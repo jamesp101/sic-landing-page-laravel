@@ -1,0 +1,37 @@
+name: cPanel branch
+
+# cPanel hosts have no Node, so the built assets travel with the code: after every push to the main branch
+# this publishes the same commit plus `public/build` as the `cpanel` branch. cPanel's Git Version Control
+# pulls that branch and deploys it (.cpanel.yml). See docs/deploy-cpanel.md.
+on:
+    push:
+        branches: [main, master]
+    workflow_dispatch:
+
+permissions:
+    contents: write
+
+concurrency:
+    group: cpanel-branch
+    cancel-in-progress: true
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with:
+                  node-version: 24
+                  cache: pnpm
+            - run: pnpm install --frozen-lockfile
+            - run: pnpm run build
+            - name: Publish the cpanel branch
+              run: |
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git checkout -B cpanel
+                  git add --force public/build
+                  git commit -m "build: assets for ${GITHUB_SHA}"
+                  git push --force origin cpanel
