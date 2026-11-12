@@ -97,6 +97,10 @@ rm -f "$HTACCESS_KEPT"
 sed "s#__APP_DIR__#${APP_DIR//#/\\#}#g" deploy/cpanel/index.php >"$DOCROOT/index.php"
 
 "$PHP" artisan migrate --force
+# Initial Superadmin from ADMIN_EMAIL / ADMIN_NAME / ADMIN_PASSWORD in .env, only while none exists. The cached
+# configuration of the previous deploy hides .env from env(), so clear it first (optimize rebuilds it below).
+"$PHP" artisan config:clear
+"$PHP" artisan sic:create-admin --if-missing --no-interaction
 "$PHP" artisan optimize
 
 trap - EXIT

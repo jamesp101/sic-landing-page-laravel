@@ -32,9 +32,10 @@ cPanel has no Node, so the built assets come with the code: the GitHub workflow 
     | `MAIL_MAILER`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` | `smtp` and an Email Account of the domain |
     | `UPLOAD_DIR` | an absolute directory outside the checkout and outside `public_html`, e.g. `/home/USER/sic-uploads` (create it); it survives redeployments and belongs in the backup |
     | `SEED_SUPERADMIN_PASSWORD`, `SEED_DEPARTMENT_PASSWORD` | remove both lines |
+    | `ADMIN_EMAIL`, `ADMIN_NAME`, `ADMIN_PASSWORD` | the initial Superadmin (password of 12 characters or more); the deploy creates it while no Superadmin exists. Remove `ADMIN_PASSWORD` after the first deploy. Leave all three out when the database is adopted from the earlier site |
 
-3. **Deploy**: Git Version Control → Manage → Pull or Deploy → Deploy HEAD Commit (or `bash deploy/cpanel/deploy.sh` in the Terminal). The script installs the PHP packages, generates `APP_KEY` if it is empty, publishes the web root, migrates the database and caches the configuration.
-4. **First Superadmin**: `php artisan sic:create-admin` in the Terminal (use the PHP 8.4 binary, see below). Skip this when the database is adopted from the earlier site: its Users keep their passwords.
+3. **Deploy**: Git Version Control → Manage → Pull or Deploy → Deploy HEAD Commit (or `bash deploy/cpanel/deploy.sh` in the Terminal). The script installs the PHP packages, generates `APP_KEY` if it is empty, publishes the web root, migrates the database, creates the initial Superadmin from `ADMIN_*` while none exists, and caches the configuration.
+4. **First Superadmin**: created by the deploy from `ADMIN_*`. Without those keys the deploy prints a warning instead; then run `php artisan sic:create-admin` in the Terminal (use the PHP 8.4 binary, see below). Not needed when the database is adopted from the earlier site: its Users keep their passwords.
 5. **Cron**: Cron Jobs → every minute:
 
     ```sh

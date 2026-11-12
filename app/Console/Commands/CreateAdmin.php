@@ -15,15 +15,31 @@ use Illuminate\Support\Facades\Hash;
  *   ADMIN_EMAIL=you@example.com ADMIN_NAME="Your Name" [ADMIN_PASSWORD=…] php artisan sic:create-admin
  *
  * Without ADMIN_PASSWORD the password is prompted on a terminal (not echoed). It is never printed.
+ *
+ * `--if-missing` (run by every deploy) does nothing once a Superadmin exists, and only warns when no Superadmin
+ * exists and ADMIN_EMAIL is unset, so a deploy creates the initial Superadmin from `.env` exactly once.
  */
 class CreateAdmin extends Command
 {
-    protected $signature = 'sic:create-admin';
+    protected $signature = 'sic:create-admin {--if-missing : Only when no Superadmin exists yet; skip quietly without ADMIN_EMAIL}';
 
     protected $description = 'Create a Superadmin, or reset an existing User\'s password and make them Superadmin (ADMIN_EMAIL, ADMIN_NAME, ADMIN_PASSWORD)';
 
     public function handle(): int
     {
+        if ($this->option('if-missing')) {
+            if (User::query()->where('role', User::ROLE_SUPERADMIN)->exists()) {
+                $this->info('A superadmin exists; nothing to do.');
+
+                return self::SUCCESS;
+            }
+            if (trim((string) env('ADMIN_EMAIL')) === '') {
+                $this->warn('No superadmin exists. Set ADMIN_EMAIL, ADMIN_NAME and ADMIN_PASSWORD in .env and deploy again, or run sic:create-admin.');
+
+                return self::SUCCESS;
+            }
+        }
+
         $email = mb_strtolower(trim((string) env('ADMIN_EMAIL')));
         $name = trim((string) env('ADMIN_NAME'));
         if (! preg_match('/^[^@\s]+@[^@\s]+\.[^@\s]+$/', $email)) {
