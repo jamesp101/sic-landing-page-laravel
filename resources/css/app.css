@@ -1,0 +1,290 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/playfair-display';
+@import './tokens.css';
+@import './slide-layout.css';
+
+/* PHP renders block HTML and Blade pages with utility classes, so Tailwind scans them too. */
+@source '../views/**/*.blade.php';
+@source '../js/**/*.{svelte,ts}';
+@source '../../app/**/*.php';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+    --font-serif: 'Playfair Display Variable', Georgia, serif;
+
+    --color-brand-950: var(--brand-950);
+    --color-brand-900: var(--brand-900);
+    --color-brand-800: var(--brand-800);
+    --color-brand-700: var(--brand-700);
+    --color-brand-600: var(--brand-600);
+    --color-brand-500: var(--brand-500);
+    --color-brand-400: var(--brand-400);
+    --color-brand-200: var(--brand-200);
+    --color-brand-100: var(--brand-100);
+    --color-brand-50: var(--brand-50);
+    --color-gold-300: var(--gold-300);
+    --color-gold-400: var(--gold-400);
+    --color-gold-500: var(--gold-500);
+    --color-gold-600: var(--gold-600);
+
+    --color-background: var(--background);
+    --color-surface: var(--surface);
+    --color-surface-alt: var(--surface-alt);
+    --color-foreground: var(--foreground);
+    --color-link: var(--link);
+    --color-border-strong: var(--border-strong);
+    --color-input-border: var(--input-border);
+
+    --color-status-article-bg: var(--status-article-bg);
+    --color-status-article-fg: var(--status-article-fg);
+    --color-status-event-bg: var(--status-event-bg);
+    --color-status-event-fg: var(--status-event-fg);
+    --color-status-announcement-bg: var(--status-announcement-bg);
+    --color-status-announcement-fg: var(--status-announcement-fg);
+    --color-file-pdf-bg: var(--file-pdf-bg);
+    --color-file-pdf-fg: var(--file-pdf-fg);
+    --color-file-doc-bg: var(--file-doc-bg);
+    --color-file-doc-fg: var(--file-doc-fg);
+    --color-file-sheet-bg: var(--file-sheet-bg);
+    --color-file-sheet-fg: var(--file-sheet-fg);
+    --color-file-image-bg: var(--file-image-bg);
+    --color-file-image-fg: var(--file-image-fg);
+    --color-file-archive-bg: var(--file-archive-bg);
+    --color-file-archive-fg: var(--file-archive-fg);
+    --color-file-other-bg: var(--file-other-bg);
+    --color-file-other-fg: var(--file-other-fg);
+
+    --shadow-brand-sm: var(--shadow-sm);
+    --shadow-brand-md: var(--shadow-md);
+    --shadow-brand-lg: var(--shadow-lg);
+    --shadow-brand-xl: var(--shadow-xl);
+
+    --radius-lg: var(--radius);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-sm: calc(var(--radius) - 4px);
+
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-destructive-foreground: var(--destructive-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+
+    --animate-fade-in: fade-in 0.8s ease-out both;
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        to {
+            opacity: 1;
+            transform: none;
+        }
+    }
+}
+
+@layer base {
+    * {
+        @apply border-border;
+    }
+    html {
+        scroll-behavior: smooth;
+    }
+    body {
+        @apply bg-background font-sans text-foreground antialiased;
+        line-height: 1.6;
+    }
+    /* Serif for display only (h1/h2); h3 and below stay sans for legibility. */
+    h1,
+    h2 {
+        @apply font-serif;
+        line-height: 1.15;
+    }
+    :focus-visible {
+        @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+    }
+}
+
+/*
+ * The sticky public header (about 4.5rem tall) must never cover the focused element (WCAG 2.4.11): scrolling to
+ * focus, to a #fragment or to the skip link's target stops below it. Pages without that header are unaffected.
+ */
+@layer base {
+    html:has([data-site-header]) {
+        scroll-padding-top: 5.5rem;
+    }
+    html:has([data-site-header]) :where(main, [id]) {
+        scroll-margin-top: 0.5rem;
+    }
+}
+
+/* Focus ring on the navy header/footer and over carousel photos: the blue ring is invisible there, so use gold. */
+@layer base {
+    .on-navy :focus-visible {
+        --tw-ring-color: var(--gold-400);
+        --tw-ring-offset-color: var(--brand-800);
+    }
+    .on-navy-deep :focus-visible {
+        --tw-ring-color: var(--gold-400);
+        --tw-ring-offset-color: var(--brand-950);
+    }
+}
+
+/*
+ * Page frame: the one definition of the public page widths. Every public container (header, breadcrumbs, banner,
+ * sections, footer, Post body) and the Block editor canvas use these classes, so their edges line up and the editor
+ * preview matches the site. `--measure` is the reading width of text (65-75 characters per line).
+ */
+:root {
+    --frame-page: 80rem;
+    --frame-reading: 48rem;
+    --frame-gutter: 1.5rem;
+    --measure: 70ch;
+}
+/* Full page width: header, breadcrumbs, banners, sections, footer. */
+@utility page-frame {
+    margin-inline: auto;
+    width: 100%;
+    max-width: var(--frame-page);
+    padding-inline: var(--frame-gutter);
+}
+/* Reading column: the Post body. */
+@utility reading-frame {
+    margin-inline: auto;
+    width: 100%;
+    max-width: var(--frame-reading);
+    padding-inline: var(--frame-gutter);
+}
+
+/*
+ * Reading rhythm of Block documents (posts, hero sections, Department content). The block classes only set size
+ * and colour; the flex gap between blocks is uniform, so headings, quotes and media get their extra space here.
+ * Direct children only: blocks nested in columns/cards keep their own tighter layout.
+ */
+@layer components {
+    [data-sic-blocks] > :is(h2, h3, h4) {
+        margin-top: 1rem;
+        margin-bottom: -0.375rem;
+        line-height: 1.25;
+        text-wrap: balance;
+    }
+    [data-sic-blocks] > :is(h2, h3, h4):first-child {
+        margin-top: 0;
+    }
+    /* Reading measure; centred or right-aligned text keeps its side. */
+    [data-sic-blocks] > :is(p, ul, ol, blockquote),
+    [data-sic-markdown] > :is(p, ul, ol, blockquote) {
+        max-width: var(--measure);
+    }
+    /* Legacy Markdown <Center> wraps its text in a centred flex column. */
+    [data-sic-markdown] > [data-sic-center] > :is(p, ul, ol) {
+        max-width: var(--measure);
+    }
+    [data-sic-blocks] > :is(p, ul, ol, blockquote):is(.text-center) {
+        margin-inline: auto;
+    }
+    [data-sic-blocks] > :is(p, ul, ol, blockquote):is(.text-right) {
+        margin-left: auto;
+    }
+    [data-sic-blocks] > blockquote {
+        margin-block: 0.5rem;
+        padding-block: 0.25rem;
+        font-size: 1.125rem;
+    }
+    [data-sic-blocks] > :is(figure, [data-album], div:has(> table)) {
+        margin-block: 0.5rem;
+    }
+    [data-sic-blocks] :is(ul, ol) > li::marker {
+        font-weight: 600;
+    }
+    [data-sic-blocks] summary {
+        min-height: 2.75rem;
+    }
+    [data-sic-blocks] summary:hover {
+        color: var(--link);
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Printed Posts: the article only, black on white, with external link addresses spelled out. */
+@media print {
+    [data-site-header],
+    footer.on-navy-deep,
+    nav[aria-label='Breadcrumb'],
+    a[href='#main'] {
+        display: none !important;
+    }
+    html,
+    body {
+        background: white !important;
+    }
+    body *,
+    body ::before,
+    body ::after {
+        color: black !important;
+        background-color: transparent !important;
+        box-shadow: none !important;
+        text-shadow: none !important;
+    }
+    main a[href^='http']:not(:has(img))::after {
+        content: ' (' attr(href) ')';
+        font-size: 0.85em;
+        overflow-wrap: anywhere;
+    }
+    img,
+    figure,
+    table,
+    blockquote {
+        break-inside: avoid;
+    }
+    img {
+        max-width: 100%;
+    }
+    :where(h1, h2, h3, h4) {
+        break-after: avoid;
+    }
+    /* Closed accordions print open; scripts/print-details.ts does the same where this pseudo-element is unknown. */
+    details::details-content {
+        content-visibility: visible;
+        display: block;
+        block-size: auto;
+    }
+}

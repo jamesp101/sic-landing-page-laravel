@@ -1,0 +1,46 @@
+[
+ {
+  "input": "a\n\nb",
+  "paragraphs": [
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a\r\n\r\nb",
+  "paragraphs": [
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "a\n\n\n\nb",
+  "paragraphs": [
+   "a",
+   "b"
+  ]
+ },
+ {
+  "input": "  \n\n a \n\n",
+  "paragraphs": [
+   "a"
+  ]
+ },
+ {
+  "input": "",
+  "paragraphs": []
+ },
+ {
+  "input": "a\rb\r\rc",
+  "paragraphs": [
+   "a\nb",
+   "c"
+  ]
+ },
+ {
+  "input": "a\n \nb",
+  "paragraphs": [
+   "a\n \nb"
+  ]
+ }
+]

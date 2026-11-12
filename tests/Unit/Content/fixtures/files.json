@@ -1,0 +1,80 @@
+[
+ {
+  "input": "a.pdf",
+  "ext": "pdf",
+  "kind": "pdf",
+  "kindDot": "other"
+ },
+ {
+  "input": "A.DOCX",
+  "ext": "docx",
+  "kind": "doc",
+  "kindDot": "other"
+ },
+ {
+  "input": "x.tar.gz",
+  "ext": "gz",
+  "kind": "archive",
+  "kindDot": "other"
+ },
+ {
+  "input": "noext",
+  "ext": "",
+  "kind": "other",
+  "kindDot": "other"
+ },
+ {
+  "input": ".hidden",
+  "ext": "",
+  "kind": "other",
+  "kindDot": "other"
+ },
+ {
+  "input": "dir/file.XLS",
+  "ext": "xls",
+  "kind": "sheet",
+  "kindDot": "other"
+ },
+ {
+  "input": "dir\\file.png",
+  "ext": "png",
+  "kind": "image",
+  "kindDot": "other"
+ },
+ {
+  "input": "trailing.",
+  "ext": "",
+  "kind": "other",
+  "kindDot": "other"
+ },
+ {
+  "input": "a.b.csv",
+  "ext": "csv",
+  "kind": "sheet",
+  "kindDot": "other"
+ },
+ {
+  "input": "x.7z",
+  "ext": "7z",
+  "kind": "archive",
+  "kindDot": "other"
+ },
+ {
+  "input": "y.avif",
+  "ext": "avif",
+  "kind": "image",
+  "kindDot": "other"
+ },
+ {
+  "input": "",
+  "ext": "",
+  "kind": "other",
+  "kindDot": "other"
+ },
+ {
+  "input": "x.mp4",
+  "ext": "mp4",
+  "kind": "other",
+  "kindDot": "other"
+ }
+]

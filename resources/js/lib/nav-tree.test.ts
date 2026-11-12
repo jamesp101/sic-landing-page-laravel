@@ -1,0 +1,239 @@
+import { describe, expect, it } from 'vitest';
+import {
+    canIndent,
+    classifyUrl,
+    internalPath,
+    navWarnings,
+    postSlugsLinked,
+    indent,
+    moveDown,
+    moveUp,
+    navUrlError,
+    outdent,
+    reorderError,
+    toPayload,
+    treeFromPayload,
+    navTreeOps,
+    proposeNavTree,
+    type NavNode,
+} from './nav-tree';
+
+const n = (id: number, children: NavNode[] = []): NavNode => ({
+    id,
+    label: `L${id}`,
+    url: '/',
+    isActive: true,
+    order: id,
+    children,
+});
+
+const ids = (tree: NavNode[]) => tree.map((t) => [t.id, t.children.map((c) => c.id)]);
+
+describe('nav tree moves', () => {
+    const tree = [n(1), n(2), n(3, [n(4), n(5)])];
+
+    it('moves within siblings and stops at the edges', () => {
+        expect(ids(moveUp(tree, 2)!)).toEqual([
+            [2, []],
+            [1, []],
+            [3, [4, 5]],
+        ]);
+        expect(moveUp(tree, 1)).toBeNull();
+        expect(ids(moveDown(tree, 4)!)).toEqual([
+            [1, []],
+            [2, []],
+            [3, [5, 4]],
+        ]);
+        expect(moveDown(tree, 5)).toBeNull();
+    });
+
+    it('indents childless links under the previous link only', () => {
+        expect(ids(indent(tree, 2)!)).toEqual([
+            [1, [2]],
+            [3, [4, 5]],
+        ]);
+        expect(canIndent(tree, 1)).toBe(false);
+        expect(canIndent(tree, 4)).toBe(false);
+        expect(indent([n(1), n(2, [n(3)])], 2)).toBeNull();
+    });
+
+    it('outdents a child after its parent', () => {
+        expect(ids(outdent(tree, 4)!)).toEqual([
+            [1, []],
+            [2, []],
+            [3, [5]],
+            [4, []],
+        ]);
+        expect(outdent(tree, 1)).toBeNull();
+    });
+
+    it('round-trips through a payload', () => {
+        const payload = toPayload(tree);
+        expect(payload).toContainEqual({ id: 5, parentId: 3, order: 2 });
+        expect(ids(treeFromPayload(tree, payload))).toEqual(ids(tree));
+    });
+});
+
+describe('reorderError', () => {
+    const existing = [
+        { id: 1, parentId: null },
+        { id: 2, parentId: null },
+        { id: 3, parentId: 2 },
+    ];
+    it('accepts a valid tree', () => {
+        expect(
+            reorderError(
+                [
+                    { id: 2, parentId: null, order: 1 },
+                    { id: 1, parentId: 2, order: 1 },
+                ],
+                [
+                    { id: 1, parentId: null },
+                    { id: 2, parentId: null },
+                ],
+            ),
+        ).toBeNull();
+    });
+    it('rejects unknown ids, duplicates and self parents', () => {
+        expect(reorderError([{ id: 9, parentId: null, order: 1 }], existing)).toMatch(/no longer exists/);
+        expect(
+            reorderError(
+                [
+                    { id: 1, parentId: null, order: 1 },
+                    { id: 1, parentId: null, order: 2 },
+                ],
+                existing,
+            ),
+        ).toMatch(/more than once/);
+        expect(reorderError([{ id: 1, parentId: 1, order: 1 }], existing)).toMatch(/own parent/);
+    });
+    it('rejects a third level', () => {
+        expect(reorderError([{ id: 2, parentId: 1, order: 1 }], existing)).toMatch(/two levels/);
+        expect(reorderError([{ id: 3, parentId: 3, order: 1 }], existing)).toMatch(/own parent/);
+        expect(reorderError([{ id: 1, parentId: 3, order: 1 }], existing)).toMatch(/two levels/);
+    });
+});
+
+describe('navUrlError', () => {
+    it('allows paths, anchors and safe schemes', () => {
+        for (const url of ['/', '/posts', '#departments', 'https://example.com/a', 'mailto:a@b.co', 'tel:+6312345'])
+            expect(navUrlError(url)).toBeNull();
+    });
+    it('rejects unsafe or malformed values', () => {
+        for (const url of ['', 'javascript:alert(1)', 'data:text/html,x', '//evil.com', 'posts', '/a b'])
+            expect(navUrlError(url)).not.toBeNull();
+    });
+});
+
+describe('classifyUrl', () => {
+    it('detects the link type', () => {
+        expect(classifyUrl('/')).toBe('page');
+        expect(classifyUrl('/posts?type=event')).toBe('page');
+        expect(classifyUrl('/departments/cba')).toBe('department');
+        expect(classifyUrl('/posts/hello-world')).toBe('post');
+        expect(classifyUrl('#departments')).toBe('departments-menu');
+        expect(classifyUrl('#contact')).toBe('anchor');
+        expect(classifyUrl('https://example.com')).toBe('external');
+        expect(classifyUrl('mailto:a@b.c')).toBe('email');
+        expect(classifyUrl('tel:+63')).toBe('phone');
+        expect(classifyUrl('  ')).toBeNull();
+        expect(classifyUrl('nonsense')).toBeNull();
+    });
+
+    it('ignores query, hash and trailing slash in paths', () => {
+        expect(internalPath('/posts/?type=event#x')).toBe('/posts');
+        expect(internalPath('/')).toBe('/');
+        expect(internalPath('/?a=1')).toBe('/');
+    });
+});
+
+describe('postSlugsLinked', () => {
+    it('lists each linked Post slug once, ignoring query, hash, slashes and other URLs', () => {
+        expect(
+            postSlugsLinked([
+                '/posts/hello',
+                '/posts/hello/?x=1#y',
+                '/posts/other',
+                '/posts',
+                '/posts/a/b',
+                '//posts/evil',
+                'https://example.com/posts/ext',
+                '/departments/cba',
+            ]),
+        ).toEqual(['hello', 'other']);
+    });
+});
+
+describe('navWarnings', () => {
+    const link = (id: number, url: string, extra: Partial<NavNode> = {}): NavNode => ({ ...n(id), url, ...extra });
+    const known = ['/', '/posts', '/departments/cba', '/posts/hello'];
+
+    it('flags internal paths that match nothing, ignoring query and hash', () => {
+        const tree = [
+            link(1, '/posts?type=event'),
+            link(2, '/missing'),
+            link(3, '/departments/cba#top'),
+            link(4, '/storage/file.pdf'),
+            link(5, 'https://example.com/missing'),
+            link(6, '#nowhere'),
+        ];
+        const warnings = navWarnings(tree, known);
+        expect([...warnings.keys()]).toEqual([2]);
+        expect(warnings.get(2)?.[0].kind).toBe('internal-missing');
+    });
+
+    it('flags visible duplicates at the same level only', () => {
+        const tree = [
+            link(1, '/posts'),
+            link(2, '/posts'),
+            link(3, '/', { children: [link(4, '/posts'), link(5, '/posts', { isActive: false })] }),
+            link(6, '/posts', { isActive: false }),
+        ];
+        const warnings = navWarnings(tree, known);
+        expect(warnings.get(1)?.map((w) => w.kind)).toEqual(['duplicate']);
+        expect(warnings.get(2)?.map((w) => w.kind)).toEqual(['duplicate']);
+        expect(warnings.has(4)).toBe(false);
+        expect(warnings.has(5)).toBe(false);
+        expect(warnings.has(6)).toBe(false);
+    });
+
+    it('skips links whose URL is not used because they open a dropdown', () => {
+        const tree = [link(1, '/missing', { children: [link(2, '/ok-child')] }), link(3, '#departments')];
+        const warnings = navWarnings(tree, known);
+        expect([...warnings.keys()]).toEqual([2]);
+    });
+});
+
+describe('proposeNavTree and navTreeOps', () => {
+    const current = [n(1), n(2), n(3, [n(4)])];
+
+    it('proposes the renumbered payload of a valid tree', () => {
+        expect(proposeNavTree(current, [n(2), n(1), n(3, [n(4)])])).toEqual({
+            change: {
+                kind: 'tree',
+                items: [
+                    { id: 2, parentId: null, order: 1 },
+                    { id: 1, parentId: null, order: 2 },
+                    { id: 3, parentId: null, order: 3 },
+                    { id: 4, parentId: 3, order: 1 },
+                ],
+            },
+        });
+    });
+
+    it('refuses a third level with the same message as the reorder action', () => {
+        const serverMessage = reorderError([{ id: 3, parentId: 1, order: 1 }], toPayload(current));
+        // A parent dropped under another top-level link keeps its own sub-links: three levels.
+        const proposal = proposeNavTree(current, [n(1, [n(3, [n(4)])]), n(2)]);
+        expect(serverMessage).toMatch(/two levels/);
+        expect(proposal).toEqual({ error: serverMessage });
+    });
+
+    it('applies and inverts a label patch', () => {
+        const patch = { kind: 'patch', id: 4, patch: { label: 'New', isActive: false } } as const;
+        const next = navTreeOps.apply(current, patch);
+        expect(next[2].children[0]).toMatchObject({ label: 'New', isActive: false });
+        expect(navTreeOps.apply(next, navTreeOps.invert(current, patch))).toEqual(current);
+        expect(navTreeOps.isNoop?.(current, { kind: 'patch', id: 4, patch: { label: 'L4' } })).toBe(true);
+    });
+});

@@ -1,0 +1,461 @@
+[
+ {
+  "input": "**bold**",
+  "html": "<strong class=\"font-bold text-primary\">bold</strong>",
+  "text": "bold",
+  "escaped": "\\*\\*bold\\*\\*",
+  "paragraphs": [
+   "**bold**"
+  ]
+ },
+ {
+  "input": "*italic*",
+  "html": "<em class=\"italic\">italic</em>",
+  "text": "italic",
+  "escaped": "\\*italic\\*",
+  "paragraphs": [
+   "*italic*"
+  ]
+ },
+ {
+  "input": "a **b** and *c* d",
+  "html": "a <strong class=\"font-bold text-primary\">b</strong> and <em class=\"italic\">c</em> d",
+  "text": "a b and c d",
+  "escaped": "a \\*\\*b\\*\\* and \\*c\\* d",
+  "paragraphs": [
+   "a **b** and *c* d"
+  ]
+ },
+ {
+  "input": "[SIC](https://example.com/a?b=1)",
+  "html": "<a href=\"https://example.com/a?b=1\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\" target=\"_blank\" rel=\"noopener noreferrer\">SIC</a>",
+  "text": "SIC",
+  "escaped": "\\[SIC\\]\\(https://example.com/a?b=1\\)",
+  "paragraphs": [
+   "[SIC](https://example.com/a?b=1)"
+  ]
+ },
+ {
+  "input": "[About](/about)",
+  "html": "<a href=\"/about\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">About</a>",
+  "text": "About",
+  "escaped": "\\[About\\]\\(/about\\)",
+  "paragraphs": [
+   "[About](/about)"
+  ]
+ },
+ {
+  "input": "[mail](mailto:info@example.com)",
+  "html": "<a href=\"mailto:info@example.com\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">mail</a>",
+  "text": "mail",
+  "escaped": "\\[mail\\]\\(mailto:info@example.com\\)",
+  "paragraphs": [
+   "[mail](mailto:info@example.com)"
+  ]
+ },
+ {
+  "input": "a \\*b\\* c",
+  "html": "a *b* c",
+  "text": "a *b* c",
+  "escaped": "a \\\\\\*b\\\\\\* c",
+  "paragraphs": [
+   "a \\*b\\* c"
+  ]
+ },
+ {
+  "input": "\\[x\\](y)",
+  "html": "[x](y)",
+  "text": "[x](y)",
+  "escaped": "\\\\\\[x\\\\\\]\\(y\\)",
+  "paragraphs": [
+   "\\[x\\](y)"
+  ]
+ },
+ {
+  "input": "back\\\\slash",
+  "html": "back\\slash",
+  "text": "back\\slash",
+  "escaped": "back\\\\\\\\slash",
+  "paragraphs": [
+   "back\\\\slash"
+  ]
+ },
+ {
+  "input": "**x** \\*y\\*",
+  "html": "<strong class=\"font-bold text-primary\">x</strong> *y*",
+  "text": "x *y*",
+  "escaped": "\\*\\*x\\*\\* \\\\\\*y\\\\\\*",
+  "paragraphs": [
+   "**x** \\*y\\*"
+  ]
+ },
+ {
+  "input": "trailing\\",
+  "html": "trailing\\",
+  "text": "trailing\\",
+  "escaped": "trailing\\\\",
+  "paragraphs": [
+   "trailing\\"
+  ]
+ },
+ {
+  "input": "**bold *it* more**",
+  "html": "<strong class=\"font-bold text-primary\">bold <em class=\"italic\">it</em> more</strong>",
+  "text": "bold it more",
+  "escaped": "\\*\\*bold \\*it\\* more\\*\\*",
+  "paragraphs": [
+   "**bold *it* more**"
+  ]
+ },
+ {
+  "input": "*a **b** c*",
+  "html": "<em class=\"italic\">a <strong class=\"font-bold text-primary\">b</strong> c</em>",
+  "text": "a b c",
+  "escaped": "\\*a \\*\\*b\\*\\* c\\*",
+  "paragraphs": [
+   "*a **b** c*"
+  ]
+ },
+ {
+  "input": "[**bold** link](/x)",
+  "html": "<a href=\"/x\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\"><strong class=\"font-bold text-primary\">bold</strong> link</a>",
+  "text": "bold link",
+  "escaped": "\\[\\*\\*bold\\*\\* link\\]\\(/x\\)",
+  "paragraphs": [
+   "[**bold** link](/x)"
+  ]
+ },
+ {
+  "input": "**bold",
+  "html": "**bold",
+  "text": "**bold",
+  "escaped": "\\*\\*bold",
+  "paragraphs": [
+   "**bold"
+  ]
+ },
+ {
+  "input": "*x",
+  "html": "*x",
+  "text": "*x",
+  "escaped": "\\*x",
+  "paragraphs": [
+   "*x"
+  ]
+ },
+ {
+  "input": "5 * 3",
+  "html": "5 * 3",
+  "text": "5 * 3",
+  "escaped": "5 \\* 3",
+  "paragraphs": [
+   "5 * 3"
+  ]
+ },
+ {
+  "input": "****",
+  "html": "****",
+  "text": "****",
+  "escaped": "\\*\\*\\*\\*",
+  "paragraphs": [
+   "****"
+  ]
+ },
+ {
+  "input": "[label](",
+  "html": "[label](",
+  "text": "[label](",
+  "escaped": "\\[label\\]\\(",
+  "paragraphs": [
+   "[label]("
+  ]
+ },
+ {
+  "input": "[label]",
+  "html": "[label]",
+  "text": "[label]",
+  "escaped": "\\[label\\]",
+  "paragraphs": [
+   "[label]"
+  ]
+ },
+ {
+  "input": "[a](b",
+  "html": "[a](b",
+  "text": "[a](b",
+  "escaped": "\\[a\\]\\(b",
+  "paragraphs": [
+   "[a](b"
+  ]
+ },
+ {
+  "input": "[](x)",
+  "html": "[](x)",
+  "text": "[](x)",
+  "escaped": "\\[\\]\\(x\\)",
+  "paragraphs": [
+   "[](x)"
+  ]
+ },
+ {
+  "input": "a ) ] b",
+  "html": "a ) ] b",
+  "text": "a ) ] b",
+  "escaped": "a \\) \\] b",
+  "paragraphs": [
+   "a ) ] b"
+  ]
+ },
+ {
+  "input": "one\ntwo",
+  "html": "one<br>two",
+  "text": "one two",
+  "escaped": "one\ntwo",
+  "paragraphs": [
+   "one\ntwo"
+  ]
+ },
+ {
+  "input": "[bad](javascript:alert(1))",
+  "html": "bad)",
+  "text": "bad)",
+  "escaped": "\\[bad\\]\\(javascript:alert\\(1\\)\\)",
+  "paragraphs": [
+   "[bad](javascript:alert(1))"
+  ]
+ },
+ {
+  "input": "[a](/x\\)y)",
+  "html": "<a href=\"/x)y\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a</a>",
+  "text": "a",
+  "escaped": "\\[a\\]\\(/x\\\\\\)y\\)",
+  "paragraphs": [
+   "[a](/x\\)y)"
+  ]
+ },
+ {
+  "input": "<b>&\"'",
+  "html": "&lt;b&gt;&amp;&quot;&#39;",
+  "text": "<b>&\"'",
+  "escaped": "<b>&\"'",
+  "paragraphs": [
+   "<b>&\"'"
+  ]
+ },
+ {
+  "input": "**a**b**c**",
+  "html": "<strong class=\"font-bold text-primary\">a</strong>b<strong class=\"font-bold text-primary\">c</strong>",
+  "text": "abc",
+  "escaped": "\\*\\*a\\*\\*b\\*\\*c\\*\\*",
+  "paragraphs": [
+   "**a**b**c**"
+  ]
+ },
+ {
+  "input": "***x***",
+  "html": "<strong class=\"font-bold text-primary\">*x</strong>*",
+  "text": "*x*",
+  "escaped": "\\*\\*\\*x\\*\\*\\*",
+  "paragraphs": [
+   "***x***"
+  ]
+ },
+ {
+  "input": "*a*b*",
+  "html": "<em class=\"italic\">a</em>b*",
+  "text": "ab*",
+  "escaped": "\\*a\\*b\\*",
+  "paragraphs": [
+   "*a*b*"
+  ]
+ },
+ {
+  "input": "**",
+  "html": "**",
+  "text": "**",
+  "escaped": "\\*\\*",
+  "paragraphs": [
+   "**"
+  ]
+ },
+ {
+  "input": "*",
+  "html": "*",
+  "text": "*",
+  "escaped": "\\*",
+  "paragraphs": [
+   "*"
+  ]
+ },
+ {
+  "input": "[",
+  "html": "[",
+  "text": "[",
+  "escaped": "\\[",
+  "paragraphs": [
+   "["
+  ]
+ },
+ {
+  "input": "](",
+  "html": "](",
+  "text": "](",
+  "escaped": "\\]\\(",
+  "paragraphs": [
+   "]("
+  ]
+ },
+ {
+  "input": "[a]()",
+  "html": "[a]()",
+  "text": "[a]()",
+  "escaped": "\\[a\\]\\(\\)",
+  "paragraphs": [
+   "[a]()"
+  ]
+ },
+ {
+  "input": "[a](x)(y)",
+  "html": "<a href=\"x\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a</a>(y)",
+  "text": "a(y)",
+  "escaped": "\\[a\\]\\(x\\)\\(y\\)",
+  "paragraphs": [
+   "[a](x)(y)"
+  ]
+ },
+ {
+  "input": "[[a](b)](c)",
+  "html": "<a href=\"b\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">[a</a>](c)",
+  "text": "[a](c)",
+  "escaped": "\\[\\[a\\]\\(b\\)\\]\\(c\\)",
+  "paragraphs": [
+   "[[a](b)](c)"
+  ]
+ },
+ {
+  "input": "**[a](/b)**",
+  "html": "<strong class=\"font-bold text-primary\"><a href=\"/b\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a</a></strong>",
+  "text": "a",
+  "escaped": "\\*\\*\\[a\\]\\(/b\\)\\*\\*",
+  "paragraphs": [
+   "**[a](/b)**"
+  ]
+ },
+ {
+  "input": "*[a](/b)*",
+  "html": "<em class=\"italic\"><a href=\"/b\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a</a></em>",
+  "text": "a",
+  "escaped": "\\*\\[a\\]\\(/b\\)\\*",
+  "paragraphs": [
+   "*[a](/b)*"
+  ]
+ },
+ {
+  "input": "[a *b](c) d*",
+  "html": "<a href=\"c\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a *b</a> d*",
+  "text": "a *b d*",
+  "escaped": "\\[a \\*b\\]\\(c\\) d\\*",
+  "paragraphs": [
+   "[a *b](c) d*"
+  ]
+ },
+ {
+  "input": "\\",
+  "html": "\\",
+  "text": "\\",
+  "escaped": "\\\\",
+  "paragraphs": [
+   "\\"
+  ]
+ },
+ {
+  "input": "\\\\",
+  "html": "\\",
+  "text": "\\",
+  "escaped": "\\\\\\\\",
+  "paragraphs": [
+   "\\\\"
+  ]
+ },
+ {
+  "input": "é**ü**😀*x*",
+  "html": "é<strong class=\"font-bold text-primary\">ü</strong>😀<em class=\"italic\">x</em>",
+  "text": "éü😀x",
+  "escaped": "é\\*\\*ü\\*\\*😀\\*x\\*",
+  "paragraphs": [
+   "é**ü**😀*x*"
+  ]
+ },
+ {
+  "input": "[é](/é \"t\")",
+  "html": "<a href=\"/é &quot;t&quot;\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">é</a>",
+  "text": "é",
+  "escaped": "\\[é\\]\\(/é \"t\"\\)",
+  "paragraphs": [
+   "[é](/é \"t\")"
+  ]
+ },
+ {
+  "input": "[a](/b c)",
+  "html": "<a href=\"/b c\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a</a>",
+  "text": "a",
+  "escaped": "\\[a\\]\\(/b c\\)",
+  "paragraphs": [
+   "[a](/b c)"
+  ]
+ },
+ {
+  "input": "*a\n*b*",
+  "html": "<em class=\"italic\">a<br></em>b*",
+  "text": "a b*",
+  "escaped": "\\*a\n\\*b\\*",
+  "paragraphs": [
+   "*a\n*b*"
+  ]
+ },
+ {
+  "input": "**a\n**",
+  "html": "<strong class=\"font-bold text-primary\">a<br></strong>",
+  "text": "a ",
+  "escaped": "\\*\\*a\n\\*\\*",
+  "paragraphs": [
+   "**a\n**"
+  ]
+ },
+ {
+  "input": "[a\n](/b)",
+  "html": "<a href=\"/b\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a<br></a>",
+  "text": "a ",
+  "escaped": "\\[a\n\\]\\(/b\\)",
+  "paragraphs": [
+   "[a\n](/b)"
+  ]
+ },
+ {
+  "input": "x\\\ny",
+  "html": "x\ny",
+  "text": "x\ny",
+  "escaped": "x\\\\\ny",
+  "paragraphs": [
+   "x\\\ny"
+  ]
+ },
+ {
+  "input": "[a](https://x.y/?a=1&b=2)",
+  "html": "<a href=\"https://x.y/?a=1&amp;b=2\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\" target=\"_blank\" rel=\"noopener noreferrer\">a</a>",
+  "text": "a",
+  "escaped": "\\[a\\]\\(https://x.y/?a=1&b=2\\)",
+  "paragraphs": [
+   "[a](https://x.y/?a=1&b=2)"
+  ]
+ },
+ {
+  "input": "[a](/o'r)",
+  "html": "<a href=\"/o&#39;r\" class=\"font-medium text-link underline underline-offset-2 hover:no-underline\">a</a>",
+  "text": "a",
+  "escaped": "\\[a\\]\\(/o'r\\)",
+  "paragraphs": [
+   "[a](/o'r)"
+  ]
+ }
+]

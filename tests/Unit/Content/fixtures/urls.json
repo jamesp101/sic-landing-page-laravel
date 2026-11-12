@@ -1,0 +1,315 @@
+[
+ {
+  "input": "",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": " ",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "https://example.com/x",
+  "safeHref": "https://example.com/x",
+  "safeImageSrc": "https://example.com/x",
+  "isExternal": true,
+  "video": null
+ },
+ {
+  "input": "http://a.b",
+  "safeHref": "http://a.b",
+  "safeImageSrc": "http://a.b",
+  "isExternal": true,
+  "video": null
+ },
+ {
+  "input": "HTTPS://A.B",
+  "safeHref": "HTTPS://A.B",
+  "safeImageSrc": "HTTPS://A.B",
+  "isExternal": true,
+  "video": null
+ },
+ {
+  "input": "/admissions",
+  "safeHref": "/admissions",
+  "safeImageSrc": "/admissions",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "page?x=1",
+  "safeHref": "page?x=1",
+  "safeImageSrc": "page?x=1",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "#top",
+  "safeHref": "#top",
+  "safeImageSrc": "#top",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "?q=1",
+  "safeHref": "?q=1",
+  "safeImageSrc": "?q=1",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "mailto:info@example.com",
+  "safeHref": "mailto:info@example.com",
+  "safeImageSrc": null,
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "tel:+639171234567",
+  "safeHref": "tel:+639171234567",
+  "safeImageSrc": null,
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "javascript:alert(1)",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "JAVASCRIPT:alert(1)",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": " java\tscript:alert(1)",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "java\nscript:alert(1)",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "jav​ascript:x",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "data:text/html,<b>x</b>",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "data:image/png;base64,AAAA",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "//evil.com",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "\\\\evil.com",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "/\\evil.com",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "ftp://example.com/a.png",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "vbscript:x",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "a:b",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "a/b:c",
+  "safeHref": "a/b:c",
+  "safeImageSrc": "a/b:c",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "./a:b",
+  "safeHref": "./a:b",
+  "safeImageSrc": "./a:b",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "/a:b",
+  "safeHref": "/a:b",
+  "safeImageSrc": "/a:b",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "#a:b",
+  "safeHref": "#a:b",
+  "safeImageSrc": "#a:b",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "?a:b",
+  "safeHref": "?a:b",
+  "safeImageSrc": "?a:b",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "x y",
+  "safeHref": "x y",
+  "safeImageSrc": "x y",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "  /trim  ",
+  "safeHref": "/trim",
+  "safeImageSrc": "/trim",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "\u0000/x",
+  "safeHref": "\u0000/x",
+  "safeImageSrc": "\u0000/x",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "﻿https://x.y",
+  "safeHref": "https://x.y",
+  "safeImageSrc": "https://x.y",
+  "isExternal": true,
+  "video": null
+ },
+ {
+  "input": "https://x.y/a b",
+  "safeHref": "https://x.y/a b",
+  "safeImageSrc": "https://x.y/a b",
+  "isExternal": true,
+  "video": null
+ },
+ {
+  "input": "file:///etc/passwd",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "blob:x",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "http:",
+  "safeHref": "http:",
+  "safeImageSrc": "http:",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "mailto:",
+  "safeHref": "mailto:",
+  "safeImageSrc": null,
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "/storage/images/a.webp",
+  "safeHref": "/storage/images/a.webp",
+  "safeImageSrc": "/storage/images/a.webp",
+  "isExternal": false,
+  "video": null
+ },
+ {
+  "input": "https://example.com/<script>",
+  "safeHref": "https://example.com/<script>",
+  "safeImageSrc": "https://example.com/<script>",
+  "isExternal": true,
+  "video": null
+ },
+ {
+  "input": "https://example.com/\"'",
+  "safeHref": "https://example.com/\"'",
+  "safeImageSrc": "https://example.com/\"'",
+  "isExternal": true,
+  "video": null
+ },
+ {
+  "input": "ＨＴＴＰ://x",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "a b:c",
+  "safeHref": null,
+  "safeImageSrc": null,
+  "isExternal": null,
+  "video": null
+ },
+ {
+  "input": "/storage/videos/0123456789abcdef0123456789abcdef.mp4",
+  "safeHref": "/storage/videos/0123456789abcdef0123456789abcdef.mp4",
+  "safeImageSrc": "/storage/videos/0123456789abcdef0123456789abcdef.mp4",
+  "isExternal": false,
+  "video": {
+   "provider": "file",
+   "id": "videos/0123456789abcdef0123456789abcdef.mp4",
+   "embedUrl": "/storage/videos/0123456789abcdef0123456789abcdef.mp4",
+   "mime": "video/mp4"
+  }
+ }
+]

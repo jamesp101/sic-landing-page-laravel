@@ -1,0 +1,103 @@
+<script lang="ts">
+    import { untrack } from 'svelte';
+    import PasswordInput from '@/components/PasswordInput.svelte';
+    import TextLink from '@/components/TextLink.svelte';
+    import { Button } from '@/components/ui/button';
+    import { Input } from '@/components/ui/input';
+    import { actions } from '@/lib/actions';
+    import { csrfToken } from '@/lib/csrf';
+    import { navigate } from '@/lib/navigation';
+    import Field from './Field.svelte';
+    import Notice from './Notice.svelte';
+
+    let {
+        redirect = '/dashboard',
+        status = '',
+        initialEmail = '',
+        initialError = '',
+    }: { redirect?: string; status?: string; initialEmail?: string; initialError?: string } = $props();
+
+    // Seeded from the server-rendered no-JS POST result; owned by the form afterwards.
+    let email = $state(untrack(() => initialEmail));
+    let password = $state('');
+    let remember = $state(false);
+    let processing = $state(false);
+    let error = $state(untrack(() => initialError));
+
+    async function submit(event: SubmitEvent) {
+        event.preventDefault();
+        processing = true;
+        error = '';
+        try {
+            const { error: failure } = await actions.auth.login({ email, password, remember });
+            if (failure) {
+                error =
+                    failure.code === 'TOO_MANY_REQUESTS'
+                        ? 'Too many attempts. Please wait a minute and try again.'
+                        : 'These credentials do not match our records.';
+                password = '';
+                return;
+            }
+            await navigate(redirect);
+        } catch {
+            error = 'Could not reach the server. Please try again.';
+        } finally {
+            processing = false;
+        }
+    }
+</script>
+
+<!-- method="post": if this island never hydrates, the browser posts to /login (handled server-side)
+     instead of a GET that would put the password in the URL. -->
+<form method="post" onsubmit={submit} class="grid gap-6">
+    <input type="hidden" name="_token" value={csrfToken()} />
+    <input type="hidden" name="redirect" value={redirect} />
+    <Notice kind="success" message={status} />
+    <Notice kind="error" message={error} />
+
+    <Field id="email" label="Email address">
+        {#snippet children(props)}
+            <Input
+                {...props}
+                class="h-11"
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="email@example.com"
+                bind:value={email}
+            />
+        {/snippet}
+    </Field>
+
+    <Field id="password" label="Password">
+        {#snippet labelAside()}
+            <TextLink href="/forgot-password" class="-my-2 inline-block py-2 text-sm">Forgot your password?</TextLink>
+        {/snippet}
+        {#snippet children(props)}
+            <PasswordInput
+                {...props}
+                class="h-11"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Password"
+                bind:value={password}
+            />
+        {/snippet}
+    </Field>
+
+    <label class="flex min-h-11 items-center gap-3 text-sm font-medium">
+        <input
+            type="checkbox"
+            name="remember"
+            bind:checked={remember}
+            class="size-5 rounded border-input accent-primary"
+        />
+        <span>Remember me</span>
+    </label>
+
+    <Button type="submit" class="h-11 w-full" disabled={processing} data-test="login-button">
+        {processing ? 'Signing in…' : 'Log in'}
+    </Button>
+</form>

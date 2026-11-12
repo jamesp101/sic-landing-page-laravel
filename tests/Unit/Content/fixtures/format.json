@@ -1,0 +1,714 @@
+{
+ "dates": [
+  {
+   "input": "2026-08-15T00:00:00Z",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "input": "2026-08-15T00:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 8:00 AM"
+  },
+  {
+   "input": "2026-08-15T00:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "input": "2026-08-15T00:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 8:00 AM"
+  },
+  {
+   "input": "2026-08-15T10:30:00Z",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "input": "2026-08-15T10:30:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 6:30 PM"
+  },
+  {
+   "input": "2026-08-15T10:30:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "input": "2026-08-15T10:30:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 6:30 PM"
+  },
+  {
+   "input": "2026-08-15T16:30:00Z",
+   "opts": {},
+   "out": "August 16, 2026"
+  },
+  {
+   "input": "2026-08-15T16:30:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 16, 2026 at 12:30 AM"
+  },
+  {
+   "input": "2026-08-15T16:30:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 16, 2026"
+  },
+  {
+   "input": "2026-08-15T16:30:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 16, 2026, 12:30 AM"
+  },
+  {
+   "input": "2026-12-31T20:00:00Z",
+   "opts": {},
+   "out": "January 1, 2027"
+  },
+  {
+   "input": "2026-12-31T20:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "January 1, 2027 at 4:00 AM"
+  },
+  {
+   "input": "2026-12-31T20:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Jan 1, 2027"
+  },
+  {
+   "input": "2026-12-31T20:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Jan 1, 2027, 4:00 AM"
+  },
+  {
+   "input": "2027-01-01T04:05:00Z",
+   "opts": {},
+   "out": "January 1, 2027"
+  },
+  {
+   "input": "2027-01-01T04:05:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "January 1, 2027 at 12:05 PM"
+  },
+  {
+   "input": "2027-01-01T04:05:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Jan 1, 2027"
+  },
+  {
+   "input": "2027-01-01T04:05:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Jan 1, 2027, 12:05 PM"
+  },
+  {
+   "input": "2026-08-15T12:00:00+08:00",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "input": "2026-08-15T12:00:00+08:00",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 12:00 PM"
+  },
+  {
+   "input": "2026-08-15T12:00:00+08:00",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "input": "2026-08-15T12:00:00+08:00",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 12:00 PM"
+  },
+  {
+   "input": "2026-03-01T00:00:00Z",
+   "opts": {},
+   "out": "March 1, 2026"
+  },
+  {
+   "input": "2026-03-01T00:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "March 1, 2026 at 8:00 AM"
+  },
+  {
+   "input": "2026-03-01T00:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Mar 1, 2026"
+  },
+  {
+   "input": "2026-03-01T00:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Mar 1, 2026, 8:00 AM"
+  },
+  {
+   "input": "2026-08-15T04:00:00Z",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "input": "2026-08-15T04:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 12:00 PM"
+  },
+  {
+   "input": "2026-08-15T04:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "input": "2026-08-15T04:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 12:00 PM"
+  },
+  {
+   "input": "nonsense",
+   "opts": {},
+   "out": ""
+  },
+  {
+   "input": "nonsense",
+   "opts": {
+    "time": true
+   },
+   "out": ""
+  },
+  {
+   "input": "nonsense",
+   "opts": {
+    "short": true
+   },
+   "out": ""
+  },
+  {
+   "input": "nonsense",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": ""
+  },
+  {
+   "input": "2026-08-15",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "input": "2026-08-15",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 8:00 AM"
+  },
+  {
+   "input": "2026-08-15",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "input": "2026-08-15",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 8:00 AM"
+  }
+ ],
+ "ranges": [
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-20T01:00:00Z",
+   "opts": {},
+   "out": "August 15 – 20, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-20T01:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 9:00 AM – August 20, 2026 at 9:00 AM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-20T01:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15 – 20, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-20T01:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 9:00 AM – Aug 20, 2026, 9:00 AM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-09-02T01:00:00Z",
+   "opts": {},
+   "out": "August 15 – September 2, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-09-02T01:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 9:00 AM – September 2, 2026 at 9:00 AM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-09-02T01:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15 – Sep 2, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-09-02T01:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 9:00 AM – Sep 2, 2026, 9:00 AM"
+  },
+  {
+   "start": "2026-12-30T01:00:00Z",
+   "end": "2027-01-02T01:00:00Z",
+   "opts": {},
+   "out": "December 30, 2026 – January 2, 2027"
+  },
+  {
+   "start": "2026-12-30T01:00:00Z",
+   "end": "2027-01-02T01:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "December 30, 2026 at 9:00 AM – January 2, 2027 at 9:00 AM"
+  },
+  {
+   "start": "2026-12-30T01:00:00Z",
+   "end": "2027-01-02T01:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Dec 30, 2026 – Jan 2, 2027"
+  },
+  {
+   "start": "2026-12-30T01:00:00Z",
+   "end": "2027-01-02T01:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Dec 30, 2026, 9:00 AM – Jan 2, 2027, 9:00 AM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-15T09:00:00Z",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-15T09:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 9:00 AM – August 15, 2026 at 5:00 PM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-15T09:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-15T09:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 9:00 AM – Aug 15, 2026, 5:00 PM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": null,
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": null,
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 9:00 AM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": null,
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": null,
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 9:00 AM"
+  },
+  {
+   "start": null,
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "start": null,
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 9:00 AM"
+  },
+  {
+   "start": null,
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "start": null,
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 9:00 AM"
+  },
+  {
+   "start": null,
+   "end": null,
+   "opts": {},
+   "out": ""
+  },
+  {
+   "start": null,
+   "end": null,
+   "opts": {
+    "time": true
+   },
+   "out": ""
+  },
+  {
+   "start": null,
+   "end": null,
+   "opts": {
+    "short": true
+   },
+   "out": ""
+  },
+  {
+   "start": null,
+   "end": null,
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": ""
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "bad",
+   "opts": {},
+   "out": "August 15, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "bad",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 9:00 AM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "bad",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "bad",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 9:00 AM"
+  },
+  {
+   "start": "bad",
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {},
+   "out": ""
+  },
+  {
+   "start": "bad",
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": ""
+  },
+  {
+   "start": "bad",
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": ""
+  },
+  {
+   "start": "bad",
+   "end": "2026-08-15T01:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": ""
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-16T01:00:00Z",
+   "opts": {},
+   "out": "August 15 – 16, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-16T01:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "August 15, 2026 at 9:00 AM – August 16, 2026 at 9:00 AM"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-16T01:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Aug 15 – 16, 2026"
+  },
+  {
+   "start": "2026-08-15T01:00:00Z",
+   "end": "2026-08-16T01:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Aug 15, 2026, 9:00 AM – Aug 16, 2026, 9:00 AM"
+  },
+  {
+   "start": "2026-05-10T01:00:00Z",
+   "end": "2026-05-20T01:00:00Z",
+   "opts": {},
+   "out": "May 10 – 20, 2026"
+  },
+  {
+   "start": "2026-05-10T01:00:00Z",
+   "end": "2026-05-20T01:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "May 10, 2026 at 9:00 AM – May 20, 2026 at 9:00 AM"
+  },
+  {
+   "start": "2026-05-10T01:00:00Z",
+   "end": "2026-05-20T01:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "May 10 – 20, 2026"
+  },
+  {
+   "start": "2026-05-10T01:00:00Z",
+   "end": "2026-05-20T01:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "May 10, 2026, 9:00 AM – May 20, 2026, 9:00 AM"
+  },
+  {
+   "start": "2026-08-31T20:00:00Z",
+   "end": "2026-09-01T20:00:00Z",
+   "opts": {},
+   "out": "September 1 – 2, 2026"
+  },
+  {
+   "start": "2026-08-31T20:00:00Z",
+   "end": "2026-09-01T20:00:00Z",
+   "opts": {
+    "time": true
+   },
+   "out": "September 1, 2026 at 4:00 AM – September 2, 2026 at 4:00 AM"
+  },
+  {
+   "start": "2026-08-31T20:00:00Z",
+   "end": "2026-09-01T20:00:00Z",
+   "opts": {
+    "short": true
+   },
+   "out": "Sep 1 – 2, 2026"
+  },
+  {
+   "start": "2026-08-31T20:00:00Z",
+   "end": "2026-09-01T20:00:00Z",
+   "opts": {
+    "time": true,
+    "short": true
+   },
+   "out": "Sep 1, 2026, 4:00 AM – Sep 2, 2026, 4:00 AM"
+  }
+ ],
+ "sizes": [
+  {
+   "input": 0,
+   "out": "0 B"
+  },
+  {
+   "input": -1,
+   "out": "0 B"
+  },
+  {
+   "input": "NaN",
+   "out": "0 B"
+  },
+  {
+   "input": 1,
+   "out": "1 B"
+  },
+  {
+   "input": 1023,
+   "out": "1023 B"
+  },
+  {
+   "input": 1024,
+   "out": "1 KB"
+  },
+  {
+   "input": 1536,
+   "out": "1.5 KB"
+  },
+  {
+   "input": 10240,
+   "out": "10 KB"
+  },
+  {
+   "input": 102400,
+   "out": "100 KB"
+  },
+  {
+   "input": 1048576,
+   "out": "1 MB"
+  },
+  {
+   "input": 1572864,
+   "out": "1.5 MB"
+  },
+  {
+   "input": 5242881,
+   "out": "5 MB"
+  },
+  {
+   "input": 1073741824,
+   "out": "1 GB"
+  },
+  {
+   "input": 5000000000000,
+   "out": "4657 GB"
+  },
+  {
+   "input": 1023.5,
+   "out": "1024 B"
+  },
+  {
+   "input": 102348.8,
+   "out": "100 KB"
+  }
+ ]
+}

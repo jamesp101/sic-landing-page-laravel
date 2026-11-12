@@ -1,0 +1,261 @@
+[
+ {
+  "input": "2026-08-15",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": null,
+   "minute": null,
+   "iso": "2026-08-15"
+  },
+  "day": "August 15, 2026",
+  "time": "",
+  "key": 1786752000000
+ },
+ {
+  "input": "2026-08-15T08:00",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": 8,
+   "minute": 0,
+   "iso": "2026-08-15T08:00"
+  },
+  "day": "August 15, 2026",
+  "time": "8:00 AM",
+  "key": 1786780800000
+ },
+ {
+  "input": "2026-08-15T00:00",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": 0,
+   "minute": 0,
+   "iso": "2026-08-15T00:00"
+  },
+  "day": "August 15, 2026",
+  "time": "12:00 AM",
+  "key": 1786752000000
+ },
+ {
+  "input": "2026-08-15T12:00",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": 12,
+   "minute": 0,
+   "iso": "2026-08-15T12:00"
+  },
+  "day": "August 15, 2026",
+  "time": "12:00 PM",
+  "key": 1786795200000
+ },
+ {
+  "input": "2026-08-15T13:05",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": 13,
+   "minute": 5,
+   "iso": "2026-08-15T13:05"
+  },
+  "day": "August 15, 2026",
+  "time": "1:05 PM",
+  "key": 1786799100000
+ },
+ {
+  "input": "2026-08-15T23:59",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": 23,
+   "minute": 59,
+   "iso": "2026-08-15T23:59"
+  },
+  "day": "August 15, 2026",
+  "time": "11:59 PM",
+  "key": 1786838340000
+ },
+ {
+  "input": "2028-02-29",
+  "date": {
+   "year": 2028,
+   "month": 2,
+   "day": 29,
+   "hour": null,
+   "minute": null,
+   "iso": "2028-02-29"
+  },
+  "day": "February 29, 2028",
+  "time": "",
+  "key": 1835395200000
+ },
+ {
+  "input": "",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2026-02-30",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2027-02-29",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "15-08-2026",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2026-08-15T25:00",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2026-08-15T08:60",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "0050-01-01",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "0000-01-01",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "0100-01-01",
+  "date": {
+   "year": 100,
+   "month": 1,
+   "day": 1,
+   "hour": null,
+   "minute": null,
+   "iso": "0100-01-01"
+  },
+  "day": "January 1, 100",
+  "time": "",
+  "key": -59011459200000
+ },
+ {
+  "input": " 2026-08-15 ",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": null,
+   "minute": null,
+   "iso": "2026-08-15"
+  },
+  "day": "August 15, 2026",
+  "time": "",
+  "key": 1786752000000
+ },
+ {
+  "input": "2026-08-15T08:00:00",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2026-13-01",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2026-00-10",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2026-04-31",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "2026-08-15\n",
+  "date": {
+   "year": 2026,
+   "month": 8,
+   "day": 15,
+   "hour": null,
+   "minute": null,
+   "iso": "2026-08-15"
+  },
+  "day": "August 15, 2026",
+  "time": "",
+  "key": 1786752000000
+ },
+ {
+  "input": "2026-8-5",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "1999-12-31T24:00",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "soon",
+  "date": null,
+  "day": null,
+  "time": null,
+  "key": null
+ },
+ {
+  "input": "9999-12-31",
+  "date": {
+   "year": 9999,
+   "month": 12,
+   "day": 31,
+   "hour": null,
+   "minute": null,
+   "iso": "9999-12-31"
+  },
+  "day": "December 31, 9999",
+  "time": "",
+  "key": 253402214400000
+ }
+]

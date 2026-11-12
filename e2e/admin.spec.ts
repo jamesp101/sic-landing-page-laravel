@@ -1,0 +1,238 @@
+import AxeBuilder from '@axe-core/playwright';
+import { expect, test } from '@playwright/test';
+
+import { DEMO_DEPARTMENTS, DEMO_USERS, seedPassword } from './demo-data';
+import { ADMIN, CIT } from './auth-state';
+import { visitorPage } from './support';
+
+test.describe('as superadmin', () => {
+    test.use({ storageState: ADMIN });
+
+    // Admin navigation is full page loads (no ClientRouter): the Astro assertions about a kept document, swapped
+    // views and the hover prefetch cache have no counterpart and are dropped.
+    test('admin navigation reaches the pages from the sidebar, filters and history', async ({ page }) => {
+        await page.emulateMedia({ colorScheme: 'dark' });
+        await page.goto('/dashboard');
+
+        const sidebar = page.locator('[data-sidebar="content"]');
+        await sidebar.getByRole('link', { name: 'Departments', exact: true }).click();
+        await expect(page).toHaveURL(/\/admin\/departments$/);
+        await expect(page.getByRole('heading', { level: 1, name: 'Departments' })).toBeVisible();
+        await expect(page).toHaveTitle(/^Departments/);
+
+        // GET filter forms.
+        await page.getByLabel('Search departments').fill('business');
+        await page.getByRole('button', { name: 'Filter' }).click();
+        await expect(page).toHaveURL(/q=business/);
+        await expect(page.locator('tbody tr')).toHaveCount(1);
+
+        await sidebar.getByRole('link', { name: 'Posts', exact: true }).click();
+        await expect(page).toHaveURL(/\/admin\/posts$/);
+        await page.goBack();
+        await expect(page).toHaveURL(/q=business/);
+        await expect(page.getByRole('heading', { level: 1, name: 'Departments' })).toBeVisible();
+
+        await sidebar.getByRole('link', { name: 'Users', exact: true }).click();
+        await expect(page).toHaveURL(/\/admin\/users$/);
+        await expect(page.getByRole('heading', { level: 1 })).toContainText(/Users/);
+
+        // Theme class survives the page loads.
+        await expect(page.locator('html')).toHaveClass(/dark/);
+    });
+
+    test('creates a post with a highlight image and it is visible publicly', async ({ page }) => {
+        test.slow();
+        const title = `E2E post ${Date.now()}`;
+        await page.goto('/admin/posts/create');
+        await page.getByLabel('Post title').fill(title);
+        await page.getByRole('button', { name: 'Add Text', exact: true }).click();
+        await page.getByLabel('Text', { exact: true }).fill('Body from the end-to-end test.');
+        // A 3200x1800 noisy PNG is far above the 5 MB server limit; client-side WebP compression must
+        // shrink and downscale it so the upload is accepted. Built and attached inside the page so the
+        // ~17 MB file never crosses the Playwright protocol.
+        const pngBytes = await page.evaluate(async () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = 3200;
+            canvas.height = 1800;
+            const context = canvas.getContext('2d')!;
+            const pixels = context.createImageData(canvas.width, canvas.height);
+            for (let i = 0; i < pixels.data.length; i += 4) {
+                pixels.data[i] = (i * 7) % 255;
+                pixels.data[i + 1] = Math.floor(Math.random() * 255);
+                pixels.data[i + 2] = (i >> 10) % 255;
+                pixels.data[i + 3] = 255;
+            }
+            context.putImageData(pixels, 0, 0);
+            const { promise, resolve } = Promise.withResolvers<Blob | null>();
+            canvas.toBlob(resolve, 'image/png');
+            const blob = (await promise)!;
+            const input = document.querySelector<HTMLInputElement>('#highlightImage')!;
+            const transfer = new DataTransfer();
+            transfer.items.add(new File([blob], 'campus.png', { type: 'image/png' }));
+            input.files = transfer.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            return blob.size;
+        });
+        expect(pngBytes).toBeGreaterThan(5 * 1024 * 1024);
+        await page.getByRole('button', { name: 'Apply Crop' }).click();
+        await page.getByRole('button', { name: 'Publish post' }).click();
+        await expect(page).toHaveURL(/\/admin\/posts$/);
+        // The post-save navigation shows the fresh list.
+        await expect(page.locator('main')).toContainText(title);
+
+        await page.goto(`/posts?search=${encodeURIComponent(title)}`);
+        const link = page.getByRole('link', { name: title }).first();
+        await expect(link).toBeVisible();
+
+        await link.click();
+        await expect(page.locator('h1')).toHaveText(title);
+        const src = await page.locator('main img[src^="/storage/posts/"]').first().getAttribute('src');
+        expect(src).toBeTruthy();
+        const image = await page.request.get(src!);
+        expect(image.status()).toBe(200);
+        expect(image.headers()['content-type']).toBe('image/webp');
+        expect(src).toMatch(/\.webp$/);
+        const stored = await image.body();
+        expect(stored.length).toBeLessThan(5 * 1024 * 1024);
+        // Decoded size stays within the highlight box (1600 px) yet keeps real resolution (> cropper viewport).
+        const size = await page.evaluate(async (url) => {
+            const bitmap = await createImageBitmap(await (await fetch(url)).blob());
+            return { width: bitmap.width, height: bitmap.height };
+        }, src!);
+        expect(Math.max(size.width, size.height)).toBeLessThanOrEqual(1600);
+        expect(Math.max(size.width, size.height)).toBeGreaterThan(1000);
+    });
+
+    for (const width of [390, 1280]) {
+        test(`the editor placeholder is as tall as the Markdown editor at ${width} px`, async ({ page }) => {
+            await page.setViewportSize({ width, height: 900 });
+            // Hold the editor's code back so the placeholder can be measured, then let it through.
+            let release: () => void = () => {};
+            const gate = new Promise<void>((resolve) => (release = resolve));
+            await page.route(/MarkdownEditor[^/]*\.js/, async (route) => {
+                await gate;
+                await route.continue();
+            });
+            await page.goto('/admin/departments/create');
+            const box = page
+                .getByText('Hero content (Markdown / MDX)')
+                .locator('xpath=ancestor::div[contains(@class,"w-full")][1]');
+            await expect(page.getByRole('status')).toHaveText('Loading editor…');
+            const placeholder = (await box.boundingBox())!;
+
+            release();
+            await expect(page.getByRole('textbox', { name: 'Hero content (Markdown / MDX)' })).toBeVisible();
+            const editor = (await box.boundingBox())!;
+            expect(
+                Math.abs(placeholder.height - editor.height),
+                `placeholder ${placeholder.height}px, editor ${editor.height}px`,
+            ).toBeLessThan(1);
+        });
+    }
+
+    test('admin screens have no serious axe violations', async ({ page }) => {
+        // Four axe scans (the editor page is heavy) exceed the default 30 s under parallel load.
+        test.slow();
+        for (const route of ['/dashboard', '/admin/posts', '/admin/posts/create', '/admin/departments']) {
+            await page.goto(route);
+            const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
+            const serious = results.violations.filter((v) => v.impact === 'serious' || v.impact === 'critical');
+            expect(
+                serious.map((v) => `${route} ${v.id}: ${v.nodes.map((n) => n.target.join(' ')).join(', ')}`),
+            ).toEqual([]);
+        }
+    });
+
+    test('departments table searches, filters and sorts on the server', async ({ page }) => {
+        // Other specs create and delete throwaway departments ("Authz Probe Dept …") while this one runs.
+        const names = async () =>
+            (await page.locator('tbody tr td:first-child a').allTextContents()).filter(
+                (n) => !n.startsWith('Authz Probe Dept'),
+            );
+
+        await page.goto('/admin/departments?q=business');
+        expect(await names()).toEqual([DEMO_DEPARTMENTS.cba.name]);
+
+        await page.goto('/admin/departments?sort=name&dir=desc');
+        const desc = await names();
+        expect(desc).toEqual([...desc].sort((a, b) => b.localeCompare(a)));
+        await expect(page.locator('th[aria-sort="descending"]')).toHaveText(/Department/);
+
+        // Sorting by member count orders rows by the visible count.
+        await page.goto('/admin/departments?sort=members&dir=desc');
+        const counts = (await page.locator('tbody tr td:nth-child(2)').allTextContents()).map(Number);
+        expect(counts).toEqual([...counts].sort((a, b) => b - a));
+
+        // Seeded College of Education has no org chart members yet.
+        await page.goto('/admin/departments?members=no');
+        expect(await names()).toEqual([DEMO_DEPARTMENTS.coe.name]);
+        await page.goto('/admin/departments?members=yes');
+        expect(await names()).not.toContain(DEMO_DEPARTMENTS.coe.name);
+        await page.goto('/admin/departments?q=no-such-department');
+        await expect(page.getByText('No departments match your filters.')).toBeVisible();
+        await page.getByRole('link', { name: 'Reset' }).click();
+        await expect(page).toHaveURL(/\/admin\/departments$/);
+    });
+});
+
+test.describe('as department user', () => {
+    test.use({ storageState: CIT });
+
+    test('cannot open superadmin screens', async ({ page }) => {
+        expect((await page.goto('/admin/users'))?.status()).toBe(403);
+    });
+
+    test('departments table only lists their own department, even with filters', async ({ page }) => {
+        const names = page.locator('tbody tr td:first-child a');
+        await page.goto('/admin/departments');
+        await expect(names).toHaveText([DEMO_DEPARTMENTS.cit.name]);
+        await page.goto('/admin/departments?q=business');
+        await expect(names).toHaveCount(0);
+        await expect(page.getByRole('link', { name: 'New department' })).toHaveCount(0);
+    });
+
+    test('cannot edit another department post or see it in their list', async ({ browser, page }) => {
+        const admin = await browser.newContext({ storageState: ADMIN });
+        const adminPage = await admin.newPage();
+        await adminPage.goto('/admin/posts?q=CBA');
+        const editHref = await adminPage
+            .locator('a[href^="/admin/posts/"][href$="/edit"]')
+            .first()
+            .getAttribute('href');
+        await admin.close();
+        expect(editHref).toBeTruthy();
+
+        expect((await page.goto(editHref!))?.status()).toBe(403);
+        await page.goto('/admin/posts');
+        await expect(page.locator('main')).not.toContainText(/CBA Students/i);
+    });
+});
+
+test('wrong password shows an error', async ({ page }) => {
+    await page.goto('/login');
+    await page.getByLabel(/email/i).fill(DEMO_USERS.superAdmin.email);
+    await page.getByLabel(/^password$/i).fill('not-the-password');
+    await page.getByRole('button', { name: /log in|sign in/i }).click();
+    await expect(page).toHaveURL(/\/login/);
+    await expect(page.getByRole('alert')).toBeVisible();
+});
+
+test('login works without JavaScript and never puts credentials in the URL', async ({ browser }) => {
+    const page = await visitorPage(browser);
+    const urls: string[] = [];
+    page.on('request', (request) => urls.push(request.url()));
+
+    await page.goto('/login?redirect=/admin/posts');
+    await page.getByLabel(/email/i).fill(DEMO_USERS.superAdmin.email);
+    await page.getByLabel(/^password$/i).fill('not-the-password');
+    await page.getByRole('button', { name: /log in/i }).click();
+    await expect(page.getByRole('alert')).toContainText('These credentials do not match our records.');
+    await expect(page.getByLabel(/email/i)).toHaveValue(DEMO_USERS.superAdmin.email);
+
+    await page.getByLabel(/^password$/i).fill(seedPassword('SEED_SUPERADMIN_PASSWORD'));
+    await page.getByRole('button', { name: /log in/i }).click();
+    await expect(page).toHaveURL(/\/admin\/posts$/);
+
+    expect(urls.filter((url) => /password=|not-the-password/.test(url))).toEqual([]);
+    await page.context().close();
+});

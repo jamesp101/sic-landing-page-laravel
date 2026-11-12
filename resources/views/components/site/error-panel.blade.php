@@ -1,0 +1,26 @@
+@props(['code', 'title', 'message'])
+<section class="py-20 md:py-28">
+    <div class="mx-auto flex w-full max-w-2xl flex-col items-center px-(--frame-gutter) text-center">
+        <x-site.eyebrow>Error {{ $code }}</x-site.eyebrow>
+        <h1 class="mt-4 text-4xl font-bold text-brand-800 md:text-5xl dark:text-foreground">{{ $title }}</h1>
+        <p class="mt-4 text-base leading-relaxed text-muted-foreground">{{ $message }}</p>
+        {{ $slot }}
+        <ul class="mt-8 flex flex-wrap justify-center gap-4">
+            <li>
+                <a href="/" class="{{ \App\Site\Classes::BTN_GOLD }}">
+                    Back to home
+                </a>
+            </li>
+            <li>
+                <a href="/posts" class="{{ \App\Site\Classes::BTN_OUTLINE }}">
+                    News &amp; events
+                </a>
+            </li>
+            <li>
+                <a href="/contact" class="{{ \App\Site\Classes::BTN_OUTLINE }}">
+                    Contact us
+                </a>
+            </li>
+        </ul>
+    </div>
+</section>

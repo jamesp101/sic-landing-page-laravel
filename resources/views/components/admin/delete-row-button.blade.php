@@ -1,0 +1,21 @@
+{{-- Delete trigger for one list row; the page's single `admin/shared/RowDeleteDialog` island handles the click. --}}
+@props(['kind', 'id', 'name'])
+@php
+    $label = match ($kind) {
+        'post' => "Delete post {$name}",
+        'heroSection' => "Delete hero section {$name}",
+        default => "Delete {$name}", // department, user
+    };
+@endphp
+<button
+    type="button"
+    data-row-delete="{{ $kind }}"
+    data-id="{{ $id }}"
+    data-name="{{ $name }}"
+    aria-haspopup="dialog"
+    aria-label="{{ $label }}"
+    title="{{ $label }}"
+    class="{{ \App\Admin\Ui::DANGER_ICON_BUTTON }}"
+>
+    <x-admin.icon name="trash" class="h-4 w-4" />
+</button>

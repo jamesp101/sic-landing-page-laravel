@@ -1,0 +1,356 @@
+[
+ {
+  "name": "empty",
+  "input": "",
+  "html": "",
+  "text": ""
+ },
+ {
+  "name": "blank",
+  "input": " \n\t\n ",
+  "html": "",
+  "text": ""
+ },
+ {
+  "name": "import only",
+  "input": "import Foo from './foo';",
+  "html": "",
+  "text": ""
+ },
+ {
+  "name": "imports",
+  "input": "import Foo from './foo';\n\nimport Bar from \"./bar\"",
+  "html": "",
+  "text": ""
+ },
+ {
+  "name": "import then text",
+  "input": "import Foo from './foo';\n\nText",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">Text</p></div>",
+  "text": "Text"
+ },
+ {
+  "name": "plain",
+  "input": "Text",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">Text</p></div>",
+  "text": "Text"
+ },
+ {
+  "name": "crlf",
+  "input": "one\r\ntwo\r\n\r\nthree\rfour",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">one\ntwo</p>\n<p class=\"my-3 leading-relaxed text-foreground\">three\nfour</p></div>",
+  "text": "one two three four"
+ },
+ {
+  "name": "center",
+  "input": "<Center>\nMiddle\n</Center>",
+  "html": "<div data-sic-markdown><div data-sic-center class=\"my-6 flex flex-col items-center justify-center text-center\">\n<p class=\"my-3 leading-relaxed text-foreground\">Middle</p>\n</div></div>",
+  "text": "Middle"
+ },
+ {
+  "name": "headings",
+  "input": "# One\n\n## Two\n\n###### Six\n\n####### Seven\n\n#NoSpace\n\n#   Spaced   ",
+  "html": "<div data-sic-markdown><h2 class=\"mt-8 mb-3 text-2xl font-bold text-primary\">One</h2>\n<h3 class=\"mt-6 mb-2 text-xl font-bold text-primary\">Two</h3>\n<h6 class=\"mt-4 mb-2 text-sm font-semibold uppercase tracking-wide text-muted-foreground\">Six</h6>\n<p class=\"my-3 leading-relaxed text-foreground\">####### Seven</p>\n<p class=\"my-3 leading-relaxed text-foreground\">#NoSpace</p>\n<h2 class=\"mt-8 mb-3 text-2xl font-bold text-primary\">Spaced</h2></div>",
+  "text": "One Two Six ####### Seven #NoSpace Spaced"
+ },
+ {
+  "name": "ul",
+  "input": "- a\n- b\n* c\n+ d",
+  "html": "<div data-sic-markdown><ul class=\"my-3 list-disc space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">a</li><li class=\"leading-relaxed\">b</li><li class=\"leading-relaxed\">c</li><li class=\"leading-relaxed\">d</li></ul></div>",
+  "text": "a b c d"
+ },
+ {
+  "name": "ol",
+  "input": "1. first\n2. second\n\ntext\n\n- bullet\n\n3) paren",
+  "html": "<div data-sic-markdown><ol class=\"my-3 list-decimal space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">first</li><li class=\"leading-relaxed\">second</li></ol>\n<p class=\"my-3 leading-relaxed text-foreground\">text</p>\n<ul class=\"my-3 list-disc space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">bullet</li></ul>\n<ol class=\"my-3 list-decimal space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">paren</li></ol></div>",
+  "text": "first second text bullet paren"
+ },
+ {
+  "name": "mixed list",
+  "input": "- a\n1. b\n- c",
+  "html": "<div data-sic-markdown><ul class=\"my-3 list-disc space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">a</li></ul>\n<ol class=\"my-3 list-decimal space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">b</li></ol>\n<ul class=\"my-3 list-disc space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">c</li></ul></div>",
+  "text": "a b c"
+ },
+ {
+  "name": "inline",
+  "input": "**b** and *i* and `c` and **bold *it* more** and ***both***",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><strong class=\"font-bold text-primary\">b</strong> and <em class=\"italic\">i</em> and <code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">c</code> and <strong class=\"font-bold text-primary\">bold <em class=\"italic\">it</em> more</strong> and <strong class=\"font-bold text-primary\"><em class=\"italic\">both</strong></em></p></div>",
+  "text": "b and i and c and bold it more and both"
+ },
+ {
+  "name": "emphasis edge",
+  "input": "5 * 3 * 2 and **not closed and * lone and a*b*c and **  spaced  ** and *  x  *",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">5 * 3 * 2 and **not closed and * lone and a*b*c and **  spaced  ** and *  x  *</p></div>",
+  "text": "5 3 2 and not closed and lone and abc and spaced and x"
+ },
+ {
+  "name": "quote",
+  "input": "> quoted\n> more\n\n> second",
+  "html": "<div data-sic-markdown><blockquote class=\"my-4 border-l-4 border-gold-500 pl-4 italic text-muted-foreground\">quoted\nmore</blockquote>\n<blockquote class=\"my-4 border-l-4 border-gold-500 pl-4 italic text-muted-foreground\">second</blockquote></div>",
+  "text": "quoted more second"
+ },
+ {
+  "name": "code",
+  "input": "> quoted\n\n```js\nconst a = \"<Card>x</Card>\";\n```\n\nafter",
+  "html": "<div data-sic-markdown><blockquote class=\"my-4 border-l-4 border-gold-500 pl-4 italic text-muted-foreground\">quoted</blockquote>\n<pre class=\"my-4 overflow-x-auto rounded-lg border border-border bg-surface-alt p-4 font-mono text-sm text-foreground\"><code>const a = &quot;&lt;Card&gt;x&lt;/Card&gt;&quot;;</code></pre>\n<p class=\"my-3 leading-relaxed text-foreground\">after</p></div>",
+  "text": "quoted const a = \" x \"; after"
+ },
+ {
+  "name": "code unterminated",
+  "input": "```\nopen forever\n\ntext",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">```\nopen forever</p>\n<p class=\"my-3 leading-relaxed text-foreground\">text</p></div>",
+  "text": "open forever text"
+ },
+ {
+  "name": "code indented",
+  "input": "  ```\n  x\n  ```  ",
+  "html": "<div data-sic-markdown><pre class=\"my-4 overflow-x-auto rounded-lg border border-border bg-surface-alt p-4 font-mono text-sm text-foreground\"><code>  x</code></pre></div>",
+  "text": "x"
+ },
+ {
+  "name": "code empty",
+  "input": "```\n```",
+  "html": "<div data-sic-markdown><pre class=\"my-4 overflow-x-auto rounded-lg border border-border bg-surface-alt p-4 font-mono text-sm text-foreground\"><code></code></pre></div>",
+  "text": ""
+ },
+ {
+  "name": "code inline stash",
+  "input": "use `**x**` and `<b>` and ``dbl``",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">use <code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">**x**</code> and <code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">&lt;b&gt;</code> and `<code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">dbl</code>`</p></div>",
+  "text": "use x and and dbl"
+ },
+ {
+  "name": "card",
+  "input": "<Card title=\"Title <b>\">\nBody **bold**\n</Card>",
+  "html": "<div data-sic-markdown><div class=\"my-6 rounded-2xl border border-border bg-surface p-6 shadow-brand-sm\"><h3 class=\"mb-2 text-lg font-bold text-primary\">Title &lt;b&gt;</h3><div class=\"text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">Body <strong class=\"font-bold text-primary\">bold</strong></p>\n</div></div></div>",
+  "text": "\"> Body bold"
+ },
+ {
+  "name": "card notitle",
+  "input": "<Card>\nBody\n</Card>",
+  "html": "<div data-sic-markdown><div class=\"my-6 rounded-2xl border border-border bg-surface p-6 shadow-brand-sm\"><div class=\"text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">Body</p>\n</div></div></div>",
+  "text": "Body"
+ },
+ {
+  "name": "card unclosed",
+  "input": "<Card title=\"x\">\nBody",
+  "html": "<div data-sic-markdown><div class=\"my-6 rounded-2xl border border-border bg-surface p-6 shadow-brand-sm\"><h3 class=\"mb-2 text-lg font-bold text-primary\">x</h3><div class=\"text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">Body</p>\n</div></div></div>",
+  "text": "Body"
+ },
+ {
+  "name": "accordion",
+  "input": "<Accordion title=\"Q & A\">\nAnswer\n\n- a\n</Accordion>",
+  "html": "<div data-sic-markdown><details class=\"group my-4 rounded-xl border border-border bg-surface-alt p-4\"><summary class=\"flex cursor-pointer list-none items-center justify-between font-semibold text-primary\"><span>Q &amp; A</span><svg class=\"h-4 w-4 transition-transform group-open:rotate-180\" aria-hidden=\"true\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\"/></svg></summary><div class=\"mt-3 text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">Answer</p>\n<ul class=\"my-3 list-disc space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">a</li></ul>\n</div></details></div>",
+  "text": "Answer a"
+ },
+ {
+  "name": "accordion notitle",
+  "input": "<Accordion>\nx\n</Accordion>",
+  "html": "<div data-sic-markdown><details class=\"group my-4 rounded-xl border border-border bg-surface-alt p-4\"><summary class=\"flex cursor-pointer list-none items-center justify-between font-semibold text-primary\"><span></span><svg class=\"h-4 w-4 transition-transform group-open:rotate-180\" aria-hidden=\"true\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\"/></svg></summary><div class=\"mt-3 text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">x</p>\n</div></details></div>",
+  "text": "x"
+ },
+ {
+  "name": "nested",
+  "input": "<Flex>\n<Card title=\"a\">\nx\n</Card>\n<Card title=\"b\">\ny\n</Card>\n</Flex>",
+  "html": "<div data-sic-markdown><div class=\"my-6 flex flex-col items-stretch gap-6 md:flex-row\">\n<div class=\"my-6 rounded-2xl border border-border bg-surface p-6 shadow-brand-sm\"><h3 class=\"mb-2 text-lg font-bold text-primary\">a</h3><div class=\"text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">x</p>\n</div></div>\n<div class=\"my-6 rounded-2xl border border-border bg-surface p-6 shadow-brand-sm\"><h3 class=\"mb-2 text-lg font-bold text-primary\">b</h3><div class=\"text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">y</p>\n</div></div>\n</div></div>",
+  "text": "x y"
+ },
+ {
+  "name": "stray close",
+  "input": "a\n</Card>\nb\n</Center>",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">a</p>\n<p class=\"my-3 leading-relaxed text-foreground\">b</p></div>",
+  "text": "a b"
+ },
+ {
+  "name": "mismatched",
+  "input": "<Center>\n<Card title=\"x\">\nhi\n</Center>\nafter",
+  "html": "<div data-sic-markdown><div data-sic-center class=\"my-6 flex flex-col items-center justify-center text-center\">\n<div class=\"my-6 rounded-2xl border border-border bg-surface p-6 shadow-brand-sm\"><h3 class=\"mb-2 text-lg font-bold text-primary\">x</h3><div class=\"text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">hi</p>\n</div></div></div>\n<p class=\"my-3 leading-relaxed text-foreground\">after</p></div>",
+  "text": "hi after"
+ },
+ {
+  "name": "badges attr",
+  "input": "<Badges tags=\"a, b , ,<c>\" />",
+  "html": "<div data-sic-markdown><div class=\"my-2 flex flex-wrap gap-1.5\"><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">a</span><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">b</span><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">&lt;c&gt;</span></div></div>",
+  "text": "a, b , ,"
+ },
+ {
+  "name": "badges body",
+  "input": "<Badges>a, b, \"q\"</Badges>",
+  "html": "<div data-sic-markdown><div class=\"my-2 flex flex-wrap gap-1.5\"><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">a</span><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">b</span><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">&quot;q&quot;</span></div></div>",
+  "text": "a, b, \"q\""
+ },
+ {
+  "name": "badges multiline",
+  "input": "<Badges>\na,\nb\n</Badges>",
+  "html": "<div data-sic-markdown><div class=\"my-2 flex flex-wrap gap-1.5\"><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">a</span><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">b</span></div></div>",
+  "text": "a, b"
+ },
+ {
+  "name": "links",
+  "input": "[ext](https://x.y/a?b=1&c=2) [int](/posts) [mail](mailto:a@b.co) [bad](javascript:alert(1)) [hash](#top) [rel](page?x=1) [proto](//evil.com) [tel](tel:123) [**b**](/x) [`c`](/y)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><a href=\"https://x.y/a?b=1&amp;c=2\" class=\"font-medium text-link underline-offset-2 hover:underline\" target=\"_blank\" rel=\"noopener\">ext</a> <a href=\"/posts\" class=\"font-medium text-link underline-offset-2 hover:underline\">int</a> <a href=\"mailto:a@b.co\" class=\"font-medium text-link underline-offset-2 hover:underline\">mail</a> <a href=\"#\" class=\"font-medium text-link underline-offset-2 hover:underline\">bad</a>) <a href=\"#top\" class=\"font-medium text-link underline-offset-2 hover:underline\">hash</a> <a href=\"page?x=1\" class=\"font-medium text-link underline-offset-2 hover:underline\">rel</a> <a href=\"#\" class=\"font-medium text-link underline-offset-2 hover:underline\">proto</a> <a href=\"tel:123\" class=\"font-medium text-link underline-offset-2 hover:underline\">tel</a> <a href=\"/x\" class=\"font-medium text-link underline-offset-2 hover:underline\"><strong class=\"font-bold text-primary\">b</strong></a> <a href=\"/y\" class=\"font-medium text-link underline-offset-2 hover:underline\"><code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">c</code></a></p></div>",
+  "text": "ext int mail bad) hash rel proto tel b c"
+ },
+ {
+  "name": "link emphasis",
+  "input": "[**bold** and *it*](https://x.y)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><a href=\"https://x.y\" class=\"font-medium text-link underline-offset-2 hover:underline\" target=\"_blank\" rel=\"noopener\"><strong class=\"font-bold text-primary\">bold</strong> and <em class=\"italic\">it</em></a></p></div>",
+  "text": "bold and it"
+ },
+ {
+  "name": "image",
+  "input": "![A campus](/storage/posts/a.jpg)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><img src=\"/storage/posts/a.jpg\" alt=\"A campus\" loading=\"lazy\" decoding=\"async\" class=\"my-4 h-auto max-w-full rounded-xl\"></p></div>",
+  "text": ""
+ },
+ {
+  "name": "image bad",
+  "input": "![x](javascript:alert(1)) ![y](data:image/png;base64,AAAA) ![](/a.png) ![z](//evil.com/a.png)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><img src=\"#\" alt=\"x\" loading=\"lazy\" decoding=\"async\" class=\"my-4 h-auto max-w-full rounded-xl\">) <img src=\"#\" alt=\"y\" loading=\"lazy\" decoding=\"async\" class=\"my-4 h-auto max-w-full rounded-xl\"> <img src=\"/a.png\" alt=\"\" loading=\"lazy\" decoding=\"async\" class=\"my-4 h-auto max-w-full rounded-xl\"> <img src=\"#\" alt=\"z\" loading=\"lazy\" decoding=\"async\" class=\"my-4 h-auto max-w-full rounded-xl\"></p></div>",
+  "text": ")"
+ },
+ {
+  "name": "image amp",
+  "input": "![a & b](https://x.y/a.png?b=1&c=2)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><img src=\"https://x.y/a.png?b=1&amp;c=2\" alt=\"a &amp; b\" loading=\"lazy\" decoding=\"async\" class=\"my-4 h-auto max-w-full rounded-xl\"></p></div>",
+  "text": ""
+ },
+ {
+  "name": "hostile",
+  "input": "<script>alert(\"x\")</script> & ' \" <img src=x onerror=1> <Unknown> <b>x</b>",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">&lt;script&gt;alert(&quot;x&quot;)&lt;/script&gt; &amp; &#39; &quot; &lt;img src=x onerror=1&gt; &lt;Unknown&gt; &lt;b&gt;x&lt;/b&gt;</p></div>",
+  "text": "alert(\"x\") & ' \" x"
+ },
+ {
+  "name": "html in heading",
+  "input": "# <b>x</b> & \"q\"",
+  "html": "<div data-sic-markdown><h2 class=\"mt-8 mb-3 text-2xl font-bold text-primary\">&lt;b&gt;x&lt;/b&gt; &amp; &quot;q&quot;</h2></div>",
+  "text": "x & \"q\""
+ },
+ {
+  "name": "sentinel chars",
+  "input": "abc 0 `x`",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">abc 0 <code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">x</code></p></div>",
+  "text": "abc 0 x"
+ },
+ {
+  "name": "sentinel inject",
+  "input": "0\n\n`code` 1",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">0</p>\n<p class=\"my-3 leading-relaxed text-foreground\"><code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">code</code> 1</p></div>",
+  "text": "0 code 1"
+ },
+ {
+  "name": "multi paragraph",
+  "input": "line one\nline two\n\nsecond para  \n  indented",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">line one\nline two</p>\n<p class=\"my-3 leading-relaxed text-foreground\">second para\nindented</p></div>",
+  "text": "line one line two second para indented"
+ },
+ {
+  "name": "unicode",
+  "input": "Ñandú — “q” 日本語 😀 **bold 😀** [é](/é)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">Ñandú — “q” 日本語 😀 <strong class=\"font-bold text-primary\">bold 😀</strong> <a href=\"/é\" class=\"font-medium text-link underline-offset-2 hover:underline\">é</a></p></div>",
+  "text": "Ñandú — “q” 日本語 😀 bold 😀 é"
+ },
+ {
+  "name": "whitespace unicode",
+  "input": "a **b** c * x *",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">a <strong class=\"font-bold text-primary\">b</strong> c * x *</p></div>",
+  "text": "a b c x"
+ },
+ {
+  "name": "line sep",
+  "input": "a b\n\nc d",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">a b</p>\n<p class=\"my-3 leading-relaxed text-foreground\">c d</p></div>",
+  "text": "a b c d"
+ },
+ {
+  "name": "all",
+  "input": "# T\n\n- a\n1. b\n\n> q\n\n<Card title=\"c\">\nx\n</Card>\n<Accordion title=\"a\">\ny\n</Accordion>\n<Badges>a, b</Badges>\n\n```\ncode\n```\n\n[l](https://x.y) ![i](/a.png)",
+  "html": "<div data-sic-markdown><h2 class=\"mt-8 mb-3 text-2xl font-bold text-primary\">T</h2>\n<ul class=\"my-3 list-disc space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">a</li></ul>\n<ol class=\"my-3 list-decimal space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">b</li></ol>\n<blockquote class=\"my-4 border-l-4 border-gold-500 pl-4 italic text-muted-foreground\">q</blockquote>\n<div class=\"my-6 rounded-2xl border border-border bg-surface p-6 shadow-brand-sm\"><h3 class=\"mb-2 text-lg font-bold text-primary\">c</h3><div class=\"text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">x</p>\n</div></div>\n<details class=\"group my-4 rounded-xl border border-border bg-surface-alt p-4\"><summary class=\"flex cursor-pointer list-none items-center justify-between font-semibold text-primary\"><span>a</span><svg class=\"h-4 w-4 transition-transform group-open:rotate-180\" aria-hidden=\"true\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\"/></svg></summary><div class=\"mt-3 text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">y</p>\n</div></details>\n<div class=\"my-2 flex flex-wrap gap-1.5\"><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">a</span><span class=\"inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700\">b</span></div>\n<pre class=\"my-4 overflow-x-auto rounded-lg border border-border bg-surface-alt p-4 font-mono text-sm text-foreground\"><code>code</code></pre>\n<p class=\"my-3 leading-relaxed text-foreground\"><a href=\"https://x.y\" class=\"font-medium text-link underline-offset-2 hover:underline\" target=\"_blank\" rel=\"noopener\">l</a> <img src=\"/a.png\" alt=\"i\" loading=\"lazy\" decoding=\"async\" class=\"my-4 h-auto max-w-full rounded-xl\"></p></div>",
+  "text": "T a b q x y a, b code l"
+ },
+ {
+  "name": "import mid",
+  "input": "text\nimport A from \"a\"\nmore",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">text</p>\n<p class=\"my-3 leading-relaxed text-foreground\">more</p></div>",
+  "text": "text more"
+ },
+ {
+  "name": "trailing newline",
+  "input": "text\n",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">text</p></div>",
+  "text": "text"
+ },
+ {
+  "name": "hr like",
+  "input": "---\n\n***\n\ntext",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">---</p>\n<p class=\"my-3 leading-relaxed text-foreground\">***</p>\n<p class=\"my-3 leading-relaxed text-foreground\">text</p></div>",
+  "text": "--- text"
+ },
+ {
+  "name": "list nested",
+  "input": "- a\n  - b\n- c",
+  "html": "<div data-sic-markdown><ul class=\"my-3 list-disc space-y-1 pl-6 text-foreground marker:text-gold-600\"><li class=\"leading-relaxed\">a</li><li class=\"leading-relaxed\">b</li><li class=\"leading-relaxed\">c</li></ul></div>",
+  "text": "a b c"
+ },
+ {
+  "name": "quote empty",
+  "input": ">\n> x",
+  "html": "<div data-sic-markdown><blockquote class=\"my-4 border-l-4 border-gold-500 pl-4 italic text-muted-foreground\">\nx</blockquote></div>",
+  "text": "x"
+ },
+ {
+  "name": "tags inline",
+  "input": "before <Center> mid </Center> after",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">before</p>\n<div data-sic-center class=\"my-6 flex flex-col items-center justify-center text-center\">\n<p class=\"my-3 leading-relaxed text-foreground\">mid</p>\n</div>\n<p class=\"my-3 leading-relaxed text-foreground\">after</p></div>",
+  "text": "before mid after"
+ },
+ {
+  "name": "tag case",
+  "input": "<card title=\"x\">\ny\n</card>",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">&lt;card title=&quot;x&quot;&gt;\ny\n&lt;/card&gt;</p></div>",
+  "text": "y"
+ },
+ {
+  "name": "card title single",
+  "input": "<Card title='x'>\ny\n</Card>",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">&lt;Card title=&#39;x&#39;&gt;\ny</p></div>",
+  "text": "y"
+ },
+ {
+  "name": "accordion title empty",
+  "input": "<Accordion title=\"\">\ny\n</Accordion>",
+  "html": "<div data-sic-markdown><details class=\"group my-4 rounded-xl border border-border bg-surface-alt p-4\"><summary class=\"flex cursor-pointer list-none items-center justify-between font-semibold text-primary\"><span></span><svg class=\"h-4 w-4 transition-transform group-open:rotate-180\" aria-hidden=\"true\" fill=\"none\" viewBox=\"0 0 24 24\" stroke=\"currentColor\"><path stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"2\" d=\"M19 9l-7 7-7-7\"/></svg></summary><div class=\"mt-3 text-sm text-muted-foreground\">\n<p class=\"my-3 leading-relaxed text-foreground\">y</p>\n</div></details></div>",
+  "text": "y"
+ },
+ {
+  "name": "badges self",
+  "input": "<Badges tags=\"\" />",
+  "html": "<div data-sic-markdown><div class=\"my-2 flex flex-wrap gap-1.5\"></div></div>",
+  "text": ""
+ },
+ {
+  "name": "link text with code",
+  "input": "[a `b` c](/x)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><a href=\"/x\" class=\"font-medium text-link underline-offset-2 hover:underline\">a <code class=\"rounded bg-surface-alt px-1.5 py-0.5 font-mono text-[0.9em] text-foreground\">b</code> c</a></p></div>",
+  "text": "a b c"
+ },
+ {
+  "name": "url with parens",
+  "input": "[a](https://x.y/a_(b)) trailing",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><a href=\"https://x.y/a_(b\" class=\"font-medium text-link underline-offset-2 hover:underline\" target=\"_blank\" rel=\"noopener\">a</a>) trailing</p></div>",
+  "text": "a) trailing"
+ },
+ {
+  "name": "stars in link",
+  "input": "[a*b*c](/x*y*z)",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\"><a href=\"/x*y*z\" class=\"font-medium text-link underline-offset-2 hover:underline\">a*b*c</a></p></div>",
+  "text": "abc"
+ },
+ {
+  "name": "underscores",
+  "input": "__bold__ _it_",
+  "html": "<div data-sic-markdown><p class=\"my-3 leading-relaxed text-foreground\">__bold__ _it_</p></div>",
+  "text": "bold _it_"
+ }
+]

@@ -1,0 +1,66 @@
+[
+ {
+  "input": "",
+  "out": ""
+ },
+ {
+  "input": "Alan Turing",
+  "out": "AT"
+ },
+ {
+  "input": "Dr. Alan Turing",
+  "out": "AT"
+ },
+ {
+  "input": "Prof Dr. Ada Lovelace",
+  "out": "AL"
+ },
+ {
+  "input": "Mr.",
+  "out": "M"
+ },
+ {
+  "input": "Dr",
+  "out": "D"
+ },
+ {
+  "input": "madonna",
+  "out": "M"
+ },
+ {
+  "input": "  spaced   name  ",
+  "out": "SN"
+ },
+ {
+  "input": "Ñandú Pérez",
+  "out": "ÑP"
+ },
+ {
+  "input": "😀 smile",
+  "out": "😀S"
+ },
+ {
+  "input": "Dr. Mrs. Ms.",
+  "out": "M"
+ },
+ {
+  "input": "a b c d",
+  "out": "AD"
+ },
+ {
+  "input": "Fr. Joseph Reith, SJ",
+  "out": "JS"
+ },
+ {
+  "input": "engr juan dela cruz",
+  "out": "JC"
+ },
+ {
+  "input": "Sr Maria",
+  "out": "M"
+ },
+ {
+  "input": "hon. x",
+  "out": "X"
+ }
+]
