@@ -10,7 +10,7 @@
 @endphp
 <header data-site-header class="on-navy sticky top-0 z-50 border-b border-white/10 bg-linear-to-r from-brand-800 to-brand-700 text-white shadow-brand-md">
     <div class="page-frame flex items-center justify-between gap-4 py-3">
-        <a href="/" class="flex items-center gap-3 rounded-lg" aria-label="{{ $site['name'] }} — home">
+        <a href="/" class="flex items-center gap-3 rounded-lg" aria-label="{{ $site['name'] }}, {{ $site['motto'] }} — home">
             <img src="/sic-seal-96.webp" alt="" width="44" height="44" decoding="async" class="h-11 w-11 rounded-full border-2 border-gold-500/40 bg-white/5 object-contain" />
             <span class="leading-tight">
                 <span class="block font-serif text-lg font-bold tracking-tight">{{ $site['name'] }}</span>
