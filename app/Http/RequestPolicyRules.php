@@ -35,7 +35,7 @@ final class RequestPolicyRules
         '#^/csrf-token$#',
     ];
 
-    /** Actions a signed-out visitor may call; every other action needs a session (keep in step with `ActionController::PUBLIC`). */
+    /** Actions a signed-out visitor may call; every other action needs a session. */
     public const PUBLIC_ACTIONS = ['contact.send', 'auth.login', 'auth.forgotPassword', 'auth.resetPassword'];
 
     private const ACTION_RPC_PREFIX = '/_actions/';

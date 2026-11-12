@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\RequestPolicyRules;
 use App\Support\RequestError;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,21 +16,18 @@ use ReflectionMethod;
  * - Success: 200 `{ "data": <return value> }` (camelCase keys).
  * - Failure: bootstrap/app.php renders RequestError and ValidationException as
  *   `{ "error": { "type", "code", "message", "fields"? } }` with the matching status.
- * - Signed-out calls get 401 before the action runs, except the PUBLIC actions below.
+ * - Signed-out calls get 401 before the action runs, except `RequestPolicyRules::PUBLIC_ACTIONS`.
  *
  * Action methods are resolved through the container, so they may type-hint Request and services.
  */
 class ActionController extends Controller
 {
-    /** Actions a signed-out visitor may call. */
-    public const PUBLIC = ['contact.send', 'auth.login', 'auth.forgotPassword', 'auth.resetPassword'];
-
     public function __invoke(Request $request, string $name): JsonResponse
     {
         if (! preg_match('/^([a-z][A-Za-z]*)\.([a-z][A-Za-z]*)$/', $name, $match)) {
             throw RequestError::notFound();
         }
-        if (! $request->user() && ! in_array($name, self::PUBLIC, true)) {
+        if (! $request->user() && ! in_array($name, RequestPolicyRules::PUBLIC_ACTIONS, true)) {
             throw RequestError::unauthorized();
         }
 
