@@ -2,7 +2,6 @@
 
 namespace App\Storage;
 
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -54,7 +53,7 @@ final class StorageCleanup
         $tables = [];
         foreach (Schema::getTables() as $table) {
             $name = $table['name'];
-            if (in_array($name, self::SKIPPED_TABLES, true)) {
+            if ($name === PendingUploads::table() || in_array($name, self::SKIPPED_TABLES, true)) {
                 continue;
             }
             $columns = [];
@@ -80,20 +79,22 @@ final class StorageCleanup
      * Removes from `$unreferenced` every key found in a string column of any table.
      *
      * @param  array<string, int>  $unreferenced  key => size
-     * @param  ?int  $ignoreExpiredPendingBefore  Dry run: pending-upload rows expired at or before this (ms) are skipped, as the real run sweeps them first.
+     * @param  ?int  $dryRunAt  Dry run: Pending uploads a sweep at this instant (ms) would remove are not counted as references, as the real run sweeps them first.
      */
-    private static function scanReferences(array &$unreferenced, ?int $ignoreExpiredPendingBefore): void
+    private static function scanReferences(array &$unreferenced, ?int $dryRunAt): void
     {
         $tables = self::stringTables();
         if ($tables === []) {
             throw new RuntimeException('Database schema not available: refusing to clean up.');
         }
         $matcher = new KeyMatcher(array_keys($unreferenced));
+        foreach (PendingUploads::livePendingKeys($dryRunAt) as $pendingKey) {
+            $matcher->find($pendingKey, function (string $key) use (&$unreferenced): void {
+                unset($unreferenced[$key]);
+            });
+        }
         foreach ($tables as $table) {
             $query = DB::table($table['table'])->select($table['columns']);
-            if ($ignoreExpiredPendingBefore !== null && $table['table'] === 'pending_uploads') {
-                $query->where('expires_at', '>', Carbon::createFromTimestampMs($ignoreExpiredPendingBefore));
-            }
             $rows = $table['id'] ? $query->addSelect('id')->lazyById(self::SCAN_BATCH) : $query->cursor();
             foreach ($rows as $row) {
                 if ($unreferenced === []) {
@@ -176,7 +177,7 @@ final class StorageCleanup
         $candidateCount = count($candidates);
 
         $unreferenced = array_map(fn (array $info) => $info['size'], $candidates);
-        self::scanReferences($unreferenced, $dryRun ? PendingUploads::pendingSweepCutoff($now)->getTimestampMs() : null);
+        self::scanReferences($unreferenced, $dryRun ? $now : null);
 
         $ordered = array_keys($unreferenced);
         usort($ordered, fn (string $a, string $b) => $candidates[$a]['mtime'] <=> $candidates[$b]['mtime']);

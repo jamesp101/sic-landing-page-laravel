@@ -68,4 +68,26 @@ final class PendingUploads
         return PendingUpload::where('key', $key)->where('user_id', $userId)
             ->where('expires_at', '>', self::at($now ?? self::nowMs()))->exists();
     }
+
+    /** The table holding the records; `StorageCleanup` reads Pending upload keys through `livePendingKeys`, not the table. */
+    public static function table(): string
+    {
+        return (new PendingUpload)->getTable();
+    }
+
+    /**
+     * Keys whose Pending upload record still exists, for the cleanup's reference scan (their files must be kept).
+     * With `$sweepingAt`, records a sweep at that instant would remove are left out (a dry run that has not swept).
+     *
+     * @return iterable<string>
+     */
+    public static function livePendingKeys(?int $sweepingAt = null): iterable
+    {
+        $query = PendingUpload::query();
+        if ($sweepingAt !== null) {
+            $query->where('expires_at', '>', self::pendingSweepCutoff($sweepingAt));
+        }
+
+        return $query->toBase()->select('key')->pluck('key');
+    }
 }
