@@ -21,6 +21,9 @@
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="alternate" type="application/rss+xml" title="San Isidro College — Posts" href="/rss.xml" />
         <link rel="sitemap" href="/sitemap.xml" />
+        @foreach (\App\Support\FontPreload::hrefs() as $font)
+            <link rel="preload" href="{{ $font }}" as="font" type="font/woff2" crossorigin />
+        @endforeach
         <script nonce="{{ Vite::cspNonce() }}">{!! file_get_contents(resource_path('js/scripts/theme-init.js')) !!}</script>
         <x-seo :seo="$seo" />
         @vite(['resources/css/app.css', "resources/js/{$entry}.ts"])
