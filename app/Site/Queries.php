@@ -217,7 +217,7 @@ final class Queries
         $layout = self::layout();
         $content = Content::parseContent($row->content);
         $post = [
-            ...self::summaryWithExcerpt($row, $content->excerpt()),
+            ...self::summaryWithExcerpt($row, self::excerptFor($row, $row->content)),
             'html' => $content->html(),
             'authorName' => $row->hide_author ? null : $row->user->name,
         ];
@@ -259,8 +259,19 @@ final class Queries
 
         return $rows->map(fn (Post $row) => self::summaryWithExcerpt(
             $row,
-            ($row->search_text !== null && $row->search_text !== '') ? Content::clampExcerpt($row->search_text) : Content::excerptOf($contents[$row->id] ?? null),
+            self::excerptFor($row, $contents[$row->id] ?? null),
         ))->values()->all();
+    }
+
+    /**
+     * The one Excerpt rule: the clamped stored `search_text`; only a row without it (never backfilled, or no text at
+     * all) falls back to `excerptOf($content)`.
+     */
+    private static function excerptFor(Post $row, ?string $content): string
+    {
+        return ($row->search_text !== null && $row->search_text !== '')
+            ? Content::clampExcerpt($row->search_text)
+            : Content::excerptOf($content);
     }
 
     /**

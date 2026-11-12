@@ -38,7 +38,7 @@ final class ContentTest extends TestCase
 
         $this->assertSame($format, $parsed->format);
         $this->assertSame($text, $parsed->text());
-        $this->assertSame($text, Content::toPlainText($content));
+        $this->assertSame($text, Content::searchTextOf($content));
         $this->assertSame($parsed->html(), Content::renderContent($content));
         // Nothing readable: no text and no HTML, from the same decision.
         $this->assertSame($text === '', $parsed->html() === '');

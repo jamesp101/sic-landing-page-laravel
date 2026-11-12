@@ -103,7 +103,7 @@ Rich content written in Markdown before Block documents existed.
 _Avoid_: old content, plain content
 
 **Excerpt**:
-A short plain-text summary of a Post, taken from its stored plain text (the `searchText` kept in step with its Rich content), never from parsing the content.
+A short plain-text summary of a Post, taken from its stored plain text (the `searchText` kept in step with its Rich content), never from parsing the content, except for a Post with no stored plain text yet.
 _Avoid_: preview, snippet, teaser
 
 **Welcome hero**:

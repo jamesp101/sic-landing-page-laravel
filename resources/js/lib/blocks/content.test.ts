@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { EXCERPT_LENGTH, editableBlocks, excerptOf, parseContent, renderContent, toPlainText } from './content';
+import { EXCERPT_LENGTH, editableBlocks, excerptOf, parseContent, renderContent, searchTextOf } from './content';
 import { renderBlocks } from './render';
 import { createBlock, createDocument, serializeDocument } from './document';
 
@@ -38,7 +38,7 @@ describe('Rich content classification', () => {
             const parsed = parseContent(content);
             expect(parsed.format).toBe(format);
             expect(parsed.text()).toBe(text);
-            expect(toPlainText(content)).toBe(text);
+            expect(searchTextOf(content)).toBe(text);
             expect(renderContent(content)).toBe(parsed.html());
             // Nothing readable: no text and no HTML, from the same decision.
             expect(parsed.html() === '').toBe(text === '');

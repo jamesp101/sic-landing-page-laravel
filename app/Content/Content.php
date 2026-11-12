@@ -92,12 +92,6 @@ final class Content
         return str_contains($html, ' '.AlbumBlock::ALBUM_ATTR);
     }
 
-    /** Stored content → plain text (markup stripped, whitespace collapsed) for meta descriptions and feeds. */
-    public static function toPlainText(?string $content): string
-    {
-        return self::parseContent($content)->text();
-    }
-
     /** Stored content → Excerpt of at most `EXCERPT_LENGTH` characters. */
     public static function excerptOf(?string $content): string
     {
@@ -114,7 +108,7 @@ final class Content
         return self::parseContent($content)->check();
     }
 
-    /** Plain text of stored content for the `search_text` column of posts and hero sections. */
+    /** Stored content → plain text (markup stripped, whitespace collapsed): the `search_text` column of posts and hero sections, meta descriptions and feeds. */
     public static function searchTextOf(?string $content): string
     {
         return self::parseContent($content)->text();

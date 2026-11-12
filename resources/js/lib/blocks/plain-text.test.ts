@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { toPlainText } from './content';
+import { searchTextOf } from './content';
 import { createBlock, createDocument, serializeDocument } from './document';
 import { blocksToPlainText } from './plain-text';
 import type { Block } from './types';
 
-const text = (...blocks: Block[]) => toPlainText(serializeDocument(createDocument(blocks)));
+const text = (...blocks: Block[]) => searchTextOf(serializeDocument(createDocument(blocks)));
 
-describe('toPlainText: block documents', () => {
+describe('searchTextOf: block documents', () => {
     it('extracts headings, paragraphs (without inline markup) and quotes', () => {
         expect(text(createBlock('heading', { text: 'Welcome' }))).toBe('Welcome');
         expect(
@@ -99,55 +99,55 @@ describe('toPlainText: block documents', () => {
 
     it('returns an empty string for empty documents', () => {
         expect(text()).toBe('');
-        expect(toPlainText('{"type":"sic-blocks","version":1,"blocks":"nope"}')).toBe('');
+        expect(searchTextOf('{"type":"sic-blocks","version":1,"blocks":"nope"}')).toBe('');
     });
 
     it('tolerates malformed blocks', () => {
         const json =
             '{"type":"sic-blocks","version":1,"blocks":[null,5,"x",{"type":"paragraph"},{"type":"paragraph","props":{"text":5}},{"type":"heading","props":null,"children":"x"}]}';
-        expect(toPlainText(json)).toBe('');
+        expect(searchTextOf(json)).toBe('');
     });
 
     it('returns an empty string for malformed block JSON instead of leaking markup', () => {
         expect(blocksToPlainText('{"type":"sic-blocks","version":1,"blocks":[')).toBe('');
-        expect(toPlainText('{"type":"sic-blocks"')).toBe('');
-        expect(toPlainText('{"type":"sic-blocks","version":1,"blocks":[{"type":"paragraph"')).toBe('');
+        expect(searchTextOf('{"type":"sic-blocks"')).toBe('');
+        expect(searchTextOf('{"type":"sic-blocks","version":1,"blocks":[{"type":"paragraph"')).toBe('');
     });
 });
 
-describe('toPlainText: legacy Markdown', () => {
+describe('searchTextOf: legacy Markdown', () => {
     it('strips markdown, MDX-lite tags and collapses whitespace', () => {
         expect(
-            toPlainText(
+            searchTextOf(
                 '# Title\n\n<Card title="X">\n**Bold** [link](https://a.b) text\n</Card>\n\n- item one\n1. item two\n> quote\n\n`code`',
             ),
         ).toBe('Title Bold link text item one item two quote code');
     });
 
     it('drops images and keeps badge attribute text', () => {
-        expect(toPlainText('![alt](/a.png) hi <Badges tags="a, b" />')).toBe('hi a, b');
+        expect(searchTextOf('![alt](/a.png) hi <Badges tags="a, b" />')).toBe('hi a, b');
     });
 
     it('keeps its behaviour for Markdown input', () => {
-        expect(toPlainText(null)).toBe('');
-        expect(toPlainText(undefined)).toBe('');
-        expect(toPlainText('')).toBe('');
-        expect(toPlainText('# Title\n\nSome **bold** and [link](https://x.example).')).toBe(
+        expect(searchTextOf(null)).toBe('');
+        expect(searchTextOf(undefined)).toBe('');
+        expect(searchTextOf('')).toBe('');
+        expect(searchTextOf('# Title\n\nSome **bold** and [link](https://x.example).')).toBe(
             'Title Some bold and link.',
         );
-        expect(toPlainText('- one\n- two\n\n1. three')).toBe('one two three');
-        expect(toPlainText("import Foo from './foo';\n\nText")).toBe('Text');
-        expect(toPlainText('<Card title="T">\nBody\n</Card>')).toBe('Body');
-        expect(toPlainText('<Badges tags="a, b" />')).toBe('a, b');
+        expect(searchTextOf('- one\n- two\n\n1. three')).toBe('one two three');
+        expect(searchTextOf("import Foo from './foo';\n\nText")).toBe('Text');
+        expect(searchTextOf('<Card title="T">\nBody\n</Card>')).toBe('Body');
+        expect(searchTextOf('<Badges tags="a, b" />')).toBe('a, b');
     });
 
     it('does not treat Markdown that merely mentions the marker as a document', () => {
-        expect(toPlainText('Notes about sic-blocks documents')).toBe('Notes about sic-blocks documents');
-        expect(toPlainText('{"hello":"world"}')).toBe('{"hello":"world"}');
+        expect(searchTextOf('Notes about sic-blocks documents')).toBe('Notes about sic-blocks documents');
+        expect(searchTextOf('{"hello":"world"}')).toBe('{"hello":"world"}');
     });
 });
 
-describe('toPlainText: album', () => {
+describe('searchTextOf: album', () => {
     it('extracts alt texts and captions, in order, and nothing from the URLs', () => {
         const album = createBlock('album', {
             images: [

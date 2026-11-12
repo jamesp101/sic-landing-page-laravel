@@ -95,9 +95,6 @@ export const renderContent = (content: string | null | undefined): string => par
 /** Whether rendered content (`renderContent`/`html()`) contains an album, i.e. needs the public lightbox script. */
 export const hasAlbum = (html: string): boolean => html.includes(` ${ALBUM_ATTR}`);
 
-/** Stored content → plain text (markup stripped, whitespace collapsed) for meta descriptions and feeds. */
-export const toPlainText = (content: string | null | undefined): string => parseContent(content).text();
-
 /** Stored content → Excerpt of at most `EXCERPT_LENGTH` characters. */
 export const excerptOf = (content: string | null | undefined): string => parseContent(content).excerpt();
 
@@ -123,5 +120,5 @@ export function editableBlocks(content: string | null | undefined): Block[] {
     return [createBlock('markdown', { source })];
 }
 
-/** Plain text of stored content for the `searchText` column of posts and hero sections. */
+/** Stored content → plain text (markup stripped, whitespace collapsed): the `searchText` column of posts and hero sections, meta descriptions and feeds. */
 export const searchTextOf = (content: string | null | undefined): string => parseContent(content).text();
