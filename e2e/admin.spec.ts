@@ -103,33 +103,6 @@ test.describe('as superadmin', () => {
         expect(Math.max(size.width, size.height)).toBeGreaterThan(1000);
     });
 
-    for (const width of [390, 1280]) {
-        test(`the editor placeholder is as tall as the Markdown editor at ${width} px`, async ({ page }) => {
-            await page.setViewportSize({ width, height: 900 });
-            // Hold the editor's code back so the placeholder can be measured, then let it through.
-            let release: () => void = () => {};
-            const gate = new Promise<void>((resolve) => (release = resolve));
-            await page.route(/MarkdownEditor[^/]*\.js/, async (route) => {
-                await gate;
-                await route.continue();
-            });
-            await page.goto('/admin/departments/create');
-            const box = page
-                .getByText('Hero content (Markdown / MDX)')
-                .locator('xpath=ancestor::div[contains(@class,"w-full")][1]');
-            await expect(page.getByRole('status')).toHaveText('Loading editor…');
-            const placeholder = (await box.boundingBox())!;
-
-            release();
-            await expect(page.getByRole('textbox', { name: 'Hero content (Markdown / MDX)' })).toBeVisible();
-            const editor = (await box.boundingBox())!;
-            expect(
-                Math.abs(placeholder.height - editor.height),
-                `placeholder ${placeholder.height}px, editor ${editor.height}px`,
-            ).toBeLessThan(1);
-        });
-    }
-
     test('admin screens have no serious axe violations', async ({ page }) => {
         // Four axe scans (the editor page is heavy) exceed the default 30 s under parallel load.
         test.slow();
@@ -144,10 +117,10 @@ test.describe('as superadmin', () => {
     });
 
     test('departments table searches, filters and sorts on the server', async ({ page }) => {
-        // Other specs create and delete throwaway departments ("Authz Probe Dept …") while this one runs.
+        // Other specs create and delete throwaway departments ("Authz Probe Dept …", "E2E Dept …") while this one runs.
         const names = async () =>
             (await page.locator('tbody tr td:first-child a').allTextContents()).filter(
-                (n) => !n.startsWith('Authz Probe Dept'),
+                (n) => !n.startsWith('Authz Probe Dept') && !n.startsWith('E2E Dept'),
             );
 
         await page.goto('/admin/departments?q=business');

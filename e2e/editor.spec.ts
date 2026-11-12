@@ -285,6 +285,74 @@ test.describe('visual block editor (superadmin)', () => {
         await visitor.context().close();
     });
 
+    test('department hero content is built with the block editor and renders on the Department page', async ({
+        page,
+        browser,
+    }) => {
+        const name = `E2E Dept ${Date.now()}`;
+        const headline = `Dept hero ${Date.now()}`;
+        await page.goto('/admin/departments/create');
+        await editorReady(page);
+        // The Markdown source editor is gone: the hero content is edited on the visual canvas only.
+        await expect(page.getByText('Hero content (Markdown / MDX)')).toHaveCount(0);
+        await page.getByLabel('Department name').fill(name);
+        await page.getByRole('button', { name: /Hero intro/ }).click();
+        await canvas(page).locator('[data-block-type="heading"]').click();
+        await page.getByLabel('Heading text').fill(headline);
+        await page.getByRole('button', { name: 'Save department' }).click();
+        await expect(page).toHaveURL(/\/admin\/departments$/);
+
+        const slug = name.toLowerCase().replaceAll(' ', '-');
+        try {
+            const visitor = await visitorPage(browser);
+            await visitor.goto(`/departments/${slug}`);
+            await expect(visitor.getByRole('heading', { level: 2, name: headline })).toBeVisible();
+            expect(await visitor.content()).not.toContain('sic-blocks"');
+            await visitor.context().close();
+
+            // Reopening shows the saved blocks on the canvas, not a Markdown block.
+            await page.getByRole('link', { name: `Edit ${name}` }).click();
+            await editorReady(page);
+            await expect(canvas(page).getByRole('heading', { name: headline })).toBeVisible();
+            await expect(canvas(page).locator('[data-block-type="markdown"]')).toHaveCount(0);
+        } finally {
+            await page.goto('/admin/departments');
+            const id = await page
+                .getByRole('link', { name: `Edit ${name}` })
+                .getAttribute('href')
+                .then((href) => Number(href?.match(/departments\/(\d+)\/edit/)?.[1]));
+            await postAction(page, 'departments.delete', { json: { id } });
+        }
+    });
+
+    test('the editor spans the whole admin content area on a wide screen', async ({ page }) => {
+        await page.setViewportSize({ width: 1920, height: 1000 });
+        for (const route of [
+            '/admin/posts/create',
+            '/admin/hero-sections/create',
+            '/admin/departments/create',
+            '/admin/settings/landing',
+        ]) {
+            await page.goto(route);
+            await editorReady(page);
+            const { editor, available } = await page
+                .getByRole('toolbar', { name: 'Editor toolbar' })
+                .evaluate((bar) => {
+                    const main = document.querySelector('main')!;
+                    const container = bar.closest('.p-6')!;
+                    const style = getComputedStyle(container);
+                    return {
+                        editor: bar.parentElement!.getBoundingClientRect().width,
+                        available:
+                            main.getBoundingClientRect().width -
+                            parseFloat(style.paddingLeft) -
+                            parseFloat(style.paddingRight),
+                    };
+                });
+            expect(Math.abs(editor - available), `${route}: editor ${editor}px of ${available}px`).toBeLessThan(2);
+        }
+    });
+
     test('landing settings save a block document that the home page renders', async ({ page, browser }) => {
         const text = `Landing note ${Date.now()}`;
         await page.goto('/admin/settings/landing');

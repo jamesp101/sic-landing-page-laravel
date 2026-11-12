@@ -1,7 +1,8 @@
 <script lang="ts">
     import { actions } from '@/lib/actions';
     import { navigate } from '@/lib/navigation';
-    import { onMount, untrack } from 'svelte';
+    import { untrack } from 'svelte';
+    import BlockEditor from '../editor/BlockEditor.svelte';
     import UnsavedChangesGuard from '../shared/UnsavedChangesGuard.svelte';
     import { unsavedChanges } from '../shared/unsaved-changes.svelte';
     import { actionForm } from '../shared/action-form.svelte';
@@ -26,16 +27,6 @@
     let description = $state(initial?.description ?? '');
     let heroContent = $state(initial?.heroContent ?? '');
     let logo = $state<File | null>(null);
-
-    // CodeMirror is heavy: load the editor after the form is interactive instead of bundling it with the form.
-    let Editor = $state.raw<typeof import('@/components/MarkdownEditor.svelte').default | null>(null);
-    let editorError = $state(false);
-    onMount(() => {
-        import('@/components/MarkdownEditor.svelte').then(
-            (module) => (Editor = module.default),
-            () => (editorError = true),
-        );
-    });
 
     const unsaved = unsavedChanges(() => [name, description, heroContent, logo !== null]);
 
@@ -96,36 +87,15 @@
             hint="PNG, JPG, WebP or GIF (max 5 MB)"
             error={form.errors.logo}
         />
-
-        <div class="space-y-1.5">
-            {#if Editor}
-                <Editor
-                    bind:value={heroContent}
-                    id="hero-content"
-                    label="Hero content (Markdown / MDX)"
-                    rows={8}
-                    error={form.errors.heroContent ?? ''}
-                />
-            {:else}
-                <!-- Same box as the editor (label, toolbar, 192 px of text) so nothing shifts when CodeMirror arrives. The
-           toolbar wraps to three rows on a phone, two on a large phone, one from 37rem; the min-heights are those. -->
-                <div class="w-full space-y-1.5" aria-busy={!editorError}>
-                    <p class="text-sm font-semibold text-foreground">Hero content (Markdown / MDX)</p>
-                    <div
-                        class="flex min-h-[19.3125rem] min-[27rem]:min-h-[17.3125rem] min-[37rem]:min-h-[15.5625rem] items-center justify-center rounded-xl border border-border-strong bg-surface-alt text-sm text-muted-foreground shadow-brand-sm"
-                    >
-                        {#if editorError}
-                            <span role="alert" class="text-destructive"
-                                >The editor could not be loaded. Reload the page to try again.</span
-                            >
-                        {:else}
-                            <span role="status">Loading editor…</span>
-                        {/if}
-                    </div>
-                </div>
-            {/if}
-        </div>
     </div>
+
+    <BlockEditor
+        bind:value={heroContent}
+        id="hero-content"
+        label="Hero content"
+        error={form.errors.heroContent}
+        context="section"
+    />
 
     <FormActions
         cancelHref="/admin/departments"
