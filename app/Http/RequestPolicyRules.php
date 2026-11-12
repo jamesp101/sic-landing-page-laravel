@@ -223,7 +223,7 @@ final class RequestPolicyRules
         $headers = [];
 
         if (! $input['hasCacheControl'] && ! self::isAssetPath($pathname)) {
-            $isPrivate = self::matches(self::PRIVATE, $pathname) || $input['signedIn'] || $input['method'] !== 'GET';
+            $isPrivate = self::matches(self::PRIVATE, $pathname) || $input['signedIn'] || ! in_array($input['method'], ['GET', 'HEAD'], true);
             $headers['Cache-Control'] = $isPrivate ? 'no-store' : self::PUBLIC_CACHE_CONTROL;
         }
         if (self::matches(self::PRIVATE, $pathname)) {

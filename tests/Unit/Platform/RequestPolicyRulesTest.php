@@ -47,6 +47,7 @@ class RequestPolicyRulesTest extends TestCase
             'upload' => ['/api/admin/uploads/image', ['method' => 'POST', 'signedIn' => true], $private],
             '/sitemap.xml' => ['/sitemap.xml', [], $public],
             'non-GET public page' => ['/contact', ['method' => 'POST'], $noStore],
+            'HEAD of a public page (crawlers, uptime checks)' => ['/posts', ['method' => 'HEAD'], $public],
             'signed-in GET on a public page' => ['/posts', ['signedIn' => true], $noStore],
             'asset under /build' => ['/build/assets/a.js', [], ['Content-Security-Policy' => self::CSP, ...self::BASE]],
             'own Cache-Control and CSP' => ['/posts', ['cc' => true, 'csp' => true], self::BASE],
