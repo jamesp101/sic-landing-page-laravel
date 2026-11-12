@@ -1,15 +1,6 @@
 <script lang="ts">
-    import {
-        ALIGN_CLASS,
-        BG_COLOR_CLASS,
-        ON_COLOR_CLASS,
-        RADIUS_CLASS,
-        TYPE_LABEL,
-        layerLabel,
-        relFor,
-        type Layer,
-    } from '@/lib/carousel-overlay';
-    import { layerPresentation, type SlideMode } from '@/lib/carousel-layout';
+    import { RADIUS_CLASS, TYPE_LABEL, layerLabel, relFor, type Layer } from '@/lib/carousel-overlay';
+    import { layerClasses, layerPresentation, type SlideMode } from '@/lib/carousel-layout';
     import type { MobileBox } from '@/lib/carousel-overlay-mobile';
 
     let {
@@ -32,70 +23,13 @@
     const preview = $derived(mode !== 'public');
     const look = $derived(layerPresentation(layer, z, box, mode));
     const style = $derived(look.style);
-    const phone = $derived(look.phoneClass);
-    const textColor = $derived(look.textColor);
-
-    const textClass = $derived(
-        layer.type === 'text'
-            ? [
-                  'sl sl-fs sl-text',
-                  phone,
-                  ALIGN_CLASS[layer.align],
-                  textColor,
-                  'whitespace-pre-line break-words',
-                  // Serif is reserved for headings (h1/h2) by the design rules.
-                  layer.role === 'heading' && layer.font === 'serif' ? 'font-serif' : 'font-sans',
-                  layer.role === 'heading' ? 'font-bold leading-tight tracking-tight' : 'leading-snug',
-              ].join(' ')
-            : '',
-    );
-
-    const buttonClass = $derived(
-        layer.type === 'button'
-            ? [
-                  'sl sl-fs',
-                  phone,
-                  'inline-flex min-w-[10em] items-center justify-center gap-[0.6em] rounded-xl border-2 px-[1.5em] py-[0.8em] font-semibold uppercase tracking-widest leading-none',
-                  layer.variant === 'solid'
-                      ? `border-transparent ${BG_COLOR_CLASS[layer.color]} ${ON_COLOR_CLASS[layer.color]} shadow-brand-md`
-                      : `border-current ${textColor}`,
-                  !preview && 'transition hover:-translate-y-0.5',
-              ]
-                  .filter(Boolean)
-                  .join(' ')
-            : '',
-    );
-
-    const badgeClass = $derived(
-        layer.type === 'badge'
-            ? `sl sl-fs ${phone} inline-block rounded-full px-[0.9em] py-[0.35em] font-semibold uppercase leading-none tracking-wider ${BG_COLOR_CLASS[layer.color]} ${ON_COLOR_CLASS[layer.color]}`
-            : '',
-    );
-
-    const shapeClass = $derived(
-        layer.type === 'shape'
-            ? `sl sl-shape ${phone} ${BG_COLOR_CLASS[layer.color]} ${RADIUS_CLASS[layer.radius]}`
-            : '',
-    );
-    const imageClass = $derived(layer.type === 'image' ? `sl sl-img ${phone} ${RADIUS_CLASS[layer.radius]}` : '');
-
-    const previewClass = $derived(
-        layer.type === 'text'
-            ? textClass
-            : layer.type === 'button'
-              ? buttonClass
-              : layer.type === 'badge'
-                ? badgeClass
-                : layer.type === 'shape'
-                  ? shapeClass
-                  : imageClass,
-    );
+    const className = $derived(layerClasses(layer, look, preview));
 </script>
 
 {#if preview}
     <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
     <div
-        class="{previewClass} cursor-grab select-none {look.ghostClass}"
+        class="{className} cursor-grab select-none {look.ghostClass}"
         {style}
         data-layer-id={layer.id}
         role={interactive ? 'button' : undefined}
@@ -119,18 +53,18 @@
     </div>
 {:else if layer.type === 'text'}
     {#if layer.role === 'heading'}
-        <h2 class={textClass} {style}>{layer.text}</h2>
+        <h2 class={className} {style}>{layer.text}</h2>
     {:else}
-        <p class={textClass} {style}>{layer.text}</p>
+        <p class={className} {style}>{layer.text}</p>
     {/if}
 {:else if layer.type === 'button'}
-    <a href={layer.href} rel={relFor(layer.href)} class={buttonClass} {style}>
+    <a href={layer.href} rel={relFor(layer.href)} class={className} {style}>
         {layer.label}<span aria-hidden="true">&rarr;</span>
     </a>
 {:else if layer.type === 'badge'}
-    <span class={badgeClass} {style}>{layer.text}</span>
+    <span class={className} {style}>{layer.text}</span>
 {:else if layer.type === 'shape'}
-    <div class={shapeClass} {style} aria-hidden="true"></div>
+    <div class={className} {style} aria-hidden="true"></div>
 {:else}
-    <img src={layer.src} alt={layer.alt} loading="lazy" decoding="async" class="{imageClass} object-contain" {style} />
+    <img src={layer.src} alt={layer.alt} loading="lazy" decoding="async" class="{className} object-contain" {style} />
 {/if}

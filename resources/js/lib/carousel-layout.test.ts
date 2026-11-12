@@ -9,9 +9,11 @@ import {
     PHONE_MAX_REM,
     WIDE_MIN_REM,
     heroImageSizes,
+    layerClasses,
     layerPresentation,
     measureLayerBox,
     measureLayerBoxes,
+    type SlideMode,
 } from './carousel-layout';
 import { TYPE_SCALE, defaultLayer, type Layer } from './carousel-overlay';
 import { resolveMobile, type MobileBox } from './carousel-overlay-mobile';
@@ -128,6 +130,27 @@ describe('layerPresentation', () => {
         expect(box).not.toBeNull();
         expect(layerPresentation(heading, 1, box, 'phone').style).toContain(`left:${box?.x}%`);
         expect(layerPresentation(heading, 1, box, 'public').style).toContain(`--mx:${box?.x}%`);
+    });
+});
+
+describe('layerClasses', () => {
+    // Shared with tests/Unit/Carousel/LayoutTest.php: both implementations must produce these exact strings.
+    const { cases } = JSON.parse(readFileSync(`${src}../tests/Unit/Carousel/fixtures/layer-classes.json`, 'utf8')) as {
+        cases: { layer: Layer; box: MobileBox | null; mode: SlideMode; preview: boolean; out: string }[];
+    };
+
+    test.each(cases.map((c) => [`${c.layer.id} ${c.mode} ${c.box ? JSON.stringify(c.box) : 'no box'}`, c] as const))(
+        'matches the shared fixture: %s',
+        (_name, c) => {
+            expect(layerClasses(c.layer, layerPresentation(c.layer, 1, c.box, c.mode), c.preview)).toBe(c.out);
+        },
+    );
+
+    test('only the public button lifts on hover', () => {
+        const button = cases.find((c) => c.layer.type === 'button' && !c.preview);
+        const preview = cases.find((c) => c.layer.type === 'button' && c.preview);
+        expect(button?.out).toContain('hover:-translate-y-0.5');
+        expect(preview?.out).not.toContain('hover:-translate-y-0.5');
     });
 });
 

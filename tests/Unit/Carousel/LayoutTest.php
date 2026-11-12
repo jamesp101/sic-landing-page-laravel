@@ -46,6 +46,20 @@ class LayoutTest extends TestCase
         $this->assertSame($fixture['width'], ['tall' => Layout::heroPhoneImageWidth(true), 'short' => Layout::heroPhoneImageWidth(false)]);
     }
 
+    public function test_layer_classes_match_the_ts_implementation(): void
+    {
+        $cases = json_decode((string) file_get_contents(__DIR__.'/fixtures/layer-classes.json'), true)['cases'];
+        $this->assertNotEmpty($cases);
+        foreach ($cases as $case) {
+            $look = Layout::layerPresentation($case['layer'], 1, $case['box'], $case['mode']);
+            $this->assertSame(
+                $case['out'],
+                Layout::layerClasses($case['layer'], $look, $case['preview']),
+                "{$case['layer']['id']} {$case['mode']} ".json_encode($case['box']),
+            );
+        }
+    }
+
     public function test_a_phone_hero_draws_the_photo_as_wide_as_its_height_requires(): void
     {
         $this->assertSame(889, Layout::heroPhoneImageWidth(true));

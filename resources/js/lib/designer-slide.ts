@@ -1,6 +1,6 @@
 import type { Layer, SlideMobile } from '@/lib/carousel-overlay';
 
-/** Slide as the admin designer sees it (read model: `toDesignerSlide` in `server/slides.ts`). */
+/** Slide as the admin designer sees it (read model: `Slides::toDesignerSlide` in `app/Carousel/Slides.php`). */
 export interface DesignerSlide {
     id: number;
     imageUrl: string;

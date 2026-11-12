@@ -7,7 +7,17 @@
  * file hard-codes them.
  */
 import type { Box } from './carousel-editor';
-import { TEXT_COLOR_CLASS, TYPE_SCALE, scaleKind, type ColorKey, type Layer } from './carousel-overlay';
+import {
+    ALIGN_CLASS,
+    BG_COLOR_CLASS,
+    ON_COLOR_CLASS,
+    RADIUS_CLASS,
+    TEXT_COLOR_CLASS,
+    TYPE_SCALE,
+    scaleKind,
+    type ColorKey,
+    type Layer,
+} from './carousel-overlay';
 import type { MobileBox } from './carousel-overlay-mobile';
 
 // ---------------------------------------------------------------------------
@@ -130,6 +140,45 @@ export function layerPresentation(layer: Layer, z: number, box: MobileBox | null
         phoneClass = box.hidden ? 'sl-mhide' : `sl-m ${box.auto ? 'sl-mauto' : ''}`;
     }
     return { style: parts.join(';'), phoneClass, textColor, ghostClass: '' };
+}
+
+/**
+ * The class recipe of one Layer's element, given its `look` (`layerPresentation`). `preview` is the designer's inert
+ * box: it lacks the buttons' hover lift. The renderers only place markup around the result.
+ */
+export function layerClasses(layer: Layer, look: LayerPresentation, preview: boolean): string {
+    const phone = look.phoneClass;
+    switch (layer.type) {
+        case 'text':
+            return [
+                'sl sl-fs sl-text',
+                phone,
+                ALIGN_CLASS[layer.align],
+                look.textColor,
+                'whitespace-pre-line break-words',
+                // Serif is reserved for headings (h1/h2) by the design rules.
+                layer.role === 'heading' && layer.font === 'serif' ? 'font-serif' : 'font-sans',
+                layer.role === 'heading' ? 'font-bold leading-tight tracking-tight' : 'leading-snug',
+            ].join(' ');
+        case 'button':
+            return [
+                'sl sl-fs',
+                phone,
+                'inline-flex min-w-[10em] items-center justify-center gap-[0.6em] rounded-xl border-2 px-[1.5em] py-[0.8em] font-semibold uppercase tracking-widest leading-none',
+                layer.variant === 'solid'
+                    ? `border-transparent ${BG_COLOR_CLASS[layer.color]} ${ON_COLOR_CLASS[layer.color]} shadow-brand-md`
+                    : `border-current ${look.textColor}`,
+                !preview && 'transition hover:-translate-y-0.5',
+            ]
+                .filter(Boolean)
+                .join(' ');
+        case 'badge':
+            return `sl sl-fs ${phone} inline-block rounded-full px-[0.9em] py-[0.35em] font-semibold uppercase leading-none tracking-wider ${BG_COLOR_CLASS[layer.color]} ${ON_COLOR_CLASS[layer.color]}`;
+        case 'shape':
+            return `sl sl-shape ${phone} ${BG_COLOR_CLASS[layer.color]} ${RADIUS_CLASS[layer.radius]}`;
+        case 'image':
+            return `sl sl-img ${phone} ${RADIUS_CLASS[layer.radius]}`;
+    }
 }
 
 // ---------------------------------------------------------------------------

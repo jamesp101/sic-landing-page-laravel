@@ -122,6 +122,45 @@ final class Layout
         return ['style' => implode(';', $parts), 'phoneClass' => $phoneClass, 'textColor' => $textColor, 'ghostClass' => ''];
     }
 
+    /**
+     * The class recipe of one Layer's element, given its `$look` (`layerPresentation`). `$preview` is the designer's
+     * inert box: it lacks the buttons' hover lift. The renderers only place markup around the result.
+     *
+     * @param  array<string, mixed>  $layer
+     * @param  array{style: string, phoneClass: string, textColor: string, ghostClass: string}  $look
+     */
+    public static function layerClasses(array $layer, array $look, bool $preview): string
+    {
+        $phone = $look['phoneClass'];
+        $bg = fn (): string => Overlay::BG_COLOR_CLASS[$layer['color']];
+        $on = fn (): string => Overlay::ON_COLOR_CLASS[$layer['color']];
+
+        return match ($layer['type']) {
+            'text' => implode(' ', [
+                'sl sl-fs sl-text',
+                $phone,
+                Overlay::ALIGN_CLASS[$layer['align']],
+                $look['textColor'],
+                'whitespace-pre-line break-words',
+                // Serif is reserved for headings (h1/h2) by the design rules.
+                $layer['role'] === 'heading' && $layer['font'] === 'serif' ? 'font-serif' : 'font-sans',
+                $layer['role'] === 'heading' ? 'font-bold leading-tight tracking-tight' : 'leading-snug',
+            ]),
+            'button' => implode(' ', array_filter([
+                'sl sl-fs',
+                $phone,
+                'inline-flex min-w-[10em] items-center justify-center gap-[0.6em] rounded-xl border-2 px-[1.5em] py-[0.8em] font-semibold uppercase tracking-widest leading-none',
+                $layer['variant'] === 'solid'
+                    ? 'border-transparent '.$bg().' '.$on().' shadow-brand-md'
+                    : 'border-current '.$look['textColor'],
+                $preview ? '' : 'transition hover:-translate-y-0.5',
+            ], fn (string $part): bool => $part !== '')),
+            'badge' => "sl sl-fs {$phone} inline-block rounded-full px-[0.9em] py-[0.35em] font-semibold uppercase leading-none tracking-wider ".$bg().' '.$on(),
+            'shape' => "sl sl-shape {$phone} ".$bg().' '.Overlay::RADIUS_CLASS[$layer['radius']],
+            'image' => "sl sl-img {$phone} ".Overlay::RADIUS_CLASS[$layer['radius']],
+        };
+    }
+
     /** A number as JavaScript prints it in a template string (shortest form, whole numbers without `.0`). */
     public static function number(int|float $value): string
     {

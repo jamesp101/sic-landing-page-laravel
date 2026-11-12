@@ -56,45 +56,24 @@
                         @php
                             $look = Layout::layerPresentation($layer, $z, $phone[$layer['id']] ?? null, 'public');
                             $type = $layer['type'];
-                            $textClass = $type === 'text' ? implode(' ', [
-                                'sl sl-fs sl-text', $look['phoneClass'],
-                                Overlay::ALIGN_CLASS[$layer['align']],
-                                $look['textColor'],
-                                'whitespace-pre-line break-words',
-                                // Serif is reserved for headings (h1/h2) by the design rules.
-                                $layer['role'] === 'heading' && $layer['font'] === 'serif' ? 'font-serif' : 'font-sans',
-                                $layer['role'] === 'heading' ? 'font-bold leading-tight tracking-tight' : 'leading-snug',
-                            ]) : '';
-                            $buttonClass = $type === 'button' ? implode(' ', [
-                                'sl sl-fs', $look['phoneClass'],
-                                'inline-flex min-w-[10em] items-center justify-center gap-[0.6em] rounded-xl border-2 px-[1.5em] py-[0.8em] font-semibold uppercase tracking-widest leading-none',
-                                $layer['variant'] === 'solid'
-                                    ? 'border-transparent '.Overlay::BG_COLOR_CLASS[$layer['color']].' '.Overlay::ON_COLOR_CLASS[$layer['color']].' shadow-brand-md'
-                                    : 'border-current '.$look['textColor'],
-                                'transition hover:-translate-y-0.5',
-                            ]) : '';
-                            $badgeClass = $type === 'badge'
-                                ? "sl sl-fs {$look['phoneClass']} inline-block rounded-full px-[0.9em] py-[0.35em] font-semibold uppercase leading-none tracking-wider ".Overlay::BG_COLOR_CLASS[$layer['color']].' '.Overlay::ON_COLOR_CLASS[$layer['color']]
-                                : '';
-                            $shapeClass = $type === 'shape' ? "sl sl-shape {$look['phoneClass']} ".Overlay::BG_COLOR_CLASS[$layer['color']].' '.Overlay::RADIUS_CLASS[$layer['radius']] : '';
-                            $imageClass = $type === 'image' ? "sl sl-img {$look['phoneClass']} ".Overlay::RADIUS_CLASS[$layer['radius']] : '';
+                            $class = Layout::layerClasses($layer, $look, false);
                         @endphp
                         @if ($type === 'text')
                             @if ($layer['role'] === 'heading')
-                                <h2 class="{{ $textClass }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</h2>
+                                <h2 class="{{ $class }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</h2>
                             @else
-                                <p class="{{ $textClass }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</p>
+                                <p class="{{ $class }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</p>
                             @endif
                         @elseif ($type === 'button')
-                            <a href="{{ $layer['href'] }}" @if ($rel = Overlay::relFor($layer['href'])) rel="{{ $rel }}" @endif class="{{ $buttonClass }}" style="{{ $look['style'] }}">
+                            <a href="{{ $layer['href'] }}" @if ($rel = Overlay::relFor($layer['href'])) rel="{{ $rel }}" @endif class="{{ $class }}" style="{{ $look['style'] }}">
                                 {{ $layer['label'] }}<span aria-hidden="true">&rarr;</span>
                             </a>
                         @elseif ($type === 'badge')
-                            <span class="{{ $badgeClass }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</span>
+                            <span class="{{ $class }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</span>
                         @elseif ($type === 'shape')
-                            <div class="{{ $shapeClass }}" style="{{ $look['style'] }}" aria-hidden="true"></div>
+                            <div class="{{ $class }}" style="{{ $look['style'] }}" aria-hidden="true"></div>
                         @else
-                            <img src="{{ $layer['src'] }}" alt="{{ $layer['alt'] }}" loading="lazy" decoding="async" class="{{ $imageClass }} object-contain" style="{{ $look['style'] }}" />
+                            <img src="{{ $layer['src'] }}" alt="{{ $layer['alt'] }}" loading="lazy" decoding="async" class="{{ $class }} object-contain" style="{{ $look['style'] }}" />
                         @endif
                     @endforeach
                 </div>
