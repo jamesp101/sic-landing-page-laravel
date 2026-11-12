@@ -63,7 +63,7 @@ class PostsActions
         $input = $this->input($request, true);
         $actor = Authz::requireUser($request->user());
         /** @var Post $post */
-        $post = DepartmentAccess::loadScoped($actor, 'post', $input['id']);
+        $post = DepartmentAccess::loadScoped($actor, Post::class, $input['id']);
         $departmentId = DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null);
         $slug = $this->resolveSlug($input, $post->id);
         $highlight = $this->highlight($input);
@@ -101,7 +101,7 @@ class PostsActions
         $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
         $actor = Authz::requireUser($request->user());
         /** @var Post $post */
-        $post = DepartmentAccess::loadScoped($actor, 'post', $input['id']);
+        $post = DepartmentAccess::loadScoped($actor, Post::class, $input['id']);
         StoredFiles::deleteWithFiles(fn () => $post->delete(), [$post->highlight_image_path]);
         Flash::success('Post deleted successfully.');
 

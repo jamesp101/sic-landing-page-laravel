@@ -88,8 +88,9 @@ final class AdminScope
             ? static fn (Builder $q) => $q->where(static fn (Builder $q) => $q->where('department_id', $id)->orWhereNull('department_id'))
             : static fn (Builder $q) => $q->where('department_id', $id);
 
-        if (! Authz::isSuperAdmin($actor)) {
-            return $only($actor->department_id ?? -1);
+        $restricted = DepartmentAccess::restrictedDepartmentId($actor);
+        if ($restricted !== null) {
+            return $only($restricted);
         }
         if ($scope['kind'] === 'main') {
             return static fn (Builder $q) => $q->whereNull('department_id');
@@ -172,8 +173,7 @@ final class AdminScope
         $departments = [];
         $scope = ['kind' => 'all'];
         if ($user instanceof User) {
-            $departments = Department::query()
-                ->when(! Authz::isSuperAdmin($user), fn (Builder $q) => $q->where('id', $user->department_id ?? -1))
+            $departments = DepartmentAccess::visibleDepartments($user)
                 ->orderBy('name')
                 ->get(['id', 'name', 'slug', 'logo_path'])
                 ->map(fn (Department $d) => [

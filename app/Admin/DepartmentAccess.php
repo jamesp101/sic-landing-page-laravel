@@ -2,38 +2,57 @@
 
 namespace App\Admin;
 
-use App\Models\CarouselItem;
 use App\Models\Department;
-use App\Models\Download;
-use App\Models\DownloadDirectory;
-use App\Models\HeroSection;
 use App\Models\Member;
-use App\Models\Post;
 use App\Models\User;
 use App\Support\Authz;
 use App\Support\RequestError;
+use Closure;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 /**
- * Department-scoped admin access that needs the database: which department a write may target, and loading
- * one row the actor is allowed to touch. The pure rules live in Authz (`scopeDepartment`, `departmentForWrite`)
- * and AdminScope (`departmentWhere`).
+ * The Department-user rule, stated once: a Superadmin sees and changes every Department's rows (and the main
+ * page / General, `department_id` null); any other actor sees and changes only their own Department's rows.
+ * Reads (`restrictedDepartmentId`, `visibleDepartments`, `departmentOptions`, `formProps`), writes
+ * (`resolveWriteDepartment`) and loads (`loadScoped`, `loadScopedMany`, `loadOwnDepartment`, `loadMember`)
+ * all go through here. `AdminScope` builds list filters from `restrictedDepartmentId`.
  */
 final class DepartmentAccess
 {
-    /** Models `loadScoped` can load, by the camelCase name the TS source uses. */
-    private const MODELS = [
-        'post' => Post::class,
-        'carouselItem' => CarouselItem::class,
-        'heroSection' => HeroSection::class,
-        'download' => Download::class,
-        'downloadDirectory' => DownloadDirectory::class,
-    ];
+    /** Matches no Department: the restriction of a department user who has no Department assigned. */
+    private const NO_DEPARTMENT = -1;
 
     /** Validation rules of a `departmentId` input of create/update actions: null/absent = main page or General. */
     public static function departmentIdRules(): array
     {
         return ['nullable', 'integer'];
+    }
+
+    /** The only Department id the actor may see or change: null = unrestricted (Superadmin). */
+    public static function restrictedDepartmentId(User $actor): ?int
+    {
+        return Authz::isSuperAdmin($actor) ? null : ($actor->department_id ?? self::NO_DEPARTMENT);
+    }
+
+    /**
+     * Constraint for a query over the `departments` table itself (Department rows are not owned by a
+     * Department: a department user's restriction is their own row, `id`).
+     *
+     * @return Closure(Builder): void
+     */
+    public static function departmentsWhere(User $actor): Closure
+    {
+        $only = self::restrictedDepartmentId($actor);
+
+        return static fn (Builder $q) => $only === null ? $q : $q->where('id', $only);
+    }
+
+    /** Departments the actor may see, as a query. */
+    public static function visibleDepartments(User $actor): Builder
+    {
+        return Department::query()->where(self::departmentsWhere($actor));
     }
 
     /**
@@ -43,12 +62,30 @@ final class DepartmentAccess
      */
     public static function departmentOptions(User $actor): array
     {
-        return Department::query()
-            ->when(! Authz::isSuperAdmin($actor), fn ($q) => $q->where('id', $actor->department_id ?? -1))
+        return self::visibleDepartments($actor)
             ->orderBy('name')
             ->get(['id', 'name'])
             ->map(fn (Department $d) => ['id' => (int) $d->id, 'name' => $d->name])
             ->all();
+    }
+
+    /**
+     * Admin scope props of a Rich content editor form island: the Departments the actor may pick, whether they
+     * are a Superadmin, and (create forms only, `$request` given) the Department the current scope preselects.
+     *
+     * @return array{departments: list<array{id: int, name: string}>, isSuperAdmin: bool, defaultDepartmentId?: ?int}
+     */
+    public static function formProps(User $actor, ?Request $request = null): array
+    {
+        $props = [
+            'departments' => self::departmentOptions($actor),
+            'isSuperAdmin' => Authz::isSuperAdmin($actor),
+        ];
+        if ($request !== null) {
+            $props['defaultDepartmentId'] = AdminScope::scopeDefaultDepartment(AdminScope::current($request));
+        }
+
+        return $props;
     }
 
     /** Throws BAD_REQUEST unless the department exists. */
@@ -65,7 +102,9 @@ final class DepartmentAccess
      */
     public static function resolveWriteDepartment(User $actor, ?int $requested): ?int
     {
-        $departmentId = Authz::departmentForWrite($actor, $requested);
+        $departmentId = Authz::isSuperAdmin($actor)
+            ? $requested
+            : ($actor->department_id ?? throw RequestError::forbidden());
         if ($departmentId !== null) {
             self::assertDepartmentExists($departmentId);
         }
@@ -73,38 +112,51 @@ final class DepartmentAccess
         return $departmentId;
     }
 
-    /** Loads one row by id for the actor: NOT_FOUND when missing (or `$id` is null), FORBIDDEN for another department's row. */
+    /**
+     * Loads one row by id for the actor: NOT_FOUND when missing (or `$id` is null), FORBIDDEN for another
+     * department's row (or any row without a department, for a department user).
+     *
+     * @template T of Model
+     *
+     * @param  class-string<T>  $model  a model with a `department_id` attribute
+     * @return T
+     */
     public static function loadScoped(User $actor, string $model, ?int $id): Model
     {
         if ($id === null) {
             throw RequestError::notFound();
         }
 
-        return Authz::scopeDepartment($actor, self::modelClass($model)::query()->find($id));
+        return self::assertOwnRow($actor, $model::query()->find($id));
     }
 
     /**
      * Loads rows for a batch of distinct ids, returned in `$ids` order: NOT_FOUND if any id is missing,
      * FORBIDDEN if any row belongs to another department.
      *
+     * @template T of Model
+     *
+     * @param  class-string<T>  $model
      * @param  list<int>  $ids
-     * @return list<Model>
+     * @return list<T>
      */
     public static function loadScopedMany(User $actor, string $model, array $ids): array
     {
-        $byId = self::modelClass($model)::query()->whereIn('id', $ids)->get()->keyBy('id');
+        $byId = $model::query()->whereIn('id', $ids)->get()->keyBy('id');
 
-        return array_map(fn (int $id) => Authz::scopeDepartment($actor, $byId->get($id)), $ids);
+        return array_map(fn (int $id) => self::assertOwnRow($actor, $byId->get($id)), $ids);
     }
 
     /** Loads a department the actor may manage (their own; any for superadmins): NOT_FOUND / FORBIDDEN otherwise. */
     public static function loadOwnDepartment(User $actor, ?int $id): Department
     {
-        if ($id === null) {
+        $department = $id === null ? null : Department::query()->find($id);
+        if (! $department) {
             throw RequestError::notFound();
         }
+        self::assertDepartment($actor, $department->id);
 
-        return Authz::scopeOwnDepartment($actor, Department::query()->find($id));
+        return $department;
     }
 
     /** Loads a member of `$departmentId`, which the actor must be allowed to manage: NOT_FOUND / FORBIDDEN otherwise. */
@@ -119,9 +171,21 @@ final class DepartmentAccess
         return $member;
     }
 
-    /** @return class-string<Model> */
-    private static function modelClass(string $model): string
+    private static function assertOwnRow(User $actor, ?Model $row): Model
     {
-        return self::MODELS[$model] ?? throw new \InvalidArgumentException("Unknown scoped model: {$model}");
+        if (! $row) {
+            throw RequestError::notFound();
+        }
+        self::assertDepartment($actor, $row->department_id);
+
+        return $row;
+    }
+
+    private static function assertDepartment(User $actor, ?int $departmentId): void
+    {
+        $only = self::restrictedDepartmentId($actor);
+        if ($only !== null && $departmentId !== $only) {
+            throw RequestError::forbidden();
+        }
     }
 }

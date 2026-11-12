@@ -1,6 +1,7 @@
 @php
     use App\Admin\AdminScope;
     use App\Admin\Ui;
+    use App\Support\Authz;
 
     $user = request()->user();
     $stats = [
@@ -23,7 +24,7 @@
                 Welcome back, {{ $user->name === null || $user->name === '' ? 'Administrator' : $user->name }}
             </h1>
             <p class="text-sm text-muted-foreground">
-                {{ $actor->isSuperAdmin()
+                {{ Authz::isSuperAdmin($actor)
                     ? 'Superadmin • Full administrative controls active.'
                     : 'Department user • Managing content for '.AdminScope::scopeLabel($scope).'.' }}
             </p>

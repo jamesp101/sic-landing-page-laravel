@@ -36,11 +36,6 @@ class User extends Authenticatable
         ];
     }
 
-    public function isSuperAdmin(): bool
-    {
-        return $this->role === self::ROLE_SUPERADMIN;
-    }
-
     public function department(): BelongsTo
     {
         return $this->belongsTo(Department::class);

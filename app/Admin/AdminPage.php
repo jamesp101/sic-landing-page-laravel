@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
  * bootstrap/app.php renders as the HTTP error page; pages carry no try/catch of their own.
  *
  *   ['actor' => $actor, 'row' => $post] = AdminPage::resolve($request, [
- *       'load' => fn (User $actor) => DepartmentAccess::loadScoped($actor, 'post', AdminPage::parseId($id)),
+ *       'load' => fn (User $actor) => DepartmentAccess::loadScoped($actor, Post::class, AdminPage::parseId($id)),
  *   ]);
  */
 final class AdminPage

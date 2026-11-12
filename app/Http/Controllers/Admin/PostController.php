@@ -76,23 +76,18 @@ class PostController extends Controller
     {
         ['actor' => $actor] = AdminPage::resolve($request);
 
-        return view('admin.posts.create', [
-            'departments' => DepartmentAccess::departmentOptions($actor),
-            'isSuperAdmin' => $actor->isSuperAdmin(),
-            'defaultDepartmentId' => AdminScope::scopeDefaultDepartment(AdminScope::current($request)),
-        ]);
+        return view('admin.posts.create', DepartmentAccess::formProps($actor, $request));
     }
 
     public function edit(Request $request, string $id)
     {
         ['actor' => $actor, 'row' => $post] = AdminPage::resolve($request, [
-            'load' => fn ($actor) => DepartmentAccess::loadScoped($actor, 'post', AdminPage::parseId($id)),
+            'load' => fn ($actor) => DepartmentAccess::loadScoped($actor, Post::class, AdminPage::parseId($id)),
         ]);
 
         return view('admin.posts.edit', [
             'post' => $post,
-            'departments' => DepartmentAccess::departmentOptions($actor),
-            'isSuperAdmin' => $actor->isSuperAdmin(),
+            ...DepartmentAccess::formProps($actor),
             'values' => [
                 'id' => $post->id,
                 'title' => $post->title,

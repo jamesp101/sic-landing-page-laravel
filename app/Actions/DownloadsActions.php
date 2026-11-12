@@ -61,7 +61,7 @@ class DownloadsActions
         $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
         $actor = Authz::requireUser($request->user());
         /** @var Download $download */
-        $download = DepartmentAccess::loadScoped($actor, 'download', $input['id']);
+        $download = DepartmentAccess::loadScoped($actor, Download::class, $input['id']);
         StoredFiles::deleteWithFiles(fn () => $download->delete(), [$download->file_path]);
         Flash::success('File deleted successfully.');
 

@@ -80,12 +80,12 @@ class DepartmentAccessTest extends TestCase
 
     public function test_load_scoped(): void
     {
-        $this->assertSame(2, DepartmentAccess::loadScoped($this->admin, 'post', 2)->id);
-        $this->assertSame(1, DepartmentAccess::loadScoped($this->cit, 'post', 1)->id);
-        $this->assertSame('NOT_FOUND', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, 'post', 99)));
-        $this->assertSame('NOT_FOUND', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, 'post', null)));
-        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, 'post', 2)));
-        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, 'post', 3)));
+        $this->assertSame(2, DepartmentAccess::loadScoped($this->admin, Post::class, 2)->id);
+        $this->assertSame(1, DepartmentAccess::loadScoped($this->cit, Post::class, 1)->id);
+        $this->assertSame('NOT_FOUND', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, Post::class, 99)));
+        $this->assertSame('NOT_FOUND', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, Post::class, null)));
+        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, Post::class, 2)));
+        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScoped($this->cit, Post::class, 3)));
     }
 
     public function test_load_own_department(): void
@@ -99,11 +99,11 @@ class DepartmentAccessTest extends TestCase
     public function test_load_scoped_many_keeps_the_order_of_the_ids(): void
     {
         $ids = fn (array $rows) => array_map(fn ($row) => $row->id, $rows);
-        $this->assertSame([2, 1], $ids(DepartmentAccess::loadScopedMany($this->cit, 'carouselItem', [2, 1])));
-        $this->assertSame([3, 1, 2], $ids(DepartmentAccess::loadScopedMany($this->admin, 'carouselItem', [3, 1, 2])));
-        $this->assertSame('NOT_FOUND', $this->code(fn () => DepartmentAccess::loadScopedMany($this->cit, 'carouselItem', [1, 99])));
-        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScopedMany($this->cit, 'carouselItem', [1, 3])));
-        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScopedMany($this->unassigned, 'carouselItem', [1])));
+        $this->assertSame([2, 1], $ids(DepartmentAccess::loadScopedMany($this->cit, CarouselItem::class, [2, 1])));
+        $this->assertSame([3, 1, 2], $ids(DepartmentAccess::loadScopedMany($this->admin, CarouselItem::class, [3, 1, 2])));
+        $this->assertSame('NOT_FOUND', $this->code(fn () => DepartmentAccess::loadScopedMany($this->cit, CarouselItem::class, [1, 99])));
+        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScopedMany($this->cit, CarouselItem::class, [1, 3])));
+        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadScopedMany($this->unassigned, CarouselItem::class, [1])));
     }
 
     public function test_load_member(): void
@@ -122,5 +122,23 @@ class DepartmentAccessTest extends TestCase
         $this->assertSame(['CBA', 'CIT'], array_column(DepartmentAccess::departmentOptions($this->admin), 'name'));
         $this->assertSame([['id' => 10, 'name' => 'CIT']], DepartmentAccess::departmentOptions($this->cit));
         $this->assertSame([], DepartmentAccess::departmentOptions($this->unassigned));
+    }
+
+    public function test_restriction_is_unset_for_superadmin_and_the_own_department_otherwise(): void
+    {
+        $this->assertNull(DepartmentAccess::restrictedDepartmentId($this->admin));
+        $this->assertSame(10, DepartmentAccess::restrictedDepartmentId($this->cit));
+        $this->assertSame([10], DepartmentAccess::visibleDepartments($this->cit)->pluck('id')->all());
+        $this->assertSame([], DepartmentAccess::visibleDepartments($this->unassigned)->pluck('id')->all());
+        $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadOwnDepartment($this->unassigned, 10)));
+    }
+
+    public function test_form_props_carry_the_admin_scope(): void
+    {
+        $props = DepartmentAccess::formProps($this->cit);
+        $this->assertSame([['id' => 10, 'name' => 'CIT']], $props['departments']);
+        $this->assertFalse($props['isSuperAdmin']);
+        $this->assertArrayNotHasKey('defaultDepartmentId', $props);
+        $this->assertTrue(DepartmentAccess::formProps($this->admin)['isSuperAdmin']);
     }
 }

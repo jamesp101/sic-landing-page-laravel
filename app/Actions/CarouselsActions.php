@@ -72,7 +72,7 @@ class CarouselsActions
         );
         $actor = Authz::requireUser($request->user());
         /** @var CarouselItem $row */
-        $row = DepartmentAccess::loadScoped($actor, 'carouselItem', $input['id']);
+        $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
         $content = $this->overlayData($input['overlay']);
 
         // '' removes the video; omitted keeps it.
@@ -93,7 +93,7 @@ class CarouselsActions
         );
         $actor = Authz::requireUser($request->user());
         /** @var CarouselItem $row */
-        $row = DepartmentAccess::loadScoped($actor, 'carouselItem', $input['id']);
+        $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
         $departmentId = $request->has('departmentId')
             ? DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null)
             : $row->department_id;
@@ -108,7 +108,7 @@ class CarouselsActions
         $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
         $actor = Authz::requireUser($request->user());
         /** @var CarouselItem $row */
-        $row = DepartmentAccess::loadScoped($actor, 'carouselItem', $input['id']);
+        $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
 
         return ['slide' => Slides::toDesignerSlide(CarouselAdmin::duplicateSlide($row))];
     }
@@ -131,7 +131,7 @@ class CarouselsActions
         if (count(array_unique($ids)) !== count($ids)) {
             throw RequestError::badRequest('Duplicate slides in the order.');
         }
-        $rows = DepartmentAccess::loadScopedMany($actor, 'carouselItem', $ids);
+        $rows = DepartmentAccess::loadScopedMany($actor, CarouselItem::class, $ids);
 
         $orders = CarouselAdmin::assignOrders(array_map(fn (CarouselItem $row): int => $row->order, $rows));
         DB::transaction(function () use ($ids, $orders): void {
@@ -153,7 +153,7 @@ class CarouselsActions
         $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
         $actor = Authz::requireUser($request->user());
         /** @var CarouselItem $row */
-        $row = DepartmentAccess::loadScoped($actor, 'carouselItem', $input['id']);
+        $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
 
         return CarouselAdmin::deleteSlide($row);
     }

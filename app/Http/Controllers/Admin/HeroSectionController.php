@@ -57,23 +57,18 @@ class HeroSectionController extends Controller
     {
         ['actor' => $actor] = AdminPage::resolve($request);
 
-        return view('admin.hero-sections.create', [
-            'departments' => DepartmentAccess::departmentOptions($actor),
-            'isSuperAdmin' => $actor->isSuperAdmin(),
-            'defaultDepartmentId' => AdminScope::scopeDefaultDepartment(AdminScope::current($request)),
-        ]);
+        return view('admin.hero-sections.create', DepartmentAccess::formProps($actor, $request));
     }
 
     public function edit(Request $request, string $id)
     {
         ['actor' => $actor, 'row' => $section] = AdminPage::resolve($request, [
-            'load' => fn ($actor) => DepartmentAccess::loadScoped($actor, 'heroSection', AdminPage::parseId($id)),
+            'load' => fn ($actor) => DepartmentAccess::loadScoped($actor, HeroSection::class, AdminPage::parseId($id)),
         ]);
 
         return view('admin.hero-sections.edit', [
             'section' => $section,
-            'departments' => DepartmentAccess::departmentOptions($actor),
-            'isSuperAdmin' => $actor->isSuperAdmin(),
+            ...DepartmentAccess::formProps($actor),
             'values' => [
                 'id' => $section->id,
                 'title' => $section->title,

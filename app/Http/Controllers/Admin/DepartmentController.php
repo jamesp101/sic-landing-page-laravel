@@ -39,14 +39,11 @@ class DepartmentController extends Controller
             $dir,
         );
 
-        // Department rows are not owned by a department: a department user's restriction is their own row (`id`).
         $list = AdminList::runList([
             'url' => $request->getRequestUri(),
             'actor' => $actor,
             'scope' => AdminScope::current($request),
-            'restriction' => $superadmin
-                ? fn (Builder $q) => $q
-                : fn (Builder $q) => $q->where('id', $actor->department_id ?? -1),
+            'restriction' => DepartmentAccess::departmentsWhere($actor),
             'spec' => [
                 'fields' => [
                     'name' => AdminList::sortColumn('name'),

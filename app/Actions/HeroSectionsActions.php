@@ -30,7 +30,7 @@ class HeroSectionsActions
         $input = $this->input($request, true);
         $actor = Authz::requireUser($request->user());
         /** @var HeroSection $section */
-        $section = DepartmentAccess::loadScoped($actor, 'heroSection', $input['id']);
+        $section = DepartmentAccess::loadScoped($actor, HeroSection::class, $input['id']);
         $departmentId = DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null);
         $section->update($this->data($input) + ['department_id' => $departmentId]);
         Flash::success('Hero section updated successfully.');
@@ -43,7 +43,7 @@ class HeroSectionsActions
         $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
         $actor = Authz::requireUser($request->user());
         /** @var HeroSection $section */
-        $section = DepartmentAccess::loadScoped($actor, 'heroSection', $input['id']);
+        $section = DepartmentAccess::loadScoped($actor, HeroSection::class, $input['id']);
         $section->delete();
         Flash::success('Hero section deleted successfully.');
 

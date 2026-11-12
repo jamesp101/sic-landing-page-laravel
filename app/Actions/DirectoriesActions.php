@@ -31,7 +31,7 @@ class DirectoriesActions
         $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
         $actor = Authz::requireUser($request->user());
         /** @var DownloadDirectory $directory */
-        $directory = DepartmentAccess::loadScoped($actor, 'downloadDirectory', $input['id']);
+        $directory = DepartmentAccess::loadScoped($actor, DownloadDirectory::class, $input['id']);
         $directory->delete();
         Flash::success('Folder deleted.');
 

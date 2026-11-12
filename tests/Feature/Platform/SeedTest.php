@@ -10,6 +10,7 @@ use App\Models\NavigationLink;
 use App\Models\Post;
 use App\Models\Setting;
 use App\Models\User;
+use App\Support\Authz;
 use Database\Seeders\DatabaseSeeder;
 use Database\Seeders\DemoData;
 use Database\Seeders\SchoolsSeeder;
@@ -40,7 +41,7 @@ class SeedTest extends TestCase
         $this->artisan('sic:seed')->assertSuccessful();
 
         $admin = User::where('email', 'admin@sic.edu.ph')->firstOrFail();
-        $this->assertTrue($admin->isSuperAdmin());
+        $this->assertTrue(Authz::isSuperAdmin($admin));
         $this->assertNull($admin->department_id);
         $this->assertTrue(Hash::check(config('sic.seed.superadmin_password'), $admin->password));
 

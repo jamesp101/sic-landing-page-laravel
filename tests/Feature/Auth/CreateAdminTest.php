@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use App\Support\Authz;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -35,7 +36,7 @@ class CreateAdminTest extends TestCase
 
         $user = User::query()->where('email', 'boss@example.org')->firstOrFail();
         $this->assertSame('The Boss', $user->name);
-        $this->assertTrue($user->isSuperAdmin());
+        $this->assertTrue(Authz::isSuperAdmin($user));
         $this->assertTrue($user->email_verified);
         $this->assertTrue(Hash::check('a-long-enough-password', $user->password));
     }
@@ -49,7 +50,7 @@ class CreateAdminTest extends TestCase
 
         $fresh = $user->fresh();
         $this->assertSame('Old Name', $fresh->name);
-        $this->assertTrue($fresh->isSuperAdmin());
+        $this->assertTrue(Authz::isSuperAdmin($fresh));
         $this->assertTrue(Hash::check('a-long-enough-password', $fresh->password));
         $this->assertSame(0, DB::table('sessions')->where('user_id', $user->id)->count());
         $this->assertSame(1, User::query()->count());

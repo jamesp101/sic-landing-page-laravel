@@ -97,11 +97,9 @@ class DownloadController extends Controller
         ['actor' => $actor] = AdminPage::resolve($request);
 
         return view('admin.downloads.create', [
-            'departments' => DepartmentAccess::departmentOptions($actor),
+            ...DepartmentAccess::formProps($actor, $request),
             'directories' => Downloads::getDirectoryNames(),
             'defaultDirectory' => Downloads::DEFAULT_DIRECTORY,
-            'isSuperAdmin' => Authz::isSuperAdmin($actor),
-            'defaultDepartmentId' => AdminScope::scopeDefaultDepartment(AdminScope::current($request)),
             'maxMb' => DownloadIntake::DOWNLOAD_MAX_MB,
             'uploadMode' => DownloadIntake::downloadUploadMode(),
         ]);
