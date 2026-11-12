@@ -37,3 +37,11 @@
         Header set Cache-Control "public, max-age=86400" env=!SIC_IMMUTABLE
     </FilesMatch>
 </IfModule>
+
+# Text responses compressed (pages, CSS, JS, feeds); fonts and images are compressed formats already.
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/css text/plain text/xml application/javascript text/javascript application/json application/ld+json application/manifest+json application/xml application/rss+xml image/svg+xml
+</IfModule>
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/plain text/xml application/javascript text/javascript application/json application/ld+json application/manifest+json application/xml application/rss+xml image/svg+xml
+</IfModule>
