@@ -14,11 +14,14 @@ final class Ui
     /** Search box in a list's filter bar (the search icon sits at its left). */
     public const SEARCH_INPUT = 'w-full rounded-lg border border-input-border bg-surface py-2 pr-4 pl-10 text-sm text-foreground shadow-brand-sm outline-none placeholder:text-muted-foreground focus:border-brand-600 focus-visible:ring-2 focus-visible:ring-ring';
 
-    /** Page container: lists and editors (wide content). */
+    /** Page container: lists (wide content). */
     public const WIDE_PAGE = 'mx-auto w-full max-w-7xl space-y-6 p-6';
 
     /** Page container: plain forms. */
     public const FORM_PAGE = 'mx-auto w-full max-w-3xl space-y-6 p-6';
+
+    /** Page container: pages that host the block editor. No width cap, so the canvas gets the whole content area. */
+    public const EDITOR_PAGE = 'w-full space-y-6 p-6';
 
     public const ICON_LINK = 'inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors duration-150 ease-out hover:bg-accent hover:text-accent-foreground';
 

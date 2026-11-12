@@ -6,7 +6,7 @@
         ['title' => 'Edit'],
     ]"
 >
-    <div class="{{ \App\Admin\Ui::WIDE_PAGE }}">
+    <div class="{{ \App\Admin\Ui::EDITOR_PAGE }}">
         <x-admin.page-header title="Edit post" :description="'Make changes to “'.$post->title.'”.'" backHref="/admin/posts" />
         <x-island
             name="admin/posts/PostForm"

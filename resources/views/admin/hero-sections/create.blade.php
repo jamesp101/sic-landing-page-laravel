@@ -6,7 +6,7 @@
         ['title' => 'New'],
     ]"
 >
-    <div class="{{ \App\Admin\Ui::WIDE_PAGE }}">
+    <div class="{{ \App\Admin\Ui::EDITOR_PAGE }}">
         <x-admin.page-header
             title="New hero section"
             description="Design a new hero panel for the Main site or a department page with the visual editor."

@@ -6,7 +6,7 @@
         ['title' => 'New'],
     ]"
 >
-    <div class="{{ \App\Admin\Ui::WIDE_PAGE }}">
+    <div class="{{ \App\Admin\Ui::EDITOR_PAGE }}">
         <x-admin.page-header
             title="New post"
             description="Publish a new article, event advisory or announcement."

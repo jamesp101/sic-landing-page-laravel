@@ -6,7 +6,7 @@
         ['title' => 'Edit'],
     ]"
 >
-    <div class="{{ \App\Admin\Ui::WIDE_PAGE }}">
+    <div class="{{ \App\Admin\Ui::EDITOR_PAGE }}">
         <x-admin.page-header
             title="Edit hero section"
             :description="'Make changes to “'.($section->title === null || $section->title === '' ? 'Hero section' : $section->title).'”.'"
