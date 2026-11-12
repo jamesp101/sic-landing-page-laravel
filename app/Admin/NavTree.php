@@ -17,7 +17,8 @@ final class NavTree
 {
     public const TWO_LEVEL_ERROR = 'Navigation is two levels deep: only top-level links can have sub-links.';
 
-    private const URL_ERROR = 'Use a path such as /posts or a full https:// URL.';
+    /** The one message for a rejected navigation URL (also used by the `navlinks` action's validation). */
+    public const URL_ERROR = 'Use a path such as /posts or a full https:// URL.';
 
     private const WHITESPACE = '/[\s\x{feff}]/u';
 
@@ -66,40 +67,6 @@ final class NavTree
         return self::URL_ERROR;
     }
 
-    /** Returns a copy with `order` renumbered 1..n among siblings. */
-    public static function renumber(array $tree): array
-    {
-        $out = [];
-        foreach (array_values($tree) as $i => $node) {
-            $children = [];
-            foreach (array_values($node['children']) as $j => $child) {
-                $children[] = [...$child, 'order' => $j + 1, 'children' => []];
-            }
-            $out[] = [...$node, 'order' => $i + 1, 'children' => $children];
-        }
-
-        return $out;
-    }
-
-    /** @return list<array{id: int, parentId: ?int, order: int}> */
-    public static function toPayload(array $tree): array
-    {
-        $items = [];
-        foreach (array_values($tree) as $i => $node) {
-            $items[] = ['id' => $node['id'], 'parentId' => null, 'order' => $i + 1];
-            foreach (array_values($node['children']) as $j => $child) {
-                $items[] = ['id' => $child['id'], 'parentId' => $node['id'], 'order' => $j + 1];
-            }
-        }
-
-        return $items;
-    }
-
-    public static function samePayload(array $a, array $b): bool
-    {
-        return $a === $b;
-    }
-
     /**
      * Validates a reorder request against the parent map currently stored (`$existing`: `['id', 'parentId']` rows).
      * Returns an error message, or null when the resulting tree is valid.
@@ -140,27 +107,6 @@ final class NavTree
         }
 
         return null;
-    }
-
-    /**
-     * The one place that decides whether a nav tree may be saved: the editor (`proposeNavTree`) and the reorder
-     * action (`reorderError`) answer with the same message.
-     *
-     * @return array{change: array{kind: 'tree', items: list<array>}}|array{error: string}
-     */
-    public static function proposeNavTree(array $current, array $next): array
-    {
-        foreach ($next as $top) {
-            foreach ($top['children'] as $child) {
-                if ($child['children'] !== []) {
-                    return ['error' => self::TWO_LEVEL_ERROR];
-                }
-            }
-        }
-        $items = self::toPayload(self::renumber($next));
-        $error = self::reorderError($items, self::toPayload($current));
-
-        return $error !== null ? ['error' => $error] : ['change' => ['kind' => 'tree', 'items' => $items]];
     }
 
     /** Detects what a navigation URL points at. Returns null for an empty or unrecognised URL. */

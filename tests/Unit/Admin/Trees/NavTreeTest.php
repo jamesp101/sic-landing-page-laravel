@@ -18,23 +18,6 @@ class NavTreeTest extends TestCase
         return self::n($id, [], ['url' => $url, ...$over]);
     }
 
-    public function test_the_payload_round_trips_the_tree_structure(): void
-    {
-        $tree = [self::n(1), self::n(2), self::n(3, [self::n(4), self::n(5)])];
-        $payload = NavTree::toPayload($tree);
-        $this->assertContains(['id' => 5, 'parentId' => 3, 'order' => 2], $payload);
-        $this->assertSame([1, 2, 3, 4, 5], array_column($payload, 'id'));
-        $this->assertTrue(NavTree::samePayload($payload, NavTree::toPayload(NavTree::renumber($tree))));
-        $this->assertFalse(NavTree::samePayload($payload, array_reverse($payload)));
-    }
-
-    public function test_renumber_numbers_siblings_from_one(): void
-    {
-        $renumbered = NavTree::renumber([self::n(7, [self::n(9), self::n(8)]), self::n(5)]);
-        $this->assertSame([1, 2], array_column($renumbered, 'order'));
-        $this->assertSame([1, 2], array_column($renumbered[0]['children'], 'order'));
-    }
-
     // ---- reorderError ------------------------------------------------------------------------------------------
 
     private function existing(): array
@@ -85,7 +68,7 @@ class NavTreeTest extends TestCase
         }
         $this->assertSame('The URL is required.', NavTree::navUrlError('  '));
         $this->assertSame('The URL must not contain spaces.', NavTree::navUrlError('/a b'));
-        $this->assertSame('Use a path such as /posts or a full https:// URL.', NavTree::navUrlError('//evil.com'));
+        $this->assertSame(NavTree::URL_ERROR, NavTree::navUrlError('//evil.com'));
     }
 
     // ---- classifyUrl / internalPath / postSlugsLinked ----------------------------------------------------------
@@ -154,26 +137,5 @@ class NavTreeTest extends TestCase
     {
         $tree = [self::link(1, '/missing', ['children' => [self::link(2, '/ok-child')]]), self::link(3, '#departments')];
         $this->assertSame([2], array_keys(NavTree::navWarnings($tree, self::KNOWN)));
-    }
-
-    // ---- proposeNavTree ----------------------------------------------------------------------------------------
-
-    public function test_propose_returns_the_renumbered_payload_of_a_valid_tree(): void
-    {
-        $current = [self::n(1), self::n(2), self::n(3, [self::n(4)])];
-        $this->assertSame(['change' => ['kind' => 'tree', 'items' => [
-            ['id' => 2, 'parentId' => null, 'order' => 1],
-            ['id' => 1, 'parentId' => null, 'order' => 2],
-            ['id' => 3, 'parentId' => null, 'order' => 3],
-            ['id' => 4, 'parentId' => 3, 'order' => 1],
-        ]]], NavTree::proposeNavTree($current, [self::n(2), self::n(1), self::n(3, [self::n(4)])]));
-    }
-
-    public function test_propose_refuses_a_third_level_with_the_same_message_as_the_reorder_action(): void
-    {
-        $current = [self::n(1), self::n(2), self::n(3, [self::n(4)])];
-        $serverMessage = NavTree::reorderError([['id' => 3, 'parentId' => 1, 'order' => 1]], NavTree::toPayload($current));
-        $this->assertMatchesRegularExpression('/two levels/', $serverMessage);
-        $this->assertSame(['error' => $serverMessage], NavTree::proposeNavTree($current, [self::n(1, [self::n(3, [self::n(4)])]), self::n(2)]));
     }
 }

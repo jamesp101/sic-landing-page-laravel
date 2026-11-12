@@ -11,6 +11,7 @@
         canIndent,
         canOutdent,
         cloneTree,
+        findNode,
         indent,
         locate,
         moveDown,
@@ -117,14 +118,7 @@
     const warningText = { 'internal-missing': 'page not found', duplicate: 'duplicate' } as const;
     const warningBadge = { 'internal-missing': 'Page not found', duplicate: 'Duplicate link' } as const;
 
-    function find(id: number): NavNode | null {
-        for (const top of tops) {
-            if (top.id === id) return top;
-            const child = top.children.find((c) => c.id === id);
-            if (child) return child;
-        }
-        return null;
-    }
+    const find = (id: number) => findNode(tops, id);
 
     /** Reports a finished save: the failure toast and announcement, or the success note. Returns whether it was saved. */
     async function finish(pending: Promise<EditResult>, note?: string): Promise<boolean> {
@@ -162,7 +156,7 @@
     }
 
     function setChildren(topId: number, items: NavNode[]) {
-        const top = tops.find((t) => t.id === topId);
+        const top = findNode(tops, topId);
         if (top) top.children = items;
     }
 

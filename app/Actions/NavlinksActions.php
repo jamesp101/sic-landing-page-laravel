@@ -107,7 +107,7 @@ class NavlinksActions
             'label' => ['bail', 'required', 'string', 'max:255'],
             'url' => ['bail', 'required', 'string', 'max:255', function (string $attribute, mixed $value, Closure $fail): void {
                 if (NavTree::navUrlError((string) $value) !== null) {
-                    $fail('Use a path such as /posts or a full https:// URL.');
+                    $fail(NavTree::URL_ERROR);
                 }
             }],
             'order' => ['required', 'integer'],

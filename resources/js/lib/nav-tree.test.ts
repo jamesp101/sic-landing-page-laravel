@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
     canIndent,
     classifyUrl,
+    findNode,
     internalPath,
     navWarnings,
     postSlugsLinked,
@@ -71,6 +72,12 @@ describe('nav tree moves', () => {
         const payload = toPayload(tree);
         expect(payload).toContainEqual({ id: 5, parentId: 3, order: 2 });
         expect(ids(treeFromPayload(tree, payload))).toEqual(ids(tree));
+    });
+
+    it('finds a link at either level', () => {
+        expect(findNode(tree, 3)?.id).toBe(3);
+        expect(findNode(tree, 5)?.id).toBe(5);
+        expect(findNode(tree, 99)).toBeNull();
     });
 });
 

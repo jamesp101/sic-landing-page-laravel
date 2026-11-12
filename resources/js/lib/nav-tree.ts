@@ -22,15 +22,17 @@ export interface ReorderItem {
     order: number;
 }
 
+const URL_ERROR = 'Use a path such as /posts or a full https:// URL.';
+
 /** Accepts site paths, anchors and http(s)/mailto/tel URLs; rejects javascript:, data: and other schemes. */
 export function navUrlError(raw: string): string | null {
     const url = raw.trim();
     if (!url) return 'The URL is required.';
     if (/\s/.test(url)) return 'The URL must not contain spaces.';
-    if (url.startsWith('//')) return 'Use a path such as /posts or a full https:// URL.';
+    if (url.startsWith('//')) return URL_ERROR;
     if (url.startsWith('/') || url.startsWith('#')) return null;
     if (/^(https?:\/\/|mailto:|tel:)\S+$/i.test(url)) return null;
-    return 'Use a path such as /posts or a full https:// URL.';
+    return URL_ERROR;
 }
 
 export function cloneTree(tree: NavNode[]): NavNode[] {
@@ -176,7 +178,7 @@ export type NavPatch = Partial<Pick<NavNode, 'label' | 'isActive'>>;
 /** One edit of the nav tree: a whole new order/nesting, or a label/visibility change of one link. */
 export type NavChange = { kind: 'tree'; items: ReorderItem[] } | { kind: 'patch'; id: number; patch: NavPatch };
 
-function findNode(tree: NavNode[], id: number): NavNode | null {
+export function findNode(tree: NavNode[], id: number): NavNode | null {
     const pos = locate(tree, id);
     if (!pos) return null;
     return pos.parentIndex === null ? tree[pos.index] : tree[pos.parentIndex].children[pos.index];
