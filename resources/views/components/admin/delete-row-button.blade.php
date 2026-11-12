@@ -1,4 +1,5 @@
-{{-- Delete trigger for one list row; the page's single `admin/shared/RowDeleteDialog` island handles the click. --}}
+{{-- Delete trigger for one list row; the page's single `admin/shared/RowDeleteDialog` island handles the click.
+     Rendered disabled: the island enables the buttons once it listens, so a click is never silently lost. --}}
 @props(['kind', 'id', 'name'])
 @php
     $label = match ($kind) {
@@ -9,6 +10,7 @@
 @endphp
 <button
     type="button"
+    disabled
     data-row-delete="{{ $kind }}"
     data-id="{{ $id }}"
     data-name="{{ $name }}"

@@ -29,6 +29,10 @@
             open = true;
         }
         document.addEventListener('click', onClick);
+        // The server renders the triggers disabled; from here on a click reaches the listener above.
+        for (const button of document.querySelectorAll<HTMLButtonElement>(`button[${ROW_DELETE_ATTR}]`)) {
+            button.disabled = false;
+        }
         return () => document.removeEventListener('click', onClick);
     });
 
