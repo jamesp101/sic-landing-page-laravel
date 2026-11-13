@@ -2,14 +2,24 @@
 
 namespace App\Models;
 
+use App\Storage\FileOwnership;
+use App\Storage\OwnsFiles;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Department extends Model
+class Department extends Model implements OwnsFiles
 {
     protected $table = 'departments';
 
     protected $fillable = ['name', 'slug', 'description', 'hero_content', 'logo_path'];
+
+    public static function fileOwnership(): FileOwnership
+    {
+        return new FileOwnership(
+            columns: ['logo_path' => ['prefix' => 'departments', 'variants' => true]],
+            cascades: ['members', 'carouselItems', 'posts', 'downloads'],
+        );
+    }
 
     protected function casts(): array
     {

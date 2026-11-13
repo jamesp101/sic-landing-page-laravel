@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Admin\ActionField;
 use App\Admin\ActionInput;
 use App\Admin\DepartmentAccess;
 use App\Admin\Slug;
@@ -9,9 +10,9 @@ use App\Content\Content;
 use App\Content\ContentField;
 use App\Models\Post;
 use App\Storage\ImageFile;
+use App\Storage\ImageUpload;
 use App\Storage\Storage;
 use App\Storage\StoredFiles;
-use App\Support\Authz;
 use App\Support\Flash;
 use Closure;
 use Illuminate\Http\Request;
@@ -23,86 +24,48 @@ class PostsActions
 {
     private const POST_TYPES = ['article', 'event', 'announcement'];
 
-    private const TYPES = [
-        'title' => 'string', 'slug' => 'string', 'content' => 'text', 'type' => 'string',
-        'startDate' => 'string', 'endDate' => 'string', 'departmentId' => 'int',
-        'isFeatured' => 'bool', 'hideAuthor' => 'bool', 'highlightImage' => 'raw',
-    ];
-
+    #[Action(Access::User)]
     public function create(Request $request): array
     {
         $input = $this->input($request, false);
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         $departmentId = DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null);
         $slug = $this->resolveSlug($input);
 
-        $post = StoredFiles::commitWithFiles([
-            'files' => ['highlight' => $this->highlight($input)],
-            'run' => fn (array $keys) => Post::query()->create([
-                'title' => $input['title'],
-                'slug' => $slug,
-                'content' => $input['content'],
-                'search_text' => Content::searchTextOf($input['content']),
-                'type' => $input['type'],
-                'start_date' => $input['startDate'] ?? null,
-                'end_date' => $input['endDate'] ?? null,
-                'highlight_image_path' => $keys['highlight'] ?? null,
-                'department_id' => $departmentId,
-                'user_id' => $actor->id,
-                'is_featured' => $input['isFeatured'],
-                'hide_author' => $input['hideAuthor'],
-            ]),
-        ]);
+        $post = StoredFiles::save(
+            new Post,
+            $this->row($input, $departmentId, $slug) + ['user_id' => $actor->id],
+            ['highlight_image_path' => $this->highlight($input)],
+        );
         Flash::success('Post created successfully.');
 
         return ['id' => $post->id];
     }
 
+    #[Action(Access::User)]
     public function update(Request $request): array
     {
         $input = $this->input($request, true);
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         /** @var Post $post */
         $post = DepartmentAccess::loadScoped($actor, Post::class, $input['id']);
         $departmentId = DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null);
         $slug = $this->resolveSlug($input, $post->id);
-        $highlight = $this->highlight($input);
 
-        StoredFiles::commitWithFiles([
-            'files' => ['highlight' => $highlight],
-            'run' => function (array $keys) use ($post, $input, $slug, $departmentId) {
-                $data = [
-                    'title' => $input['title'],
-                    'slug' => $slug,
-                    'content' => $input['content'],
-                    'search_text' => Content::searchTextOf($input['content']),
-                    'type' => $input['type'],
-                    'start_date' => $input['startDate'] ?? null,
-                    'end_date' => $input['endDate'] ?? null,
-                    'department_id' => $departmentId,
-                    'is_featured' => $input['isFeatured'],
-                    'hide_author' => $input['hideAuthor'],
-                ];
-                if (($keys['highlight'] ?? null) !== null) {
-                    $data['highlight_image_path'] = $keys['highlight'];
-                }
-
-                return $post->update($data);
-            },
-            'stale' => [$highlight ? $post->highlight_image_path : null],
-        ]);
+        StoredFiles::save($post, $this->row($input, $departmentId, $slug), ['highlight_image_path' => $this->highlight($input)]);
         Flash::success('Post updated successfully.');
 
         return ['id' => $post->id];
     }
 
+    #[Action(Access::User)]
     public function delete(Request $request): array
     {
-        $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, ['id' => ActionField::id()]);
+        $actor = $request->user();
         /** @var Post $post */
         $post = DepartmentAccess::loadScoped($actor, Post::class, $input['id']);
-        StoredFiles::deleteWithFiles(fn () => $post->delete(), [$post->highlight_image_path]);
+        StoredFiles::delete($post);
         Flash::success('Post deleted successfully.');
 
         return ['id' => $input['id']];
@@ -116,51 +79,53 @@ class PostsActions
                 $fail('Enter a valid date.');
             }
         };
-        $rules = [
-            'title' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255'],
-            'content' => ContentField::rules(true),
-            'type' => ['required', Rule::in(self::POST_TYPES)],
-            'startDate' => ['nullable', 'string', $date()],
-            'endDate' => ['nullable', 'string', $date(), function (string $attribute, mixed $value, Closure $fail) use ($request): void {
+
+        return ActionInput::validate($request, [
+            'title' => ActionField::string(['required', 'string', 'max:255'], ['required' => 'The title is required.']),
+            'slug' => ActionField::string(['nullable', 'string', 'max:255']),
+            'content' => ActionField::text(ContentField::rules(true), ['required' => 'The content is required.']),
+            'type' => ActionField::string(['required', Rule::in(self::POST_TYPES)], ['required' => 'Choose a valid post type.', 'in' => 'Choose a valid post type.']),
+            'startDate' => ActionField::string(['nullable', 'string', $date()]),
+            'endDate' => ActionField::string(['nullable', 'string', $date(), function (string $attribute, mixed $value, Closure $fail) use ($request): void {
                 $start = $request->input('startDate');
                 $end = $value ? strtotime((string) $value) : false;
                 $begin = $start ? strtotime((string) $start) : false;
                 if ($end !== false && $begin !== false && $end < $begin) {
                     $fail('The end date must be on or after the start date.');
                 }
-            }],
-            'departmentId' => ['nullable', 'integer'],
-            'isFeatured' => ['required', 'boolean'],
-            'hideAuthor' => ['required', 'boolean'],
-            'highlightImage' => ['nullable', ...ImageFile::imageFile(Storage::limit('image'), 'highlight')],
-        ];
-        $types = self::TYPES;
-        if ($withId) {
-            $types['id'] = 'int';
-            $rules['id'] = ['required', 'integer'];
-        }
-
-        $input = ActionInput::validate($request, $types, $rules, [
-            'title.required' => 'The title is required.',
-            'content.required' => 'The content is required.',
-            'type.required' => 'Choose a valid post type.',
-            'type.in' => 'Choose a valid post type.',
-        ]);
-        // Block documents are stored in normalised form; Markdown passes through unchanged.
-        $input['content'] = Content::checkContent($input['content'])['value'];
-
-        return $input;
+            }]),
+            'departmentId' => ActionField::int(['nullable', 'integer']),
+            'isFeatured' => ActionField::bool(['required', 'boolean']),
+            'hideAuthor' => ActionField::bool(['required', 'boolean']),
+            'highlightImage' => ActionField::raw(['nullable', ...ImageFile::imageFile(Storage::limit('image'), 'highlight')]),
+        ] + ($withId ? ['id' => ActionField::id()] : []));
     }
 
-    /** @return array{prefix: string, file: mixed, variant: true}|null */
-    private function highlight(array $input): ?array
+    /** The Post columns of validated input, shared by create and update (the Highlight image goes through `highlight`). */
+    private function row(array $input, ?int $departmentId, string $slug): array
+    {
+        $content = Content::forStorage($input['content']);
+
+        return [
+            'title' => $input['title'],
+            'slug' => $slug,
+            'content' => $content->value,
+            'search_text' => $content->searchText,
+            'type' => $input['type'],
+            'start_date' => $input['startDate'] ?? null,
+            'end_date' => $input['endDate'] ?? null,
+            'department_id' => $departmentId,
+            'is_featured' => $input['isFeatured'],
+            'hide_author' => $input['hideAuthor'],
+        ];
+    }
+
+    /** The replacement Highlight image, or null to keep the current one. */
+    private function highlight(array $input): ?ImageUpload
     {
         $file = $input['highlightImage'] ?? null;
 
-        return $file instanceof UploadedFile
-            ? ['prefix' => 'posts', 'file' => ImageFile::upload($file, 'highlight'), 'variant' => true]
-            : null;
+        return $file instanceof UploadedFile ? ImageFile::upload($file, 'highlight') : null;
     }
 
     /** `slugify(slug ?? title)`; empty becomes `post`; `-1`, `-2`, … until unique (excluding the post itself). */

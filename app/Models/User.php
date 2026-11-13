@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Storage\FileOwnership;
+use App\Storage\OwnsFiles;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,7 +15,7 @@ use Illuminate\Notifications\Notifiable;
  * A person who signs in to the admin. `role` is `superadmin` or `department_user` (see App\Support\Authz).
  * The Password login is the bcrypt hash in `password`; write it only through App\Auth\PasswordLogin.
  */
-class User extends Authenticatable
+class User extends Authenticatable implements OwnsFiles
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
@@ -25,6 +27,12 @@ class User extends Authenticatable
     protected $fillable = ['name', 'email', 'email_verified', 'email_verified_at', 'image', 'role', 'department_id'];
 
     protected $hidden = ['password', 'remember_token'];
+
+    /** A User owns no file itself; the Highlight images of their Posts and their Downloads go with them. */
+    public static function fileOwnership(): FileOwnership
+    {
+        return new FileOwnership(cascades: ['posts', 'downloads']);
+    }
 
     protected function casts(): array
     {

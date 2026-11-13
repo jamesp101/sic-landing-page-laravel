@@ -151,7 +151,7 @@ An entry in the site header menu. It may hold one level of nested Navigation lin
 _Avoid_: menu item, nav item
 
 **Default menu**:
-The header menu of Home, Departments, News & Events, Downloads and Contact. Visitors see it while no Navigation links are stored, and a Superadmin can create it as Navigation links.
+The header menu of Home, Departments, News & Events, Downloads and Contact. Visitors see it while no Navigation links are stored, and a Superadmin can then create it as Navigation links, all at once or not at all.
 _Avoid_: fallback menu, standard nav
 
 ### Downloads

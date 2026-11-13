@@ -90,7 +90,7 @@ class VideoIntakeTest extends TestCase
         $user = $this->actingAsSuperadmin();
         Storage::putBytes(self::KEY, str_repeat('x', 42), 'video/mp4');
         PendingUploads::registerPendingUpload(self::KEY, $user->id);
-        $this->assertSame(['key' => self::KEY, 'size' => 42], VideoIntake::complete($user->id, self::KEY));
+        $this->assertSame(['key' => self::KEY, 'size' => 42], PendingUploads::claim(PendingUploads::VIDEO, $user->id, self::KEY));
         $this->assertFalse(PendingUploads::ownsPendingUpload(self::KEY, $user->id));
         $this->assertNotNull(Storage::head(self::KEY), 'the object is kept');
     }
@@ -100,7 +100,7 @@ class VideoIntakeTest extends TestCase
         $owner = $this->actingAsSuperadmin();
         $this->sparse(self::KEY, Storage::limit('video') + 1);
         PendingUploads::registerPendingUpload(self::KEY, $owner->id);
-        $this->assertSame('Invalid uploaded file.', $this->message(fn () => VideoIntake::complete($owner->id + 1, self::KEY)));
+        $this->assertSame('Invalid uploaded file.', $this->message(fn () => PendingUploads::claim(PendingUploads::VIDEO, $owner->id + 1, self::KEY)));
         $this->assertNotNull(Storage::head(self::KEY));
         $this->assertTrue(PendingUploads::ownsPendingUpload(self::KEY, $owner->id));
     }
@@ -108,15 +108,15 @@ class VideoIntakeTest extends TestCase
     public function test_complete_rejects_keys_the_server_did_not_issue(): void
     {
         $user = $this->actingAsSuperadmin();
-        $this->assertSame('Invalid uploaded file.', $this->message(fn () => VideoIntake::complete($user->id, 'videos/evil.mp4')));
-        $this->assertSame('Invalid uploaded file.', $this->message(fn () => VideoIntake::complete($user->id, 'downloads/'.str_repeat('a', 32).'.mp4')));
+        $this->assertSame('Invalid uploaded file.', $this->message(fn () => PendingUploads::claim(PendingUploads::VIDEO, $user->id, 'videos/evil.mp4')));
+        $this->assertSame('Invalid uploaded file.', $this->message(fn () => PendingUploads::claim(PendingUploads::VIDEO, $user->id, 'downloads/'.str_repeat('a', 32).'.mp4')));
     }
 
     public function test_complete_does_not_burn_the_claim_when_the_object_is_missing(): void
     {
         $user = $this->actingAsSuperadmin();
         PendingUploads::registerPendingUpload(self::KEY, $user->id);
-        $this->assertSame('The uploaded video was not found. Upload it again.', $this->message(fn () => VideoIntake::complete($user->id, self::KEY)));
+        $this->assertSame('The uploaded video was not found. Upload it again.', $this->message(fn () => PendingUploads::claim(PendingUploads::VIDEO, $user->id, self::KEY)));
         $this->assertTrue(PendingUploads::ownsPendingUpload(self::KEY, $user->id));
     }
 
@@ -125,7 +125,7 @@ class VideoIntakeTest extends TestCase
         $user = $this->actingAsSuperadmin();
         $this->sparse(self::KEY, Storage::limit('video') + 1);
         PendingUploads::registerPendingUpload(self::KEY, $user->id);
-        $this->assertSame(VideoIntake::VIDEO_TOO_LARGE, $this->message(fn () => VideoIntake::complete($user->id, self::KEY)));
+        $this->assertSame(VideoIntake::VIDEO_TOO_LARGE, $this->message(fn () => PendingUploads::claim(PendingUploads::VIDEO, $user->id, self::KEY)));
         $this->assertFalse(PendingUploads::ownsPendingUpload(self::KEY, $user->id));
         $this->assertNull(Storage::head(self::KEY));
     }
@@ -135,7 +135,7 @@ class VideoIntakeTest extends TestCase
         $user = $this->actingAsSuperadmin();
         Storage::putBytes(self::KEY, '', 'video/mp4');
         PendingUploads::registerPendingUpload(self::KEY, $user->id);
-        $this->assertSame('The uploaded video is empty.', $this->message(fn () => VideoIntake::complete($user->id, self::KEY)));
+        $this->assertSame('The uploaded video is empty.', $this->message(fn () => PendingUploads::claim(PendingUploads::VIDEO, $user->id, self::KEY)));
         $this->assertNull(Storage::head(self::KEY));
     }
 
@@ -144,8 +144,8 @@ class VideoIntakeTest extends TestCase
         $user = $this->actingAsSuperadmin();
         Storage::putBytes(self::KEY, 'x', 'video/mp4');
         PendingUploads::registerPendingUpload(self::KEY, $user->id);
-        VideoIntake::complete($user->id, self::KEY);
-        $this->assertSame('Invalid uploaded file.', $this->message(fn () => VideoIntake::complete($user->id, self::KEY)));
+        PendingUploads::claim(PendingUploads::VIDEO, $user->id, self::KEY);
+        $this->assertSame('Invalid uploaded file.', $this->message(fn () => PendingUploads::claim(PendingUploads::VIDEO, $user->id, self::KEY)));
         $this->assertNotNull(Storage::head(self::KEY));
     }
 

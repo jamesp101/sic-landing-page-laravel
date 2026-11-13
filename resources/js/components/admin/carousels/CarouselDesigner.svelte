@@ -42,6 +42,7 @@
     import { postImage } from '../editor/upload';
     import {
         append,
+        type DepartmentField,
         inputClass,
         parseActionError,
         primaryButtonClass,
@@ -56,22 +57,16 @@
 
     let {
         slides,
-        departments,
+        departmentField,
         initialId,
-        superadmin,
-        lockedDepartmentId,
         scopeName = null,
-        defaultDepartmentId = null,
     }: {
         slides: DesignerSlide[];
-        departments: { id: number; name: string }[];
+        /** `value` is the Department a new slide starts in (null = Main site). */
+        departmentField: DepartmentField;
         initialId: number | null;
-        superadmin: boolean;
-        lockedDepartmentId: number | null;
         /** Current admin scope label (superadmins), shown under the title. */
         scopeName?: string | null;
-        /** Department preselected for a new slide (the scoped department; null = main page). */
-        defaultDepartmentId?: number | null;
     } = $props();
 
     /** Runs an action and hands the session its data, or the parsed error. */
@@ -111,7 +106,7 @@
     const session = new SlideDesignerSession({
         slides: untrack(() => slides),
         initialId: untrack(() => initialId),
-        newSlideDepartmentId: untrack(() => lockedDepartmentId ?? defaultDepartmentId),
+        newSlideDepartmentId: untrack(() => departmentField.value),
         port,
         objectUrls: { create: (file) => URL.createObjectURL(file), revoke: (url) => URL.revokeObjectURL(url) },
         onchange: () => (designer = session.view),
@@ -362,8 +357,7 @@
             <SlideStrip
                 slides={designer.strip}
                 {activeKey}
-                {departments}
-                {superadmin}
+                {departmentField}
                 {busy}
                 onselect={selectSlide}
                 onadd={addSlide}
@@ -576,8 +570,7 @@
                                 imageError={active.imageError}
                                 showOnMain={active.showOnMain}
                                 departmentId={active.departmentId}
-                                {departments}
-                                {superadmin}
+                                {departmentField}
                                 {busy}
                                 onplacement={(patch) => placement(active.key, patch)}
                                 video={active.video}

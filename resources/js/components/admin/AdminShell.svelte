@@ -7,11 +7,11 @@
     import AppSidebar from '@/components/AppSidebar.svelte';
     import AppSidebarHeader from '@/components/AppSidebarHeader.svelte';
     import { Toaster } from '@/components/ui/sonner';
-    import type { AdminUser, BreadcrumbItem, ScopeOption, ScopeSummary } from './types';
+    import type { AdminUser, BreadcrumbItem, NavItem, ScopeOption, ScopeSummary } from './types';
 
     let {
         user,
-        currentPath,
+        navItems,
         breadcrumbs = [],
         sidebarOpen = true,
         scope,
@@ -21,7 +21,7 @@
         children,
     }: {
         user: AdminUser;
-        currentPath: string;
+        navItems: NavItem[];
         breadcrumbs?: BreadcrumbItem[];
         sidebarOpen?: boolean;
         scope: ScopeSummary;
@@ -43,7 +43,7 @@
     Skip to main content
 </a>
 <AppShell {sidebarOpen}>
-    <AppSidebar {user} {currentPath} {scope} {scopeDepartments} {scopeLocked} />
+    <AppSidebar {user} {navItems} {scope} {scopeDepartments} {scopeLocked} />
     <AppContent class="min-w-0 overflow-x-clip">
         <AppSidebarHeader {breadcrumbs} />
         <main id="main" class="flex flex-1 flex-col">

@@ -3,7 +3,7 @@
     import { parseVideoUrl } from '@/lib/blocks/urls';
     import { uploadVideo } from '../editor/upload';
     import ImageField from '../shared/ImageField.svelte';
-    import { inputClass, secondaryButtonClass } from '../shared/form-utils';
+    import { inputClass, secondaryButtonClass, type DepartmentField } from '../shared/form-utils';
 
     let {
         file = $bindable(null),
@@ -11,8 +11,7 @@
         imageError = '',
         showOnMain,
         departmentId,
-        departments,
-        superadmin,
+        departmentField,
         busy = false,
         onplacement,
         video,
@@ -28,8 +27,7 @@
         imageError?: string;
         showOnMain: boolean;
         departmentId: number | null;
-        departments: { id: number; name: string }[];
-        superadmin: boolean;
+        departmentField: DepartmentField;
         busy?: boolean;
         onplacement: (patch: { showOnMain?: boolean; departmentId?: number | null }) => void;
         /** Background video: an uploaded file's URL or a YouTube link; '' = none. The photo stays the poster. */
@@ -277,12 +275,12 @@
                 id="slide-department"
                 class={inputClass}
                 value={departmentId === null ? '' : String(departmentId)}
-                disabled={!superadmin || busy}
+                disabled={departmentField.locked || busy}
                 onchange={(event) =>
                     onplacement({ departmentId: event.currentTarget.value ? Number(event.currentTarget.value) : null })}
             >
-                {#if superadmin}<option value="">None (main page only)</option>{/if}
-                {#each departments as department (department.id)}
+                {#if departmentField.allowMain}<option value="">None (main page only)</option>{/if}
+                {#each departmentField.options as department (department.id)}
                     <option value={String(department.id)}>{department.name}</option>
                 {/each}
             </select>

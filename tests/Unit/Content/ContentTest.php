@@ -38,7 +38,7 @@ final class ContentTest extends TestCase
 
         $this->assertSame($format, $parsed->format);
         $this->assertSame($text, $parsed->text());
-        $this->assertSame($text, Content::searchTextOf($content));
+        $this->assertSame($text, Content::parseContent($content)->text());
         $this->assertSame($parsed->html(), Content::renderContent($content));
         // Nothing readable: no text and no HTML, from the same decision.
         $this->assertSame($text === '', $parsed->html() === '');
@@ -118,11 +118,36 @@ final class ContentTest extends TestCase
         $this->assertFalse(Content::hasAlbum(Content::renderContent(self::VALID)));
     }
 
-    public function test_search_text_is_the_plain_text(): void
+    public function test_for_storage_gives_the_normalised_value_with_its_search_text_from_one_parse(): void
     {
-        $this->assertSame('Welcome Hello', Content::searchTextOf(self::VALID));
-        $this->assertSame('Title Some text', Content::searchTextOf("# Title\n\nSome **text**"));
-        $this->assertSame('', Content::searchTextOf(null));
+        $stored = Content::forStorage(self::VALID);
+        $this->assertSame('Welcome Hello', $stored->searchText);
+        $this->assertSame(Content::checkContent(self::VALID)['value'], $stored->value);
+
+        $markdown = Content::forStorage("# Title\n\nSome **text**");
+        $this->assertSame("# Title\n\nSome **text**", $markdown->value);
+        $this->assertSame('Title Some text', $markdown->searchText);
+
+        $this->assertSame('', Content::forStorage(null)->value);
+        $this->assertSame('', Content::forStorage(null)->searchText);
+        $this->assertSame('', Content::forStorage('{"type":"sic-blocks","version":1,"blocks":[]}')->value);
+    }
+
+    public function test_for_storage_search_text_is_stable_under_normalising_again(): void
+    {
+        $input = '{"type":"sic-blocks","version":1,"blocks":[{"id":"a1","type":"paragraph","props":{"text":"Hi","evil":"<script>"}}]}';
+        $first = Content::forStorage($input);
+
+        $this->assertSame($first->searchText, Content::forStorage($first->value)->searchText);
+        $this->assertSame($first->value, Content::forStorage($first->value)->value);
+    }
+
+    public function test_for_storage_of_an_invalid_document_stores_nothing(): void
+    {
+        $stored = Content::forStorage(substr(self::VALID, 0, 60));
+
+        $this->assertSame('', $stored->value);
+        $this->assertSame('', $stored->searchText);
     }
 
     public function test_invalid_utf8_is_scrubbed_instead_of_breaking_the_output(): void

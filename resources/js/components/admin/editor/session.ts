@@ -9,7 +9,7 @@
 import { createDocument, findBlock, serializeDocument, updateBlock } from '@/lib/blocks/document';
 import type { Edit } from '@/lib/blocks/edit';
 import type { Block } from '@/lib/blocks/types';
-import { History } from './history';
+import { canRedo, canUndo, commit, createHistory, redo, undo, type UndoHistory } from '@/lib/undo-history';
 
 export interface SessionView {
     blocks: Block[];
@@ -24,7 +24,7 @@ export class EditorSession {
     #blocks: Block[];
     #selectedId: string | null = null;
     #revision = 0;
-    #history: History<Block[]>;
+    #history: UndoHistory<Block[]>;
     #view: SessionView;
 
     /**
@@ -38,7 +38,7 @@ export class EditorSession {
         private readonly clock: () => number = Date.now,
     ) {
         this.#blocks = initialBlocks;
-        this.#history = new History(initialBlocks);
+        this.#history = createHistory(initialBlocks);
         this.#view = this.#snapshot();
     }
 
@@ -64,7 +64,7 @@ export class EditorSession {
     /** Applies an edit as one undo step (`key`: consecutive edits with the same key within a short window merge). */
     apply(edit: Edit, key: string | null = null): void {
         if (edit.blocks === this.#blocks) return;
-        this.#history.push(edit.blocks, key, this.clock());
+        this.#history = commit(this.#history, edit.blocks, key, this.clock());
         this.#commit(edit.blocks, edit.select);
     }
 
@@ -75,11 +75,11 @@ export class EditorSession {
     }
 
     undo(): void {
-        this.#travel(this.#history.undo());
+        this.#travel(undo);
     }
 
     redo(): void {
-        this.#travel(this.#history.redo());
+        this.#travel(redo);
     }
 
     /** Makes the Layers list rebuild from the blocks (e.g. after a rejected drop). */
@@ -88,8 +88,11 @@ export class EditorSession {
         this.#publish();
     }
 
-    #travel(snapshot: Block[] | null): void {
-        if (snapshot) this.#commit(snapshot);
+    #travel(change: (history: UndoHistory<Block[]>) => UndoHistory<Block[]>): void {
+        const next = change(this.#history);
+        if (next === this.#history) return;
+        this.#history = next;
+        this.#commit(next.present);
     }
 
     #commit(blocks: Block[], select?: string | null): void {
@@ -105,8 +108,8 @@ export class EditorSession {
             blocks: this.#blocks,
             selectedId: this.#selectedId,
             revision: this.#revision,
-            canUndo: this.#history.canUndo,
-            canRedo: this.#history.canRedo,
+            canUndo: canUndo(this.#history),
+            canRedo: canRedo(this.#history),
         };
     }
 

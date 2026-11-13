@@ -4,5 +4,5 @@
     :section="['title' => 'Hero Sections', 'href' => '/admin/hero-sections']"
     crumb="New"
     island="admin/hero-sections/HeroSectionForm"
-    :props="['departments' => $departments, 'isSuperAdmin' => $isSuperAdmin, 'defaultDepartmentId' => $defaultDepartmentId]"
+    :props="['departmentField' => $departmentField]"
 />

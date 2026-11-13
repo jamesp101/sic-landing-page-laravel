@@ -7,7 +7,7 @@ use Illuminate\Http\UploadedFile;
 /**
  * An uploaded image that passed the cheap checks (declared type, size) and still has to become a WebP for
  * `$target` (an `ImageTargets` name). Conversion decodes the file, so it only runs after the sign-in check: in
- * `StoredFiles::commitWithFiles` and the image intake (`ImageFile::storedImage`), never while the input is validated.
+ * `StoredFiles::save` and the image intake (`ImageFile::storedImage`), never while the input is validated.
  */
 final class ImageUpload extends UploadedFile
 {

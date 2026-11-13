@@ -2,7 +2,6 @@
  * View-model shapes returned by the server queries and consumed by
  * public components. URLs are already resolved through storage.publicUrl.
  */
-import type { Layer as OverlayLayer, SlideMobile } from './carousel-overlay';
 
 export type PostType = 'article' | 'event' | 'announcement';
 export const POST_TYPES: readonly PostType[] = ['article', 'event', 'announcement'];
@@ -37,12 +36,22 @@ export interface CarouselSlide {
     imageUrl: string;
     /** Smaller version of `imageUrl` (960 px wide), when the photo has one; the server falls back to the original if it is missing. */
     imageMediumUrl: string | null;
-    /** Designer layers; a legacy slide (title / subtitle / link only) arrives already converted to layers. */
-    layers: OverlayLayer[];
-    /** Phone settings of the slide (photo focal point); null = centred. */
-    mobile: SlideMobile | null;
+    /** Every Layer already presented by the server (`Layout::stage`, Mobile layout included), in reading order. */
+    stage: LayerElement[];
+    /** Where the photo is centred when cropped to the phone frame, in percent. */
+    focus: { x: number; y: number };
     /** Background video behind the layers; the photo stays the poster. */
     video: SlideVideoView | null;
+}
+
+/** One Layer of a public Slide as the element to print (`Layout::layerElement`): tag, attributes and text are decided by the server. */
+export interface LayerElement {
+    id: string;
+    tag: 'h2' | 'p' | 'a' | 'span' | 'div' | 'img';
+    attrs: Record<string, string>;
+    text: string | null;
+    /** A button's trailing arrow. */
+    arrow: boolean;
 }
 
 /** An uploaded file (public URL and MIME type) or a YouTube video (id). */

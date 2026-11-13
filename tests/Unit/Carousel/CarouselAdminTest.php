@@ -6,6 +6,7 @@ use App\Carousel\CarouselAdmin as Admin;
 use App\Carousel\Overlay;
 use App\Models\CarouselItem;
 use App\Models\Department;
+use App\Models\Member;
 use App\Models\Post;
 use App\Models\Setting;
 use App\Models\User;
@@ -117,6 +118,15 @@ class CarouselAdminTest extends TestCase
         $this->assertFalse(Admin::videoUsedElsewhere($key));
         Post::query()->forceCreate(['title' => 'P', 'slug' => 'p', 'content' => "see /storage/{$key}", 'type' => 'article', 'user_id' => User::factory()->create()->id]);
         $this->assertTrue(Admin::videoUsedElsewhere($key));
+    }
+
+    public function test_a_video_a_table_outside_the_old_hard_coded_list_references_cannot_be_adopted(): void
+    {
+        $key = $this->stored();
+        $department = Department::query()->forceCreate(['name' => 'D', 'slug' => 'd']);
+        Member::query()->forceCreate(['name' => 'M', 'role' => 'R', 'department_id' => $department->id, 'image_path' => $key]);
+        $this->assertTrue(Admin::videoUsedElsewhere($key));
+        $this->assertMatchesRegularExpression('/already used/', $this->claimError("/storage/{$key}"));
     }
 
     public function test_no_video_and_a_youtube_link_need_no_file(): void

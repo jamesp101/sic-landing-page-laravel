@@ -2,9 +2,22 @@
     import { ChevronLeft, ChevronRight, Pause, Play } from '@lucide/svelte';
     import { onMount, tick } from 'svelte';
     import { SvelteSet } from 'svelte/reactivity';
-    import { heroImageSizes } from '@/lib/carousel-layout';
-    import { readingOrder } from '@/lib/carousel-overlay';
-    import { resolveMobile, slideFocus } from '@/lib/carousel-overlay-mobile';
+    import { heroImageSizes } from '@/lib/carousel-frame';
+    import {
+        autoplay as isAutoplaying,
+        canAutoplay as canAutoplayNow,
+        classifySwipe,
+        isMultiple,
+        keyTarget,
+        preloadWindow,
+        showPill as shouldShowPill,
+        SLIDE_MS,
+        startsSwipe,
+        videoAllowed as isVideoAllowed,
+        videoRunning as isVideoRunning,
+        wrapIndex,
+        type PlaybackInputs,
+    } from '@/lib/carousel-playback';
     import type { CarouselSlide } from '@/lib/content-types';
     import SlideLayer from './SlideLayer.svelte';
     import SlideVideo from './SlideVideo.svelte';
@@ -22,11 +35,6 @@
         /** Home height (600px) vs department height (450px). */
         tall?: boolean;
     } = $props();
-
-    /** Time each slide stays up while autoplaying; the active dot's progress bar runs for this long. */
-    const SLIDE_MS = 7000;
-    /** Minimum horizontal travel for a touch swipe. */
-    const SWIPE_PX = 48;
 
     let root: HTMLElement;
     const slideEls: HTMLElement[] = $state([]);
@@ -46,13 +54,24 @@
     /** Slides whose photo may load besides the first: the current slide and its neighbours. */
     const loaded = new SvelteSet<CarouselSlide['id']>();
 
-    const multiple = $derived(slides.length > 1);
-    const canAutoplay = $derived(mounted && multiple && !reducedMotion);
-    /** Background videos only start for visitors who allow motion and data use; everyone else keeps the photo (the poster). */
-    const videoAllowed = $derived(mounted && !reducedMotion && !saveData);
-    const videoRunning = $derived(videoAllowed && !userPaused && inView && pageVisible);
-    const showPill = $derived(mounted && (multiple || (videoAllowed && slides.some((slide) => slide.video))));
-    const autoplay = $derived(canAutoplay && !userPaused && !hovering && !focused && inView && pageVisible);
+    const playback = $derived<PlaybackInputs>({
+        mounted,
+        slideCount: slides.length,
+        hasVideo: slides.some((slide) => slide.video),
+        reducedMotion,
+        saveData,
+        userPaused,
+        hovering,
+        focused,
+        inView,
+        pageVisible,
+    });
+    const multiple = $derived(isMultiple(slides.length));
+    const canAutoplay = $derived(canAutoplayNow(playback));
+    const videoAllowed = $derived(isVideoAllowed(playback));
+    const videoRunning = $derived(isVideoRunning(playback));
+    const showPill = $derived(shouldShowPill(playback));
+    const autoplay = $derived(isAutoplaying(playback));
     const pad = (n: number) => String(n).padStart(2, '0');
 
     onMount(() => {
@@ -85,11 +104,11 @@
     // Fetch the photos around the current slide ahead of time instead of all of them at page load.
     $effect(() => {
         if (!mounted) return;
-        for (const offset of [0, 1, -1]) loaded.add(slides[(current + offset + slides.length) % slides.length].id);
+        for (const index of preloadWindow(current, slides.length)) loaded.add(slides[index].id);
     });
 
     function go(index: number) {
-        const target = (index + slides.length) % slides.length;
+        const target = wrapIndex(index, slides.length);
         if (target === current) return;
         // The old slide turns inert, which drops focus; carry keyboard users to the new slide.
         const focusInside = slideEls[current]?.contains(document.activeElement) ?? false;
@@ -101,8 +120,7 @@
     const prev = () => go(current - 1);
 
     function onkeydown(event: KeyboardEvent) {
-        if (!multiple || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-        const target = { ArrowLeft: current - 1, ArrowRight: current + 1, Home: 0, End: slides.length - 1 }[event.key];
+        const target = keyTarget(event.key, event, current, slides.length);
         if (target === undefined) return;
         event.preventDefault();
         go(target);
@@ -111,17 +129,15 @@
     // Touch swipe. `touch-action: pan-y` leaves vertical scrolling to the browser.
     let swipe: { id: number; x: number; y: number } | null = null;
     function onpointerdown(event: PointerEvent) {
-        if (!multiple || event.pointerType === 'mouse' || !event.isPrimary) return;
+        if (!startsSwipe(slides.length, event.pointerType, event.isPrimary)) return;
         swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };
     }
     function onpointerup(event: PointerEvent) {
         if (!swipe || event.pointerId !== swipe.id) return;
-        const dx = event.clientX - swipe.x;
-        const dy = event.clientY - swipe.y;
+        const direction = classifySwipe(event.clientX - swipe.x, event.clientY - swipe.y);
         swipe = null;
-        if (Math.abs(dx) < SWIPE_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
-        if (dx < 0) next();
-        else prev();
+        if (direction === 'next') next();
+        else if (direction === 'previous') prev();
     }
 
     const arrow =
@@ -147,7 +163,6 @@
 
     <div aria-live={autoplay ? 'off' : 'polite'} class="h-full">
         {#each slides as slide, index (slide.id)}
-            {@const phone = resolveMobile(slide.layers)}
             <div
                 bind:this={slideEls[index]}
                 role="group"
@@ -160,8 +175,8 @@
                     ? 'z-10 opacity-100'
                     : 'z-0 opacity-0'}"
                 class:is-active={index === current}
-                style:--fx="{slideFocus(slide.mobile).x}%"
-                style:--fy="{slideFocus(slide.mobile).y}%"
+                style:--fx="{slide.focus.x}%"
+                style:--fy="{slide.focus.y}%"
             >
                 <img
                     src={index === 0 || loaded.has(slide.id) ? slide.imageUrl : undefined}
@@ -188,8 +203,8 @@
                 ></div>
                 <!-- Real, server-rendered text, links and images positioned over the picture. -->
                 <div class="slide-stage rise">
-                    {#each readingOrder(slide.layers) as { layer, z } (layer.id)}
-                        <SlideLayer {layer} {z} box={phone.get(layer.id) ?? null} />
+                    {#each slide.stage as element (element.id)}
+                        <SlideLayer {element} />
                     {/each}
                 </div>
             </div>

@@ -33,7 +33,7 @@ final class ContentParityTest extends FixtureTestCase
         $this->assertSame($case['text'], $parsed->text());
         $this->assertSame($case['excerpt'], $parsed->excerpt());
         $this->assertSame($case['check'], $parsed->check());
-        $this->assertSame($case['searchText'], Content::searchTextOf($input));
+        $this->assertSame($case['searchText'], $parsed->text());
         $this->assertSame($case['hasAlbum'], Content::hasAlbum($parsed->html()));
         $this->assertSame($case['html'], Content::renderContent($input));
     }

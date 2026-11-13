@@ -1,11 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import {
-    heroImageSizes,
-    HERO_PHONE_IMAGE_WIDTH,
-    layerPresentation,
-    type LayerPresentation,
-    type SlideMode,
-} from '../carousel-layout';
+import { heroImageSizes, HERO_PHONE_IMAGE_WIDTH } from '../carousel-frame';
+import { layerPresentation, type LayerPresentation, type SlideMode } from '../carousel-layout';
 import {
     legacyFields,
     legacyLayers,
@@ -47,10 +42,10 @@ interface OverlayFixture {
 }
 interface PresentationCase {
     id: string;
-    mode: SlideMode;
+    mode: SlideMode | 'public';
     z: number;
     box: MobileBox | null;
-    out: LayerPresentation;
+    out: LayerPresentation & { phoneClass: string };
 }
 interface LayerSet {
     layers: Layer[];
@@ -66,7 +61,8 @@ interface LayoutFixture {
 interface SlideView {
     row: Parameters<typeof slideDocument>[0] & { id: number };
     designer: { layers: Layer[]; mobile: SlideMobile | null };
-    public: { layers: Layer[]; mobile: SlideMobile | null };
+    /** The public Slide's `stage` (Layers presented by `Layout::stage`) is PHP-only; only the focal point is shared. */
+    public: { focus: { x: number; y: number } };
 }
 
 // Mirrors tests/Unit/Carousel/OverlayTest.php.
@@ -120,8 +116,12 @@ describe('layout.json', () => {
         test('layer presentations', () => {
             const layers = new Map(set.layers.map((l): [string, Layer] => [l.id, l]));
             expect(set.presentations).toHaveLength(set.layers.length * 3);
-            for (const c of set.presentations) {
-                expect(layerPresentation(layers.get(c.id)!, c.z, c.box, c.mode), `${c.id} ${c.mode}`).toEqual(c.out);
+            // `public` presentations are PHP-only (`Layout::stage`); the designer previews are shared. `phoneClass` is public-only.
+            for (const { mode, ...c } of set.presentations) {
+                if (mode === 'public') continue;
+                const { phoneClass, ...out } = c.out;
+                expect(phoneClass).toBe('');
+                expect(layerPresentation(layers.get(c.id)!, c.z, c.box, mode), `${c.id} ${mode}`).toEqual(out);
             }
         });
     });
@@ -152,7 +152,6 @@ describe('slides.json (pure part: slideDocument)', () => {
         const doc = slideDocument(view.row);
         expect(doc.layers).toEqual(view.designer.layers);
         expect(doc.mobile).toEqual(view.designer.mobile);
-        expect(doc.layers).toEqual(view.public.layers);
-        expect(doc.mobile).toEqual(view.public.mobile);
+        expect(slideFocus(doc.mobile)).toEqual(view.public.focus);
     });
 });

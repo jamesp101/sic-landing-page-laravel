@@ -2,6 +2,7 @@
 
 namespace App\Http;
 
+use App\Support\ActionErrorResponse;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 
@@ -34,9 +35,6 @@ final class RequestPolicyRules
         '#^/reset-password$#',
         '#^/csrf-token$#',
     ];
-
-    /** Actions a signed-out visitor may call; every other action needs a session. */
-    public const PUBLIC_ACTIONS = ['contact.send', 'auth.login', 'auth.forgotPassword', 'auth.resetPassword'];
 
     private const ACTION_RPC_PREFIX = '/_actions/';
 
@@ -116,8 +114,12 @@ final class RequestPolicyRules
     /**
      * True for an action call from a signed-out visitor that is not a public action. The middleware answers it
      * before the action runs, so anonymous clients cannot make the server buffer or parse uploads.
+     * `$isPublicAction` (action name → bool) is the actions' own declaration (`ActionRegistry::isPublic`); it is
+     * only called for an action path.
+     *
+     * @param  callable(string): bool  $isPublicAction
      */
-    public static function rejectsAnonymousAction(string $method, string $url, bool $signedIn): bool
+    public static function rejectsAnonymousAction(string $method, string $url, bool $signedIn, callable $isPublicAction): bool
     {
         if ($signedIn) {
             return false;
@@ -128,7 +130,7 @@ final class RequestPolicyRules
         }
         $name = preg_replace('#/$#', '', substr($pathname, strlen(self::ACTION_RPC_PREFIX)));
 
-        return ! in_array($name, self::PUBLIC_ACTIONS, true);
+        return ! $isPublicAction($name);
     }
 
     /** Weak match of one ETag against an `If-None-Match` value (a list; `*` matches anything). */
@@ -151,7 +153,7 @@ final class RequestPolicyRules
     /** The 401 `rejectsAnonymousAction` is answered with: the envelope the action client turns into an `ActionError`. */
     public static function anonymousActionResponse(): JsonResponse
     {
-        return new JsonResponse(['error' => ['type' => 'ActionError', 'code' => 'UNAUTHORIZED', 'message' => 'Sign in required.']], 401);
+        return ActionErrorResponse::unauthorized();
     }
 
     /**

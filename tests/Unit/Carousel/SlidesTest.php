@@ -96,7 +96,8 @@ class SlidesTest extends TestCase
 
         foreach ($fixtures->views as $index => $view) {
             $this->assertEquals($view->designer, self::wire(Slides::toDesignerSlide($rows[$index])), "designer slide {$view->row->id}");
-            $this->assertEquals($view->public, self::wire($public[$index]), "public slide {$view->row->id}");
+            // The presented Layers (`stage`) only exist in PHP; LayoutTest pins them.
+            $this->assertEquals($view->public, self::wire(array_diff_key($public[$index], ['stage' => true])), "public slide {$view->row->id}");
         }
     }
 

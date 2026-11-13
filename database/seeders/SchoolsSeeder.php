@@ -75,7 +75,7 @@ class SchoolsSeeder extends Seeder
                         'title' => $title,
                         'slug' => $school['slug'].'-'.Slug::slugify($title),
                         'content' => $content,
-                        'search_text' => Content::searchTextOf($content),
+                        'search_text' => Content::forStorage($content)->searchText,
                         'type' => $type,
                         'start_date' => $startDate,
                         'end_date' => $startDate?->copy()->addHours(4),

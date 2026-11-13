@@ -417,6 +417,12 @@ const SUPERADMIN_ONLY: Omit<Case, 'status'>[] = [
         watch: () => ['/admin/navlinks'],
     },
     {
+        name: 'navlinks.useDefaultMenu',
+        action: 'navlinks.useDefaultMenu',
+        input: () => ({ json: {} }),
+        watch: () => ['/admin/navlinks'],
+    },
+    {
         name: 'settings.updateLanding',
         action: 'settings.updateLanding',
         input: () => ({ json: { welcomeHeroContent: HIJACK } }),
@@ -445,23 +451,31 @@ const SELF_SERVICE = [
     'auth.logout',
     'auth.sendVerificationEmail',
 ];
-/** Keep in step with `ActionController::PUBLIC`. */
-const PUBLIC_ACTIONS = ['contact.send', 'auth.login', 'auth.forgotPassword', 'auth.resetPassword'];
+type Access = 'Public' | 'User' | 'Superadmin';
 
-/** `module.action` of every public action method in `app/Actions/<Module>Actions.php` (what `ActionController` dispatches to). */
-function definedActions(): string[] {
+/**
+ * `module.action` → the access declared with `#[Action(Access::…)]` (undefined when missing) of every public action
+ * method in `app/Actions/<Module>Actions.php` (what `ActionController` dispatches to). The declarations are the
+ * only list of public actions.
+ */
+function declaredActions(): Map<string, Access | undefined> {
     const dir = path.resolve('app/Actions');
-    const found: string[] = [];
+    const found = new Map<string, Access | undefined>();
     for (const file of fs.readdirSync(dir)) {
         const module = file.match(/^(\w+)Actions\.php$/)?.[1];
         if (!module) continue;
         const source = fs.readFileSync(path.join(dir, file), 'utf8');
-        for (const match of source.matchAll(/^ {4}public function (?!__)(\w+)\(/gm)) {
-            found.push(`${module[0].toLowerCase()}${module.slice(1)}.${match[1]}`);
+        for (const match of source.matchAll(
+            /^ {4}(?:#\[Action\(Access::(\w+)\)\]\n {4})?public function (?!__)(\w+)\(/gm,
+        )) {
+            found.set(`${module[0].toLowerCase()}${module.slice(1)}.${match[2]}`, match[1] as Access | undefined);
         }
     }
     return found;
 }
+
+const DECLARED = declaredActions();
+const PUBLIC_ACTIONS = [...DECLARED].filter(([, access]) => access === 'Public').map(([name]) => name);
 
 const CREATES = ['posts.create', 'heroSections.create', 'carousels.create', 'downloads.create', 'directories.create'];
 const ALL_ACTIONS = [
@@ -476,7 +490,16 @@ const ALL_ACTIONS = [
 
 test.describe('coverage', () => {
     test('this spec classifies every action in app/Actions and nothing else', () => {
-        expect(definedActions().sort()).toEqual([...ALL_ACTIONS].sort());
+        expect([...DECLARED.keys()].sort()).toEqual([...ALL_ACTIONS].sort());
+    });
+
+    test('every action method declares its access', () => {
+        expect([...DECLARED].filter(([, access]) => access === undefined).map(([name]) => name)).toEqual([]);
+    });
+
+    test('the Superadmin-only cases are exactly the actions declared Superadmin', () => {
+        const declared = [...DECLARED].filter(([, access]) => access === 'Superadmin').map(([name]) => name);
+        expect(SUPERADMIN_ONLY.map((c) => c.action).sort()).toEqual(declared.sort());
     });
 });
 

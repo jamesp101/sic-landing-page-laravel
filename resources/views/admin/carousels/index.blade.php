@@ -3,12 +3,9 @@
         name="admin/carousels/CarouselDesigner"
         :props="[
             'slides' => $slides,
-            'departments' => $departments,
+            'departmentField' => $departmentField,
             'initialId' => $initialId,
             'scopeName' => $scopeName,
-            'defaultDepartmentId' => $defaultDepartmentId,
-            'superadmin' => $superadmin,
-            'lockedDepartmentId' => $lockedDepartmentId,
         ]"
     />
 </x-layouts.app>

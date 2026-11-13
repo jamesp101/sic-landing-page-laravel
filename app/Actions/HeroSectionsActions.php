@@ -2,22 +2,23 @@
 
 namespace App\Actions;
 
+use App\Admin\ActionField;
 use App\Admin\ActionInput;
 use App\Admin\DepartmentAccess;
 use App\Content\Content;
 use App\Content\ContentField;
 use App\Models\HeroSection;
-use App\Support\Authz;
 use App\Support\Flash;
 use Illuminate\Http\Request;
 
 /** `heroSections.*` actions (JSON). */
 class HeroSectionsActions
 {
+    #[Action(Access::User)]
     public function create(Request $request): array
     {
         $input = $this->input($request, false);
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         $departmentId = DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null);
         $section = HeroSection::query()->create($this->data($input) + ['department_id' => $departmentId]);
         Flash::success('Hero section created successfully.');
@@ -25,10 +26,11 @@ class HeroSectionsActions
         return ['id' => $section->id];
     }
 
+    #[Action(Access::User)]
     public function update(Request $request): array
     {
         $input = $this->input($request, true);
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         /** @var HeroSection $section */
         $section = DepartmentAccess::loadScoped($actor, HeroSection::class, $input['id']);
         $departmentId = DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null);
@@ -38,10 +40,11 @@ class HeroSectionsActions
         return ['id' => $section->id];
     }
 
+    #[Action(Access::User)]
     public function delete(Request $request): array
     {
-        $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, ['id' => ActionField::id()]);
+        $actor = $request->user();
         /** @var HeroSection $section */
         $section = DepartmentAccess::loadScoped($actor, HeroSection::class, $input['id']);
         $section->delete();
@@ -52,34 +55,23 @@ class HeroSectionsActions
 
     private function input(Request $request, bool $withId): array
     {
-        $types = ['title' => 'string', 'content' => 'text', 'order' => 'int', 'isActive' => 'bool', 'departmentId' => 'int'];
-        $rules = [
-            'title' => ['nullable', 'string', 'max:255'],
-            'content' => ContentField::rules(true),
-            'order' => ['required', 'integer'],
-            'isActive' => ['required', 'boolean'],
-            'departmentId' => ['nullable', 'integer'],
-        ];
-        if ($withId) {
-            $types['id'] = 'int';
-            $rules['id'] = ['required', 'integer'];
-        }
-        $input = ActionInput::validate($request, $types, $rules, [
-            'content.required' => 'The content is required.',
-            'order.required' => 'The order must be a whole number.',
-            'order.integer' => 'The order must be a whole number.',
-        ]);
-        $input['content'] = Content::checkContent($input['content'])['value'];
-
-        return $input;
+        return ActionInput::validate($request, [
+            'title' => ActionField::string(['nullable', 'string', 'max:255']),
+            'content' => ActionField::text(ContentField::rules(true), ['required' => 'The content is required.']),
+            'order' => ActionField::int(['required', 'integer'], ['required' => 'The order must be a whole number.', 'integer' => 'The order must be a whole number.']),
+            'isActive' => ActionField::bool(['required', 'boolean']),
+            'departmentId' => ActionField::int(['nullable', 'integer']),
+        ] + ($withId ? ['id' => ActionField::id()] : []));
     }
 
     private function data(array $input): array
     {
+        $content = Content::forStorage($input['content']);
+
         return [
             'title' => $input['title'] ?? null,
-            'content' => $input['content'],
-            'search_text' => Content::searchTextOf($input['content']),
+            'content' => $content->value,
+            'search_text' => $content->searchText,
             'order' => $input['order'],
             'is_active' => $input['isActive'],
         ];

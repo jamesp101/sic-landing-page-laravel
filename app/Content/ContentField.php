@@ -6,7 +6,7 @@ namespace App\Content;
 
 /**
  * Validation of a content column that holds either a block document or legacy Markdown. Block documents
- * are validated and stored in normalised form; Markdown passes through unchanged.
+ * are validated here and stored in normalised form by `Content::forStorage`; Markdown passes through unchanged.
  */
 final class ContentField
 {
@@ -19,13 +19,5 @@ final class ContentField
     public static function rules(bool $required = false): array
     {
         return [new ContentRule($required)];
-    }
-
-    /** The value to store for validated input: block documents in normalised form, Markdown unchanged. */
-    public static function normalized(?string $value): string
-    {
-        $checked = Content::checkContent($value ?? '');
-
-        return $checked['ok'] ? $checked['value'] : '';
     }
 }

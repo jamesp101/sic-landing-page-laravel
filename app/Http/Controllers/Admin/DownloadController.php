@@ -2,15 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Admin\AdminDownloads;
 use App\Admin\AdminList;
 use App\Admin\AdminPage;
 use App\Admin\AdminScope;
 use App\Admin\DepartmentAccess;
+use App\Downloads\DownloadRules;
 use App\Http\Controllers\Controller;
 use App\Models\Download;
-use App\Site\Downloads;
 use App\Storage\DownloadIntake;
-use App\Support\Authz;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -20,14 +20,13 @@ class DownloadController extends Controller
     public function index(Request $request): View
     {
         ['actor' => $actor] = AdminPage::resolve($request);
-        $superadmin = Authz::isSuperAdmin($actor);
         $scope = AdminScope::current($request);
 
         // Each filter is declared once: its query parameter, how it parses, how a value narrows the query.
         $filters = [
             'folder' => AdminList::listFilter(
                 fn (?string $raw) => $raw !== null && $raw !== '' ? $raw : null,
-                fn (string $folder) => Downloads::directoryWhere($folder),
+                fn (string $folder) => DownloadRules::directoryWhere($folder),
             ),
         ];
 
@@ -37,9 +36,9 @@ class DownloadController extends Controller
             'scope' => $scope,
             'spec' => [
                 'fields' => [
-                    'fileName' => AdminList::sortColumn('file_name'),
-                    'createdAt' => AdminList::sortColumn('created_at', 'desc'),
-                    'size' => AdminList::sortColumn('file_size', 'desc'),
+                    'fileName' => AdminList::sortColumn('file_name', 'asc', 'Name'),
+                    'createdAt' => AdminList::sortColumn('created_at', 'desc', 'Date'),
+                    'size' => AdminList::sortColumn('file_size', 'desc', 'Size'),
                 ],
                 'defaultSort' => 'createdAt',
                 'tiebreak' => AdminList::orderColumn('id', 'desc'),
@@ -51,14 +50,13 @@ class DownloadController extends Controller
             'fetch' => fn (array $args) => AdminList::apply(Download::query()->with('department:id,name'), $args)->get(),
         ]);
 
-        ['totalFiles' => $totalFiles, 'totalBytes' => $totalBytes, 'folders' => $folders] = Downloads::getAdminFolders(
+        ['totalFiles' => $totalFiles, 'totalBytes' => $totalBytes, 'folders' => $folders] = AdminDownloads::getAdminFolders(
             $actor,
             $scope,
             fn (string $name) => $list->href(['folder' => $name]),
         );
-        $departments = DepartmentAccess::departmentOptions($actor);
 
-        $downloads = collect($list->rows)->map(fn (Download $row) => Downloads::toAdminDownload($row))->values()->all();
+        $downloads = collect($list->rows)->map(fn (Download $row) => AdminDownloads::toAdminDownload($row))->values()->all();
 
         $manager = [
             'totalFiles' => $totalFiles,
@@ -69,16 +67,8 @@ class DownloadController extends Controller
             'filtered' => $list->filtered,
             'sort' => $list->sort,
             'dir' => $list->dir,
-            'sorts' => array_map(fn (array $s) => [
-                ...$s,
-                'href' => $list->sortHref($s['field']),
-                'active' => $list->sort === $s['field'],
-            ], [
-                ['label' => 'Name', 'field' => 'fileName'],
-                ['label' => 'Date', 'field' => 'createdAt'],
-                ['label' => 'Size', 'field' => 'size'],
-            ]),
-            'allFoldersHref' => $list->href(['folder' => null]),
+            'sorts' => $list->sortOptions(),
+            'allFoldersHref' => $list->clearFilterHref('folder'),
             'resetHref' => $list->resetHref(),
             'folders' => $folders,
         ];
@@ -86,9 +76,8 @@ class DownloadController extends Controller
         return view('admin.downloads.index', [
             'list' => $list,
             'downloads' => $downloads,
-            'departments' => $departments,
+            'departmentField' => DepartmentAccess::createDepartmentField($actor, $request),
             'manager' => $manager,
-            'superadmin' => $superadmin,
         ]);
     }
 
@@ -97,9 +86,9 @@ class DownloadController extends Controller
         ['actor' => $actor] = AdminPage::resolve($request);
 
         return view('admin.downloads.create', [
-            ...DepartmentAccess::formProps($actor, $request),
-            'directories' => Downloads::getDirectoryNames(),
-            'defaultDirectory' => Downloads::DEFAULT_DIRECTORY,
+            'departmentField' => DepartmentAccess::createDepartmentField($actor, $request),
+            'directories' => DownloadRules::getDirectoryNames(),
+            'defaultDirectory' => DownloadRules::DEFAULT_DIRECTORY,
             'maxMb' => DownloadIntake::DOWNLOAD_MAX_MB,
             'uploadMode' => DownloadIntake::downloadUploadMode(),
         ]);

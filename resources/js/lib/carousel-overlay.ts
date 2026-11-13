@@ -11,11 +11,21 @@
  * Free of zod (validation lives in carousel-overlay-schema.ts) so the public
  * carousel bundle stays small and the module runs in the browser, on the server and in unit tests.
  */
-import { DESKTOP_FRAME } from './carousel-layout';
+import { DESKTOP_FRAME } from './carousel-frame';
 
 export const OVERLAY_VERSION = 1;
 export const MAX_LAYERS = 24;
 export const MAX_OVERLAY_JSON = 40_000;
+
+/** Numeric bounds of a Layer's geometry and look: the schema validates against them and the designer clamps edits to them. */
+export const LAYER_LIMITS = {
+    x: [0, 100],
+    y: [0, 100],
+    w: [1, 100],
+    h: [1, 100],
+    rotation: [-180, 180],
+    opacity: [10, 100],
+} as const;
 
 export const LAYER_TYPES = ['text', 'button', 'badge', 'shape', 'image'] as const;
 export const ROLES = ['heading', 'subtitle', 'body'] as const;

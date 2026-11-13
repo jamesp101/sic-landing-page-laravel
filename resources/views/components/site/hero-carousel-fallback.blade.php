@@ -2,13 +2,10 @@
      first one showing, the others inert), the first photo with `srcset`/`sizes`, and the page `h1`, for visitors
      without JS, crawlers and the first paint (LCP). Meant for the island's slot; the mounted carousel replaces it.
      No controls, no video.
-     Props: `slides` (App\Carousel\Slides::findSlides), `tall` (home vs Department height), `label`, `pageTitle`. --}}
+     Props: `slides` (App\Carousel\Slides::findSlides: Layers arrive presented, `stage` and `focus`), `tall` (home vs Department height), `label`, `pageTitle`. --}}
 @props(['slides', 'tall' => true, 'label' => 'Featured highlights', 'pageTitle' => null])
 @php
     use App\Carousel\Layout;
-    use App\Carousel\Overlay;
-    use App\Carousel\OverlayMobile;
-
 @endphp
 @if (count($slides) > 0)
     <section
@@ -22,8 +19,6 @@
         <div aria-live="polite" class="h-full">
             @foreach ($slides as $index => $slide)
             @php
-                $phone = OverlayMobile::resolveMobile($slide['layers']);
-                $focus = OverlayMobile::slideFocus($slide['mobile']);
                 $first = $index === 0;
             @endphp
             <div
@@ -33,7 +28,7 @@
                 tabindex="-1"
                 @unless ($first) inert @endunless
                 class="slide absolute inset-0 transition-opacity duration-1000 ease-in-out focus-visible:ring-inset focus-visible:ring-offset-0 {{ $first ? 'z-10 opacity-100 is-active' : 'z-0 opacity-0' }}"
-                style="--fx: {{ $focus['x'] }}%; --fy: {{ $focus['y'] }}%"
+                style="--fx: {{ $slide['focus']['x'] }}%; --fy: {{ $slide['focus']['y'] }}%"
             >
                 <img
                     @if ($first) src="{{ $slide['imageUrl'] }}" @endif
@@ -52,28 +47,11 @@
                 />
                 <div class="absolute inset-0 bg-linear-to-t from-brand-950/90 via-brand-950/45 to-brand-950/30 md:from-brand-950/85"></div>
                 <div class="slide-stage rise">
-                    @foreach (Overlay::readingOrder($slide['layers']) as ['layer' => $layer, 'z' => $z])
-                        @php
-                            $look = Layout::layerPresentation($layer, $z, $phone[$layer['id']] ?? null, 'public');
-                            $type = $layer['type'];
-                            $class = Layout::layerClasses($layer, $look, false);
-                        @endphp
-                        @if ($type === 'text')
-                            @if ($layer['role'] === 'heading')
-                                <h2 class="{{ $class }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</h2>
-                            @else
-                                <p class="{{ $class }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</p>
-                            @endif
-                        @elseif ($type === 'button')
-                            <a href="{{ $layer['href'] }}" @if ($rel = Overlay::relFor($layer['href'])) rel="{{ $rel }}" @endif class="{{ $class }}" style="{{ $look['style'] }}">
-                                {{ $layer['label'] }}<span aria-hidden="true">&rarr;</span>
-                            </a>
-                        @elseif ($type === 'badge')
-                            <span class="{{ $class }}" style="{{ $look['style'] }}">{{ $layer['text'] }}</span>
-                        @elseif ($type === 'shape')
-                            <div class="{{ $class }}" style="{{ $look['style'] }}" aria-hidden="true"></div>
+                    @foreach ($slide['stage'] as $element)
+                        @if ($element['tag'] === 'img')
+                            <img @foreach ($element['attrs'] as $name => $value) {{ $name }}="{{ $value }}" @endforeach />
                         @else
-                            <img src="{{ $layer['src'] }}" alt="{{ $layer['alt'] }}" loading="lazy" decoding="async" class="{{ $class }} object-contain" style="{{ $look['style'] }}" />
+                            <{{ $element['tag'] }} @foreach ($element['attrs'] as $name => $value) {{ $name }}="{{ $value }}" @endforeach>{{ $element['text'] }}@if ($element['arrow'])<span aria-hidden="true">&rarr;</span>@endif</{{ $element['tag'] }}>
                         @endif
                     @endforeach
                 </div>

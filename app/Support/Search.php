@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Admin;
+namespace App\Support;
 
 use Closure;
 use Illuminate\Database\Eloquent\Builder;

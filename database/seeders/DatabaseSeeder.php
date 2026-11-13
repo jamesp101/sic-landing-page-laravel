@@ -117,7 +117,7 @@ class DatabaseSeeder extends Seeder
                 'department_id' => $row['department'] === null ? null : $departmentIds[$row['department']],
                 'user_id' => $userIds[$row['author']],
                 'slug' => Slug::slugify($row['title']),
-                'search_text' => Content::searchTextOf($row['content']),
+                'search_text' => Content::forStorage($row['content'])->searchText,
             ]);
         }
     }
@@ -147,7 +147,7 @@ class DatabaseSeeder extends Seeder
                 'order' => $row['order'],
                 'is_active' => $row['is_active'],
                 'department_id' => $row['department'] === null ? null : $departmentIds[$row['department']],
-                'search_text' => Content::searchTextOf($row['content']),
+                'search_text' => Content::forStorage($row['content'])->searchText,
             ]);
         }
     }

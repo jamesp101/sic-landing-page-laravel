@@ -21,12 +21,12 @@ class UserController extends Controller
     {
         ['actor' => $actor] = AdminPage::resolve($request, ['superAdmin' => true]);
 
-        // Superadmin only: every user is listed, so the Admin scope does not apply (`restriction` matches all).
+        // Superadmin only: every user is listed, so the Admin scope does not apply.
         $list = AdminList::runList([
             'url' => $request->getRequestUri(),
             'actor' => $actor,
             'scope' => AdminScope::current($request),
-            'restriction' => fn (Builder $q) => $q,
+            'restriction' => AdminList::unrestricted(),
             'spec' => [
                 'fields' => [
                     'name' => AdminList::sortColumn('name'),

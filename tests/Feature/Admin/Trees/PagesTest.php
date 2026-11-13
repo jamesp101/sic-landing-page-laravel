@@ -67,14 +67,15 @@ class PagesTest extends TestCase
 
         $all = $this->props($this->get('/admin/carousels')->assertOk(), 'admin/carousels/CarouselDesigner');
         $this->assertSame([$main, $cit, $cba], array_column($all['slides'], 'id'));
-        $this->assertEquals(['initialId' => $main, 'scopeName' => 'All departments', 'defaultDepartmentId' => null, 'superadmin' => true, 'lockedDepartmentId' => null], array_intersect_key($all, array_flip(['initialId', 'scopeName', 'defaultDepartmentId', 'superadmin', 'lockedDepartmentId'])));
-        $this->assertSame([11, 10], array_column($all['departments'], 'id'));
+        $this->assertEquals(['initialId' => $main, 'scopeName' => 'All departments'], array_intersect_key($all, array_flip(['initialId', 'scopeName'])));
+        $this->assertSame([11, 10], array_column($all['departmentField']['options'], 'id'));
+        $this->assertSame([null, false, true], [$all['departmentField']['value'], $all['departmentField']['locked'], $all['departmentField']['allowMain']]);
         $this->assertSame('Welcome', $all['slides'][0]['title']);
         $this->assertSame('legacy-title', $all['slides'][0]['layers'][0]['id']);
 
         $cbaScope = $this->props($this->withHeader('Cookie', 'admin_scope=11')->get('/admin/carousels')->assertOk(), 'admin/carousels/CarouselDesigner');
         $this->assertSame([$cba], array_column($cbaScope['slides'], 'id'));
-        $this->assertSame(['College of Business', 11], [$cbaScope['scopeName'], $cbaScope['defaultDepartmentId']]);
+        $this->assertSame(['College of Business', 11], [$cbaScope['scopeName'], $cbaScope['departmentField']['value']]);
 
         $mainScope = $this->props($this->withHeader('Cookie', 'admin_scope=main')->get('/admin/carousels')->assertOk(), 'admin/carousels/CarouselDesigner');
         $this->assertSame([$main], array_column($mainScope['slides'], 'id'));
@@ -94,8 +95,8 @@ class PagesTest extends TestCase
         [, $cit] = $this->slides();
         $props = $this->props($this->actingAs($this->cit)->get('/admin/carousels')->assertOk(), 'admin/carousels/CarouselDesigner');
         $this->assertSame([$cit], array_column($props['slides'], 'id'));
-        $this->assertSame([false, 10, null], [$props['superadmin'], $props['lockedDepartmentId'], $props['scopeName']]);
-        $this->assertSame([10], array_column($props['departments'], 'id'));
+        $this->assertSame([true, 10, null], [$props['departmentField']['locked'], $props['departmentField']['value'], $props['scopeName']]);
+        $this->assertSame([10], array_column($props['departmentField']['options'], 'id'));
     }
 
     public function test_the_designer_opens_without_slides(): void

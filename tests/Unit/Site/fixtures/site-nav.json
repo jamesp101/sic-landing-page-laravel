@@ -1,0 +1,477 @@
+{
+    "links": {
+        "departmentHref": [
+            [
+                "cit",
+                "/departments/cit"
+            ]
+        ],
+        "postHref": [
+            [
+                "a",
+                "/posts/a"
+            ]
+        ]
+    },
+    "defaultNavLinks": [
+        {
+            "label": "Home",
+            "url": "/"
+        },
+        {
+            "label": "Departments",
+            "url": "#departments"
+        },
+        {
+            "label": "News & Events",
+            "url": "/posts"
+        },
+        {
+            "label": "Downloads",
+            "url": "/downloads"
+        },
+        {
+            "label": "Contact",
+            "url": "/contact"
+        }
+    ],
+    "cases": [
+        {
+            "name": "default menu with departments",
+            "navLinks": [],
+            "departments": [
+                {
+                    "name": "CIT",
+                    "slug": "cit"
+                },
+                {
+                    "name": "CBA",
+                    "slug": "cba"
+                }
+            ],
+            "header": [
+                {
+                    "label": "Home",
+                    "href": "/"
+                },
+                {
+                    "label": "Departments",
+                    "children": [
+                        {
+                            "label": "CIT",
+                            "href": "/departments/cit"
+                        },
+                        {
+                            "label": "CBA",
+                            "href": "/departments/cba"
+                        }
+                    ]
+                },
+                {
+                    "label": "News & Events",
+                    "href": "/posts"
+                },
+                {
+                    "label": "Downloads",
+                    "href": "/downloads"
+                },
+                {
+                    "label": "Contact",
+                    "href": "/contact"
+                }
+            ],
+            "footer": {
+                "departments": [
+                    {
+                        "label": "CIT",
+                        "href": "/departments/cit"
+                    },
+                    {
+                        "label": "CBA",
+                        "href": "/departments/cba"
+                    }
+                ],
+                "quickLinks": [
+                    {
+                        "label": "News & Events",
+                        "href": "/posts"
+                    },
+                    {
+                        "label": "Downloads",
+                        "href": "/downloads"
+                    },
+                    {
+                        "label": "Contact & Admissions",
+                        "href": "/contact"
+                    },
+                    {
+                        "label": "RSS feed",
+                        "href": "/rss.xml"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "default menu without departments",
+            "navLinks": [],
+            "departments": [],
+            "header": [
+                {
+                    "label": "Home",
+                    "href": "/"
+                },
+                {
+                    "label": "News & Events",
+                    "href": "/posts"
+                },
+                {
+                    "label": "Downloads",
+                    "href": "/downloads"
+                },
+                {
+                    "label": "Contact",
+                    "href": "/contact"
+                }
+            ],
+            "footer": {
+                "departments": [
+                    {
+                        "label": "Academic programs",
+                        "href": "/#departments"
+                    }
+                ],
+                "quickLinks": [
+                    {
+                        "label": "News & Events",
+                        "href": "/posts"
+                    },
+                    {
+                        "label": "Downloads",
+                        "href": "/downloads"
+                    },
+                    {
+                        "label": "Contact & Admissions",
+                        "href": "/contact"
+                    },
+                    {
+                        "label": "RSS feed",
+                        "href": "/rss.xml"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "departments link ignores its own children",
+            "navLinks": [
+                {
+                    "id": 1,
+                    "label": "Schools",
+                    "url": "#departments",
+                    "children": [
+                        {
+                            "id": 2,
+                            "label": "x",
+                            "url": "/x",
+                            "children": []
+                        }
+                    ]
+                }
+            ],
+            "departments": [
+                {
+                    "name": "CIT",
+                    "slug": "cit"
+                },
+                {
+                    "name": "CBA",
+                    "slug": "cba"
+                }
+            ],
+            "header": [
+                {
+                    "label": "Schools",
+                    "children": [
+                        {
+                            "label": "CIT",
+                            "href": "/departments/cit"
+                        },
+                        {
+                            "label": "CBA",
+                            "href": "/departments/cba"
+                        }
+                    ]
+                }
+            ],
+            "footer": {
+                "departments": [
+                    {
+                        "label": "CIT",
+                        "href": "/departments/cit"
+                    },
+                    {
+                        "label": "CBA",
+                        "href": "/departments/cba"
+                    }
+                ],
+                "quickLinks": [
+                    {
+                        "label": "News & Events",
+                        "href": "/posts"
+                    },
+                    {
+                        "label": "Downloads",
+                        "href": "/downloads"
+                    },
+                    {
+                        "label": "Contact & Admissions",
+                        "href": "/contact"
+                    },
+                    {
+                        "label": "RSS feed",
+                        "href": "/rss.xml"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "departments link with no departments",
+            "navLinks": [
+                {
+                    "id": 1,
+                    "label": "Schools",
+                    "url": "#departments",
+                    "children": []
+                }
+            ],
+            "departments": [],
+            "header": [
+                {
+                    "label": "Schools",
+                    "children": []
+                }
+            ],
+            "footer": {
+                "departments": [
+                    {
+                        "label": "Academic programs",
+                        "href": "/#departments"
+                    }
+                ],
+                "quickLinks": [
+                    {
+                        "label": "News & Events",
+                        "href": "/posts"
+                    },
+                    {
+                        "label": "Downloads",
+                        "href": "/downloads"
+                    },
+                    {
+                        "label": "Contact & Admissions",
+                        "href": "/contact"
+                    },
+                    {
+                        "label": "RSS feed",
+                        "href": "/rss.xml"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "parent with sub-links and a plain link",
+            "navLinks": [
+                {
+                    "id": 1,
+                    "label": "About",
+                    "url": "/about",
+                    "children": [
+                        {
+                            "id": 2,
+                            "label": "Team",
+                            "url": "/team",
+                            "children": []
+                        }
+                    ]
+                },
+                {
+                    "id": 3,
+                    "label": "Contact",
+                    "url": "/contact",
+                    "children": []
+                }
+            ],
+            "departments": [],
+            "header": [
+                {
+                    "label": "About",
+                    "children": [
+                        {
+                            "label": "Team",
+                            "href": "/team"
+                        }
+                    ]
+                },
+                {
+                    "label": "Contact",
+                    "href": "/contact"
+                }
+            ],
+            "footer": {
+                "departments": [
+                    {
+                        "label": "Academic programs",
+                        "href": "/#departments"
+                    }
+                ],
+                "quickLinks": [
+                    {
+                        "label": "News & Events",
+                        "href": "/posts"
+                    },
+                    {
+                        "label": "Downloads",
+                        "href": "/downloads"
+                    },
+                    {
+                        "label": "Contact & Admissions",
+                        "href": "/contact"
+                    },
+                    {
+                        "label": "RSS feed",
+                        "href": "/rss.xml"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "stored links keep order and ignore departments otherwise",
+            "navLinks": [
+                {
+                    "id": 1,
+                    "label": "Contact",
+                    "url": "/contact",
+                    "children": []
+                },
+                {
+                    "id": 2,
+                    "label": "Home",
+                    "url": "/",
+                    "children": []
+                }
+            ],
+            "departments": [
+                {
+                    "name": "CIT",
+                    "slug": "cit"
+                },
+                {
+                    "name": "CBA",
+                    "slug": "cba"
+                }
+            ],
+            "header": [
+                {
+                    "label": "Contact",
+                    "href": "/contact"
+                },
+                {
+                    "label": "Home",
+                    "href": "/"
+                }
+            ],
+            "footer": {
+                "departments": [
+                    {
+                        "label": "CIT",
+                        "href": "/departments/cit"
+                    },
+                    {
+                        "label": "CBA",
+                        "href": "/departments/cba"
+                    }
+                ],
+                "quickLinks": [
+                    {
+                        "label": "News & Events",
+                        "href": "/posts"
+                    },
+                    {
+                        "label": "Downloads",
+                        "href": "/downloads"
+                    },
+                    {
+                        "label": "Contact & Admissions",
+                        "href": "/contact"
+                    },
+                    {
+                        "label": "RSS feed",
+                        "href": "/rss.xml"
+                    }
+                ]
+            }
+        },
+        {
+            "name": "single department",
+            "navLinks": [],
+            "departments": [
+                {
+                    "name": "Law & Order",
+                    "slug": "law-order"
+                }
+            ],
+            "header": [
+                {
+                    "label": "Home",
+                    "href": "/"
+                },
+                {
+                    "label": "Departments",
+                    "children": [
+                        {
+                            "label": "Law & Order",
+                            "href": "/departments/law-order"
+                        }
+                    ]
+                },
+                {
+                    "label": "News & Events",
+                    "href": "/posts"
+                },
+                {
+                    "label": "Downloads",
+                    "href": "/downloads"
+                },
+                {
+                    "label": "Contact",
+                    "href": "/contact"
+                }
+            ],
+            "footer": {
+                "departments": [
+                    {
+                        "label": "Law & Order",
+                        "href": "/departments/law-order"
+                    }
+                ],
+                "quickLinks": [
+                    {
+                        "label": "News & Events",
+                        "href": "/posts"
+                    },
+                    {
+                        "label": "Downloads",
+                        "href": "/downloads"
+                    },
+                    {
+                        "label": "Contact & Admissions",
+                        "href": "/contact"
+                    },
+                    {
+                        "label": "RSS feed",
+                        "href": "/rss.xml"
+                    }
+                ]
+            }
+        }
+    ]
+}

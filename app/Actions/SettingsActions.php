@@ -2,25 +2,22 @@
 
 namespace App\Actions;
 
+use App\Admin\ActionField;
 use App\Admin\ActionInput;
 use App\Content\Content;
 use App\Content\ContentField;
 use App\Content\WelcomeHero;
-use App\Support\Authz;
 use App\Support\Flash;
 use Illuminate\Http\Request;
 
 /** `settings.*` actions (JSON). */
 class SettingsActions
 {
+    #[Action(Access::Superadmin)]
     public function updateLanding(Request $request): array
     {
-        $input = ActionInput::validate($request, ['welcomeHeroContent' => 'text'], [
-            'welcomeHeroContent' => ContentField::rules(false),
-        ]);
-        Authz::requireSuperAdmin($request->user());
-        $content = $input['welcomeHeroContent'] === '' ? '' : Content::checkContent($input['welcomeHeroContent'])['value'];
-        WelcomeHero::setWelcomeHero($content);
+        $input = ActionInput::validate($request, ['welcomeHeroContent' => ActionField::text(ContentField::rules(false))]);
+        WelcomeHero::setWelcomeHero(Content::forStorage($input['welcomeHeroContent'])->value);
         Flash::success('Landing page settings updated successfully.');
 
         return ['saved' => true];

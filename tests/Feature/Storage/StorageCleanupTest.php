@@ -10,6 +10,7 @@ use App\Models\Post;
 use App\Storage\KeyMatcher;
 use App\Storage\Storage;
 use App\Storage\StorageCleanup;
+use App\Storage\StoredKeyReferences;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use Tests\Unit\Storage\UsesUploadsDisk;
@@ -243,7 +244,7 @@ class StorageCleanupTest extends TestCase
 
     public function test_it_finds_the_text_columns_from_the_schema_so_new_columns_count(): void
     {
-        $tables = collect(StorageCleanup::stringTables())->keyBy('table');
+        $tables = collect(StoredKeyReferences::stringTables())->keyBy('table');
         $this->assertContains('logo_path', $tables['departments']['columns']);
         $this->assertContains('highlight_image_path', $tables['posts']['columns']);
         $this->assertContains('overlay', $tables['carousel_items']['columns']);

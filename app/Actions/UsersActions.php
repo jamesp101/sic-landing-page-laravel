@@ -8,7 +8,6 @@ use App\Auth\PasswordLogin;
 use App\Auth\PasswordPolicy;
 use App\Auth\UserRules;
 use App\Models\User;
-use App\Support\Authz;
 use App\Support\Flash;
 use App\Support\RequestError;
 use Illuminate\Http\Request;
@@ -20,9 +19,9 @@ use Illuminate\Validation\Rule;
 class UsersActions
 {
     /** `{ name, email, role, departmentId?, password }` → `{ id }`. */
+    #[Action(Access::Superadmin)]
     public function create(Request $request): array
     {
-        Authz::requireSuperAdmin($request->user());
         $input = $this->validated($request, passwordRequired: true);
         $this->assertEmailFree($input['email']);
         $departmentId = $this->departmentFor($input);
@@ -47,9 +46,9 @@ class UsersActions
     }
 
     /** `{ id, name, email, role, departmentId?, password? }` → `{ id }`. A new password or email ends the User's other sessions. */
+    #[Action(Access::Superadmin)]
     public function update(Request $request): array
     {
-        Authz::requireSuperAdmin($request->user());
         $input = $this->validated($request, passwordRequired: false, withId: true);
         $existing = User::query()->find($input['id']);
         if (! $existing) {
@@ -87,9 +86,10 @@ class UsersActions
     }
 
     /** `{ id }` → `{ id }`. */
+    #[Action(Access::Superadmin)]
     public function delete(Request $request): array
     {
-        $actor = Authz::requireSuperAdmin($request->user());
+        $actor = $request->user();
         $input = $request->validate(['id' => ['required', 'integer']]);
         $id = (int) $input['id'];
         if ($id === $actor->id) {

@@ -9,9 +9,7 @@ use App\Support\RequestError;
  *
  * - `validateVideoUpload` decides whether `{ fileName, contentType, size }` may be issued a key.
  * - `receive` (local driver) streams the PUT body to disk for a key issued to the same user.
- * - `complete` (both drivers) verifies the stored object, then claims the pending upload so that expiry never
- *   deletes it. As in `DownloadIntake`, the claim is consumed only after the object is known to exist and fit, so
- *   a missing object does not burn it.
+ * Granting the key and claiming the upload (step 2) belong to `PendingUploads`.
  */
 final class VideoIntake
 {
@@ -65,7 +63,7 @@ final class VideoIntake
      */
     public static function receive(int $userId, string $key, int $size, $body): array
     {
-        DirectIntake::assertIssuedTo($userId, $key, self::isVideoUploadKey($key));
+        PendingUploads::assertIssuedTo($userId, $key, self::isVideoUploadKey($key));
         if ($size <= 0) {
             throw RequestError::badRequest('Choose a file to upload.');
         }
@@ -86,25 +84,5 @@ final class VideoIntake
         }
 
         return ['size' => $written];
-    }
-
-    /**
-     * Verifies the uploaded object and claims the pending upload (see `DirectIntake::claimUploadedObject`); the
-     * object is then kept.
-     *
-     * @return array{key: string, size: int}
-     */
-    public static function complete(int $userId, string $key): array
-    {
-        return DirectIntake::claimUploadedObject($userId, $key, [
-            'validKey' => self::isVideoUploadKey($key),
-            'maxBytes' => Storage::limit('video'),
-            'messages' => [
-                'missing' => 'The uploaded video was not found. Upload it again.',
-                'empty' => 'The uploaded video is empty.',
-                'tooLarge' => self::VIDEO_TOO_LARGE,
-            ],
-            'context' => 'rejected video upload',
-        ]);
     }
 }

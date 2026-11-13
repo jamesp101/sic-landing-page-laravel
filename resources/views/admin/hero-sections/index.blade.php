@@ -3,7 +3,7 @@
 
     $columns = [
         ['title', 'Section'],
-        ...($showLocation ? [['department', 'Page location']] : []),
+        ...($list->showDepartment ? [['department', 'Page location']] : []),
         ['order', 'Order'],
         ['active', 'Status'],
     ];
@@ -57,7 +57,7 @@
                                         </div>
                                     </div>
                                 </td>
-                                @if ($showLocation)
+                                @if ($list->showDepartment)
                                     <td class="px-4 py-3">
                                         @if ($hs->department)
                                             <span

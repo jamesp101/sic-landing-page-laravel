@@ -6,6 +6,7 @@ use App\Admin\AdminList;
 use App\Admin\AdminPage;
 use App\Admin\AdminScope;
 use App\Admin\DepartmentAccess;
+use App\Admin\FormValues;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\Post;
@@ -66,8 +67,6 @@ class PostController extends Controller
             'list' => $list,
             'posts' => $list->rows,
             'postTypes' => PostFilters::POST_TYPES,
-            // A single department or main page: the Department column adds nothing.
-            'showDepartment' => $scope['kind'] === 'all',
             'imageUrls' => $list->rows->mapWithKeys(fn (Post $p) => [$p->id => Storage::publicUrl($p->highlight_image_path)])->all(),
         ]);
     }
@@ -76,7 +75,7 @@ class PostController extends Controller
     {
         ['actor' => $actor] = AdminPage::resolve($request);
 
-        return view('admin.posts.create', DepartmentAccess::formProps($actor, $request));
+        return view('admin.posts.create', ['departmentField' => DepartmentAccess::createDepartmentField($actor, $request)]);
     }
 
     public function edit(Request $request, string $id)
@@ -87,20 +86,8 @@ class PostController extends Controller
 
         return view('admin.posts.edit', [
             'post' => $post,
-            ...DepartmentAccess::formProps($actor),
-            'values' => [
-                'id' => $post->id,
-                'title' => $post->title,
-                'slug' => $post->slug,
-                'content' => $post->content,
-                'type' => $post->type,
-                'startDate' => $post->start_date?->toISOString(),
-                'endDate' => $post->end_date?->toISOString(),
-                'departmentId' => $post->department_id,
-                'isFeatured' => $post->is_featured,
-                'hideAuthor' => $post->hide_author,
-                'highlightImageUrl' => Storage::publicUrl($post->highlight_image_path),
-            ],
+            'departmentField' => DepartmentAccess::departmentField($actor, $post->department_id),
+            'values' => FormValues::post($post),
         ]);
     }
 }

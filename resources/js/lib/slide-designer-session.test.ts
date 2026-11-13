@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_LAYERS, defaultLayer, type Layer } from './carousel-overlay';
-import { LAYER_LIMITS } from './carousel-overlay-schema';
+import { LAYER_LIMITS, MAX_LAYERS, defaultLayer, type Layer } from './carousel-overlay';
 import type { DesignerSlide } from './designer-slide';
 import {
     SlideDesignerSession,

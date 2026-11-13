@@ -114,7 +114,7 @@ return new class extends Migration
             $table->string('title');
             $table->string('slug')->unique();
             $table->longText('content');
-            // Plain text of `content` for admin and public search (kept by Content::searchTextOf).
+            // Plain text of `content` for admin and public search (kept by Content::forStorage).
             $table->longText('search_text')->default('');
             // article | event | announcement
             $table->string('type')->index();
@@ -160,7 +160,7 @@ return new class extends Migration
             $table->increments('id');
             $table->string('title')->nullable();
             $table->longText('content');
-            // Plain text of `content` for admin search (kept by Content::searchTextOf).
+            // Plain text of `content` for admin search (kept by Content::forStorage).
             $table->longText('search_text')->default('');
             $table->integer('order')->default(0);
             $table->boolean('is_active')->default(true);

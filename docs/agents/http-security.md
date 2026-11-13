@@ -4,7 +4,7 @@
 
 ## Request policy
 
-- A signed-out call to any action except the public ones (`RequestPolicyRules::PUBLIC_ACTIONS`, same list as `ActionController::PUBLIC`) gets 401 in the action error envelope before the action runs. A new public action goes into both lists.
+- A signed-out call to any action except the `Access::Public` ones gets 401 in the action error envelope before the action runs. The list is the `#[Action(Access::Public)]` declarations (`ActionRegistry::isPublic`, handed to `RequestPolicyRules::rejectsAnonymousAction`); a new public action needs only its declaration.
 - Any other signed-out request that can carry a body (not GET/HEAD) gets 413 unless `Content-Length` is present and at most 64 KB.
 - Anonymous visitors of protected routes (`/dashboard`, `/admin`, `/settings`, `/confirm-password`, `/verify-email…`) are redirected to `/login?redirect=…`.
 - Private routes (protected ones, `/api/`, `/_actions`, `/login`, `/forgot-password`, `/reset-password`, `/csrf-token`) are `noindex, nofollow` and `no-store`.

@@ -6,42 +6,35 @@
         SidebarMenuButton,
         SidebarMenuItem,
     } from '@/components/ui/sidebar';
+    import type { Component } from 'svelte';
     import type { NavItem } from '@/components/admin/types';
 
     let {
         items = [],
-        currentPath,
+        icons,
     }: {
         items: NavItem[];
-        currentPath: string;
+        /** Lucide components by the names `items` use. */
+        icons: Record<string, Component<{ class?: string }>>;
     } = $props();
-
-    function matches(href: string): boolean {
-        if (href === '/') return currentPath === '/';
-        return currentPath === href || currentPath.startsWith(`${href}/`);
-    }
-
-    /** The most specific matching link wins (e.g. Org chart over Departments). */
-    function isActive(href: string): boolean {
-        return matches(href) && !items.some((other) => other.href.length > href.length && matches(other.href));
-    }
 </script>
 
 <SidebarGroup class="px-2 py-0">
     <SidebarGroupLabel>Platform</SidebarGroupLabel>
     <SidebarMenu>
         {#each items as item (item.href)}
+            {@const Icon = icons[item.icon]}
             <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={isActive(item.href)} tooltip={item.title}>
+                <SidebarMenuButton asChild isActive={item.active} tooltip={item.title}>
                     {#snippet children(props)}
                         <a
                             {...props}
                             href={item.href}
-                            aria-current={isActive(item.href) ? 'page' : undefined}
+                            aria-current={item.active ? 'page' : undefined}
                             class={props.class}
                         >
-                            {#if item.icon}
-                                <item.icon class="size-4 shrink-0" />
+                            {#if Icon}
+                                <Icon class="size-4 shrink-0" />
                             {/if}
                             <span>{item.title}</span>
                         </a>

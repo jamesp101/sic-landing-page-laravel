@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Actions\ActionRegistry;
 use App\Http\RequestPolicyRules as Rules;
 use Closure;
 use Illuminate\Http\Request;
@@ -32,7 +33,7 @@ class RequestPolicy
         $signedIn = ! $isAsset && $request->user() !== null;
 
         // Before the action runs: a signed-out visitor never reaches an action and never makes the server take a large body.
-        $rejected = Rules::rejectsAnonymousAction($method, $url, $signedIn)
+        $rejected = Rules::rejectsAnonymousAction($method, $url, $signedIn, ActionRegistry::isPublic(...))
             ? Rules::anonymousActionResponse()
             : (Rules::rejectsLargeAnonymousBody($method, $signedIn, $request->headers->get('Content-Length'))
                 ? Rules::payloadTooLargeResponse()

@@ -61,7 +61,7 @@ final class DownloadIntake
     }
 
     /**
-     * The accepted file is already stored; the caller removes it (`StoredFiles::commitWithFiles(['adopted' => …])`)
+     * The accepted file is already stored; the caller removes it (`StoredFiles::save` adopts a key set on a declared file column)
      * if its row write fails.
      *
      * @param  array{file?: ?UploadedFile, uploadedKey?: ?string}  $input
@@ -71,16 +71,7 @@ final class DownloadIntake
     {
         $uploadedKey = $input['uploadedKey'] ?? null;
         if ($uploadedKey !== null && $uploadedKey !== '') {
-            return DirectIntake::claimUploadedObject($userId, $uploadedKey, [
-                'validKey' => Storage::directUploads() && DirectUpload::isDirectUploadKey($uploadedKey),
-                'maxBytes' => Storage::limit('download'),
-                'messages' => [
-                    'missing' => 'The uploaded file was not found. Upload it again.',
-                    'empty' => 'The uploaded file is empty.',
-                    'tooLarge' => self::DOWNLOAD_TOO_LARGE,
-                ],
-                'context' => 'rejected upload',
-            ]);
+            return PendingUploads::claim(PendingUploads::DOWNLOAD, $userId, $uploadedKey);
         }
         $file = $input['file'] ?? null;
         if (! $file instanceof UploadedFile) {

@@ -33,7 +33,7 @@ class BackfillSearchText extends Command
         $total = 0;
         while (($rows = DB::table($table)->where('id', '>', $afterId)->orderBy('id')->limit(self::BATCH)->get(['id', 'content', 'search_text']))->isNotEmpty()) {
             foreach ($rows as $row) {
-                $searchText = Content::searchTextOf((string) $row->content);
+                $searchText = Content::forStorage((string) $row->content)->searchText;
                 if ($searchText !== $row->search_text) {
                     // The query builder, not the model: it must not touch `updated_at`.
                     DB::table($table)->where('id', $row->id)->update(['search_text' => $searchText]);

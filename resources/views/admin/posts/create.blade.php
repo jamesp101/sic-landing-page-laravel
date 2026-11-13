@@ -4,5 +4,5 @@
     :section="['title' => 'Posts', 'href' => '/admin/posts']"
     crumb="New"
     island="admin/posts/PostForm"
-    :props="['departments' => $departments, 'isSuperAdmin' => $isSuperAdmin, 'defaultDepartmentId' => $defaultDepartmentId]"
+    :props="['departmentField' => $departmentField]"
 />

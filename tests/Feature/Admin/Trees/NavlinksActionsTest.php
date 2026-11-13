@@ -4,6 +4,7 @@ namespace Tests\Feature\Admin\Trees;
 
 use App\Models\NavigationLink;
 use App\Models\User;
+use App\Site\SiteNav;
 use App\Support\Flash;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Testing\TestResponse;
@@ -42,9 +43,28 @@ class NavlinksActionsTest extends TestCase
 
     public function test_signed_out_calls_are_unauthorized(): void
     {
-        foreach (['create', 'update', 'reorder', 'delete'] as $name) {
+        foreach (['create', 'update', 'reorder', 'delete', 'useDefaultMenu'] as $name) {
             $this->action(null, $name)->assertStatus(401);
         }
+    }
+
+    public function test_use_default_menu_creates_exactly_the_default_menu_and_returns_the_tree(): void
+    {
+        $response = $this->action($this->admin, 'useDefaultMenu')->assertOk();
+
+        $stored = NavigationLink::query()->orderBy('order')->get();
+        $this->assertSame(SiteNav::DEFAULT_NAV_LINKS, $stored->map(fn (NavigationLink $l): array => ['label' => $l->label, 'url' => $l->url])->all());
+        $this->assertSame(range(1, count(SiteNav::DEFAULT_NAV_LINKS)), $stored->pluck('order')->all());
+        $this->assertTrue($stored->every(fn (NavigationLink $l): bool => $l->is_active && $l->parent_id === null));
+        $this->assertSame($stored->pluck('id')->all(), array_column($response->json('data.links'), 'id'));
+    }
+
+    public function test_use_default_menu_is_refused_when_links_exist_and_writes_nothing(): void
+    {
+        $this->link('mine');
+        $this->action($this->admin, 'useDefaultMenu')->assertStatus(409);
+        $this->assertSame(['mine'], NavigationLink::query()->pluck('label')->all());
+        $this->action($this->cit, 'useDefaultMenu')->assertStatus(403);
     }
 
     public function test_only_superadmins_may_change_navigation_links(): void

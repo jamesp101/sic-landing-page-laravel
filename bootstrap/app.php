@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\RequestPolicy;
+use App\Support\ActionErrorResponse;
 use App\Support\RequestError;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
@@ -49,14 +50,9 @@ return Application::configure(basePath: dirname(__DIR__))
         // An expected rejection (403, 404, 409, …) is an answer, not an application error: keep it out of the log.
         $exceptions->dontReport(RequestError::class);
 
-        $actionError = fn (string $type, string $code, string $message, int $status, array $extra = []) => response()->json(
-            ['error' => ['type' => $type, 'code' => $code, 'message' => $message] + $extra],
-            $status,
-        );
-
-        $exceptions->render(function (RequestError $error, Request $request) use ($isAction, $isApi, $actionError) {
+        $exceptions->render(function (RequestError $error, Request $request) use ($isAction, $isApi) {
             if ($isAction($request)) {
-                return $actionError('ActionError', $error->errorCode, $error->getMessage(), $error->status());
+                return ActionErrorResponse::fromRequestError($error);
             }
             if ($isApi($request) || $request->expectsJson()) {
                 return response()->json(['message' => $error->getMessage()], $error->status());
@@ -67,22 +63,14 @@ return Application::configure(basePath: dirname(__DIR__))
             abort($error->status(), $error->getMessage());
         });
 
-        $exceptions->render(function (ValidationException $error, Request $request) use ($isAction, $actionError) {
-            if ($isAction($request)) {
-                return $actionError('ActionInputError', RequestError::BAD_REQUEST, 'Failed to validate.', 400, [
-                    'fields' => $error->errors(),
-                ]);
-            }
+        $exceptions->render(fn (ValidationException $error, Request $request) => $isAction($request) ? ActionErrorResponse::invalidInput($error) : null);
 
-            return null;
-        });
-
-        $exceptions->render(function (AuthenticationException $error, Request $request) use ($isAction, $isApi, $actionError) {
+        $exceptions->render(function (AuthenticationException $error, Request $request) use ($isAction, $isApi) {
             if ($isAction($request)) {
-                return $actionError('ActionError', RequestError::UNAUTHORIZED, 'Sign in required.', 401);
+                return ActionErrorResponse::unauthorized();
             }
             if ($isApi($request)) {
-                return response()->json(['message' => 'Sign in required.'], 401);
+                return response()->json(['message' => RequestError::SIGN_IN_REQUIRED], 401);
             }
 
             return null;

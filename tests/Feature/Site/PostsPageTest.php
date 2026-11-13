@@ -39,10 +39,10 @@ class PostsPageTest extends TestCase
         $this->makeDepartment('CIT', 'cit', ['id' => 1]);
         $this->makeDepartment('CBA', 'cba', ['id' => 2]);
         $this->makePost('block', [
-            'content' => $this->blockContent, 'search_text' => Content::searchTextOf($this->blockContent),
+            'content' => $this->blockContent, 'search_text' => Content::forStorage($this->blockContent)->searchText,
             'highlight_image_path' => 'posts/abc.webp', 'created_at' => $this->day(10),
         ]);
-        $this->makePost('markdown', ['content' => $this->markdownContent, 'search_text' => Content::searchTextOf($this->markdownContent), 'created_at' => $this->day(9)]);
+        $this->makePost('markdown', ['content' => $this->markdownContent, 'search_text' => Content::forStorage($this->markdownContent)->searchText, 'created_at' => $this->day(9)]);
         // Never backfilled: no search_text, so the content is read.
         $this->makePost('legacy', ['content' => $this->markdownContent, 'search_text' => '', 'created_at' => $this->day(8)]);
         $this->makePost('empty', ['content' => '', 'search_text' => '', 'created_at' => $this->day(7)]);

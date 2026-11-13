@@ -13,7 +13,7 @@ final class ListState
      * @param  array<string, mixed>  $values  parsed value of each declared filter (null when absent or invalid), by query parameter
      * @param  list<array{0: string, 1: string}>  $params  the request's query pairs
      * @param  list<string>  $filterNames
-     * @param  array<string, array{defaultDir: string}>  $fields
+     * @param  array<string, array{defaultDir: string, label: ?string}>  $fields
      */
     public function __construct(
         public readonly iterable $rows,
@@ -33,12 +33,37 @@ final class ListState
         private readonly array $params,
         private readonly array $filterNames,
         private readonly array $fields,
+        /** The Admin scope spans every department, so rows show which Department they belong to. */
+        public readonly bool $showDepartment,
     ) {}
 
     /** The list without search, filters and page; sort and direction stay, so a reset does not reorder it. */
     public function resetHref(): string
     {
         return $this->href(['q' => null, 'page' => null] + array_fill_keys($this->filterNames, null));
+    }
+
+    /** The list without one filter; every other parameter stays. */
+    public function clearFilterHref(string $filter): string
+    {
+        return $this->href([$filter => null]);
+    }
+
+    /**
+     * Sort links for the fields declared with a label, in declaration order.
+     *
+     * @return list<array{label: string, field: string, href: string, active: bool}>
+     */
+    public function sortOptions(): array
+    {
+        $options = [];
+        foreach ($this->fields as $field => $spec) {
+            if ($spec['label'] !== null) {
+                $options[] = ['label' => $spec['label'], 'field' => $field, 'href' => $this->sortHref($field), 'active' => $this->sort === $field];
+            }
+        }
+
+        return $options;
     }
 
     /** Same list with `$changes` applied to its parameters (null removes one); back on page 1 unless `page` is set. */

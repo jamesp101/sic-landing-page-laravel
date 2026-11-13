@@ -8,8 +8,13 @@ import {
     MOBILE_TOP,
     MOBILE_TYPE_SCALE,
     countLines,
+    focusMobile,
     hasMobileOverride,
     mobileSize,
+    nudgeOnPhone,
+    patchLayerMobile,
+    resetAllMobile,
+    resetLayerMobile,
     resetMobile,
     resolveMobile,
     setMobile,
@@ -223,6 +228,35 @@ describe('mobile override helpers', () => {
         const reset = resetMobile(layer);
         expect(hasMobileOverride(reset)).toBe(false);
         expect(reset).not.toHaveProperty('mobile');
+    });
+});
+
+describe('phone layer transforms', () => {
+    test('nudgeOnPhone stores a position inside the slide with the rendered size', () => {
+        const layer = heading();
+        expect(nudgeOnPhone(layer, { x: 5, y: 10, w: 40, h: 10 }, 10, -50)).toEqual({ x: 15, y: 0, w: 40 });
+        expect(nudgeOnPhone(layer, { x: 90, y: 10, w: 40, h: 10 }, 20, 0).x).toBe(60);
+    });
+
+    test('nudgeOnPhone stores a height only for shapes and images', () => {
+        const shape = defaultLayer('shape');
+        expect(nudgeOnPhone(shape, { x: 5, y: 5, w: 20, h: 8 }, 0, 0)).toEqual({ x: 5, y: 5, w: 20, h: 8 });
+    });
+
+    test('patchLayerMobile and resetLayerMobile touch only the named layer', () => {
+        const a = heading('a');
+        const b = heading('b');
+        const patched = patchLayerMobile([a, b], a.id, { x: 1, y: 2 });
+        expect(patched[0].mobile).toEqual({ x: 1, y: 2 });
+        expect(patched[1]).toBe(b);
+        const reset = resetLayerMobile(patched, a.id);
+        expect(reset[0]).not.toHaveProperty('mobile');
+    });
+
+    test('resetAllMobile clears every layer; focusMobile wraps the focal point', () => {
+        const layers = [setMobile(heading('a'), { hidden: true }), setMobile(heading('b'), { size: 'sm' })];
+        expect(resetAllMobile(layers).some(hasMobileOverride)).toBe(false);
+        expect(focusMobile({ x: 10, y: 20 })).toEqual({ focus: { x: 10, y: 20 } });
     });
 });
 

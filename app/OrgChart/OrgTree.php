@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Admin;
+namespace App\OrgChart;
 
 /**
  * Pure server-side rules for the department org chart: `buildOrgTree` for the public chart, and `wouldCycle`,

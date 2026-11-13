@@ -1,7 +1,7 @@
 <script lang="ts">
     import type { Snippet } from 'svelte';
-    import SlideLayer from '@/components/site/SlideLayer.svelte';
-    import { FRAME_ASPECT_CLASS } from '@/lib/carousel-layout';
+    import SlideLayerBox from './SlideLayerBox.svelte';
+    import { FRAME_ASPECT_CLASS } from '@/lib/carousel-frame';
     import type { Layer } from '@/lib/carousel-overlay';
     import type { MobileBox } from '@/lib/carousel-overlay-mobile';
 
@@ -60,7 +60,7 @@
         class="pointer-events-none absolute inset-0 bg-linear-to-t from-brand-950/85 via-brand-950/45 to-brand-950/30"
     ></div>
     {#each layers as layer, index (layer.id)}
-        <SlideLayer
+        <SlideLayerBox
             {layer}
             z={index + 1}
             mode={view === 'mobile' ? 'phone' : 'desktop'}

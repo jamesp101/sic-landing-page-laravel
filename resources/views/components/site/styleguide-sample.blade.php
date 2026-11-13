@@ -29,8 +29,8 @@
         'department' => $type === 'article' ? null : ['id' => $dept['id'], 'name' => $dept['name'], 'slug' => $dept['slug']],
     ], ['article', 'event', 'announcement'], [0, 1, 2]);
     $slides = [
-        ['id' => 1, 'imageUrl' => '/sic-seal.png', 'imageMediumUrl' => null, 'layers' => \App\Carousel\Overlay::legacyLayers(['title' => 'Sample slide one', 'subtitle' => 'Subtitle text', 'linkUrl' => '/posts']), 'mobile' => null, 'video' => null],
-        ['id' => 2, 'imageUrl' => '/sic-seal.png', 'imageMediumUrl' => null, 'layers' => \App\Carousel\Overlay::legacyLayers(['title' => 'Sample slide two']), 'mobile' => null, 'video' => null],
+        ['id' => 1, 'imageUrl' => '/sic-seal.png', 'imageMediumUrl' => null, 'stage' => \App\Carousel\Layout::stage(\App\Carousel\Overlay::legacyLayers(['title' => 'Sample slide one', 'subtitle' => 'Subtitle text', 'linkUrl' => '/posts'])), 'focus' => \App\Carousel\OverlayMobile::slideFocus(null), 'video' => null],
+        ['id' => 2, 'imageUrl' => '/sic-seal.png', 'imageMediumUrl' => null, 'stage' => \App\Carousel\Layout::stage(\App\Carousel\Overlay::legacyLayers(['title' => 'Sample slide two'])), 'focus' => \App\Carousel\OverlayMobile::slideFocus(null), 'video' => null],
     ];
     $members = [[
         'id' => 1, 'name' => 'Sample Dean', 'role' => 'Dean', 'imageUrl' => null,

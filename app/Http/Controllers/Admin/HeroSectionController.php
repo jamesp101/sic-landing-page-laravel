@@ -6,6 +6,7 @@ use App\Admin\AdminList;
 use App\Admin\AdminPage;
 use App\Admin\AdminScope;
 use App\Admin\DepartmentAccess;
+use App\Admin\FormValues;
 use App\Http\Controllers\Controller;
 use App\Models\Department;
 use App\Models\HeroSection;
@@ -49,7 +50,6 @@ class HeroSectionController extends Controller
         return view('admin.hero-sections.index', [
             'list' => $list,
             'sections' => $list->rows,
-            'showLocation' => $scope['kind'] === 'all',
         ]);
     }
 
@@ -57,7 +57,7 @@ class HeroSectionController extends Controller
     {
         ['actor' => $actor] = AdminPage::resolve($request);
 
-        return view('admin.hero-sections.create', DepartmentAccess::formProps($actor, $request));
+        return view('admin.hero-sections.create', ['departmentField' => DepartmentAccess::createDepartmentField($actor, $request)]);
     }
 
     public function edit(Request $request, string $id)
@@ -68,15 +68,8 @@ class HeroSectionController extends Controller
 
         return view('admin.hero-sections.edit', [
             'section' => $section,
-            ...DepartmentAccess::formProps($actor),
-            'values' => [
-                'id' => $section->id,
-                'title' => $section->title,
-                'content' => $section->content,
-                'order' => $section->order,
-                'isActive' => $section->is_active,
-                'departmentId' => $section->department_id,
-            ],
+            'departmentField' => DepartmentAccess::departmentField($actor, $section->department_id),
+            'values' => FormValues::heroSection($section),
         ]);
     }
 }

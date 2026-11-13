@@ -6,26 +6,21 @@
     import { actionForm } from '@/components/admin/shared/action-form.svelte';
     import Field from '@/components/admin/shared/Field.svelte';
     import FormActions from '@/components/admin/shared/FormActions.svelte';
-    import { append, formatFileSize, inputClass } from '@/components/admin/shared/form-utils';
+    import { append, formatFileSize, inputClass, type DepartmentField } from '@/components/admin/shared/form-utils';
     import { uploadDownloadDirect } from '@/components/admin/editor/upload';
     import { cardClass, selectClass } from '@/components/admin/ui';
 
     let {
-        departments,
+        departmentField,
         directories,
         defaultDirectory,
-        isSuperAdmin,
-        defaultDepartmentId = null,
         maxMb = 20,
         uploadMode = 'multipart',
     }: {
-        departments: { id: number; name: string }[];
+        departmentField: DepartmentField;
         directories: string[];
         /** Directory a Download without one is stored in. */
         defaultDirectory: string;
-        isSuperAdmin: boolean;
-        /** Admin scope's department, preselected (superadmins may change it). */
-        defaultDepartmentId?: number | null;
         maxMb?: number;
         /** `direct`: upload from the browser to the bucket, then submit only the key; `multipart`: submit the file. */
         uploadMode?: 'direct' | 'multipart';
@@ -35,9 +30,7 @@
     let fileName = $state('');
     let directory = $state('');
     let tags = $state('');
-    let departmentId = $state(
-        isSuperAdmin ? String(untrack(() => defaultDepartmentId) ?? '') : String(departments[0]?.id ?? ''),
-    );
+    let departmentId = $state(String(untrack(() => departmentField.value) ?? ''));
     let progress = $state<number | null>(null);
     /** Already uploaded file, reused when the form is resubmitted after a validation error. */
     let uploaded: { file: File; key: string } | null = null;
@@ -166,8 +159,9 @@
         <Field label="Owning department" id="departmentId" error={form.errors.departmentId}>
             {#snippet children(props)}
                 <select {...props} bind:value={departmentId} class="{selectClass} w-full">
-                    {#if isSuperAdmin}<option value="">General (no specific department)</option>{/if}
-                    {#each departments as dept (dept.id)}<option value={String(dept.id)}>{dept.name}</option>{/each}
+                    {#if departmentField.allowMain}<option value="">General (no specific department)</option>{/if}
+                    {#each departmentField.options as dept (dept.id)}<option value={String(dept.id)}>{dept.name}</option
+                        >{/each}
                 </select>
             {/snippet}
         </Field>

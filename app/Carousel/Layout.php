@@ -5,7 +5,8 @@ namespace App\Carousel;
 /**
  * Mobile layout facts of the carousel: phone breakpoint, 4:5 frame, hero heights, the hero photo `sizes`, and the
  * Layer + box → style rule. The CSS that must repeat them is `resources/css/slide-layout.css`; the client twin is
- * `resources/js/lib/carousel-layout.ts` (the measuring helpers there are browser-only and not ported).
+ * `resources/js/lib/carousel-frame.ts` and `carousel-layout.ts` (the measuring helpers there are browser-only and not ported). The public
+ * Carousel is presented here only (`stage`): the client twin serves the designer preview.
  */
 final class Layout
 {
@@ -135,7 +136,7 @@ final class Layout
         $bg = fn (): string => Overlay::BG_COLOR_CLASS[$layer['color']];
         $on = fn (): string => Overlay::ON_COLOR_CLASS[$layer['color']];
 
-        return match ($layer['type']) {
+        $classes = match ($layer['type']) {
             'text' => implode(' ', [
                 'sl sl-fs sl-text',
                 $phone,
@@ -158,6 +159,55 @@ final class Layout
             'badge' => "sl sl-fs {$phone} inline-block rounded-full px-[0.9em] py-[0.35em] font-semibold uppercase leading-none tracking-wider ".$bg().' '.$on(),
             'shape' => "sl sl-shape {$phone} ".$bg().' '.Overlay::RADIUS_CLASS[$layer['radius']],
             'image' => "sl sl-img {$phone} ".Overlay::RADIUS_CLASS[$layer['radius']],
+        };
+
+        // Empty parts (no phone modifier) leave no gaps; the designer twin never has them.
+        return preg_replace('/\s+/', ' ', trim($classes));
+    }
+
+    /**
+     * What the public Carousel prints for each Layer of a Slide, in reading order: the Layer presentation of the whole
+     * stage. The Blade fallback and the `site/HeroCarousel` island both only print these elements, so the server's
+     * first view and the mounted island cannot differ. The Mobile layout of every Layer is resolved here and reaches
+     * the page as the `--m*` custom properties and `sl-m*` classes of its element, never as a map keyed by Layer id.
+     *
+     * @param  list<array<string, mixed>>  $layers
+     * @return list<array{id: string, tag: string, attrs: array<string, string>, text: ?string, arrow: bool}>
+     */
+    public static function stage(array $layers): array
+    {
+        $boxes = OverlayMobile::resolveMobile($layers);
+
+        return array_map(
+            fn (array $item): array => self::layerElement($item['layer'], $item['z'], $boxes[$item['layer']['id']] ?? null),
+            Overlay::readingOrder($layers),
+        );
+    }
+
+    /**
+     * One Layer as the element the public Carousel shows: text as `h2` (heading) or `p`, a button as `a` (with `rel`
+     * for external links) plus a trailing arrow, a badge as `span`, a shape as a hidden `div`, an image as a lazy `img`.
+     * `attrs` are printed verbatim (escaped); `text` is the element's text, `arrow` appends the button arrow.
+     *
+     * @param  array<string, mixed>  $layer
+     * @param  array<string, mixed>|null  $box
+     * @return array{id: string, tag: string, attrs: array<string, string>, text: ?string, arrow: bool}
+     */
+    public static function layerElement(array $layer, int $z, ?array $box): array
+    {
+        $look = self::layerPresentation($layer, $z, $box, 'public');
+        $class = self::layerClasses($layer, $look, false);
+        $shown = ['class' => $class, 'style' => $look['style']];
+        $element = fn (string $tag, array $attrs, ?string $text = null, bool $arrow = false): array => [
+            'id' => (string) $layer['id'], 'tag' => $tag, 'attrs' => $attrs, 'text' => $text, 'arrow' => $arrow,
+        ];
+
+        return match ($layer['type']) {
+            'text' => $element($layer['role'] === 'heading' ? 'h2' : 'p', $shown, $layer['text']),
+            'button' => $element('a', array_filter(['href' => $layer['href'], 'rel' => Overlay::relFor($layer['href'])] + $shown, fn (?string $value): bool => $value !== null), $layer['label'], true),
+            'badge' => $element('span', $shown, $layer['text']),
+            'shape' => $element('div', $shown + ['aria-hidden' => 'true']),
+            'image' => $element('img', ['src' => $layer['src'], 'alt' => $layer['alt'], 'loading' => 'lazy', 'decoding' => 'async', 'class' => "{$class} object-contain", 'style' => $look['style']]),
         };
     }
 

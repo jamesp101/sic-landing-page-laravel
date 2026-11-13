@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Site;
 
+use App\Admin\AdminDownloads;
+use App\Downloads\DownloadRules;
 use App\Models\Download;
 use App\Models\DownloadDirectory;
 use App\Models\User;
@@ -88,27 +90,27 @@ class DownloadsPageTest extends TestCase
     public function test_directory_names_are_listed_once_by_name(): void
     {
         DownloadDirectory::query()->create(['name' => 'Empty folder', 'department_id' => 10]);
-        $this->assertSame(['Empty folder'], Downloads::getDirectoryNames());
+        $this->assertSame(['Empty folder'], DownloadRules::getDirectoryNames());
     }
 
     public function test_tags_encode_the_comma_separated_field_as_json_and_decode_it_back(): void
     {
-        $this->assertSame('["a","b","c"]', Downloads::encodeTags(' a, b ,,c'));
-        $this->assertSame('[]', Downloads::encodeTags(null));
-        $this->assertSame(['freshman', '2026'], Downloads::parseTags(Downloads::encodeTags('freshman, 2026')));
+        $this->assertSame('["a","b","c"]', DownloadRules::encodeTags(' a, b ,,c'));
+        $this->assertSame('[]', DownloadRules::encodeTags(null));
+        $this->assertSame(['freshman', '2026'], DownloadRules::parseTags(DownloadRules::encodeTags('freshman, 2026')));
     }
 
     public function test_tags_tolerate_legacy_comma_separated_double_encoded_and_empty_values(): void
     {
-        $this->assertSame(['a', 'b'], Downloads::parseTags('a, b'));
-        $this->assertSame(['a', 'b'], Downloads::parseTags('"a,b"'));
-        $this->assertSame([], Downloads::parseTags('  '));
-        $this->assertSame([], Downloads::parseTags(null));
+        $this->assertSame(['a', 'b'], DownloadRules::parseTags('a, b'));
+        $this->assertSame(['a', 'b'], DownloadRules::parseTags('"a,b"'));
+        $this->assertSame([], DownloadRules::parseTags('  '));
+        $this->assertSame([], DownloadRules::parseTags(null));
     }
 
     public function test_download_facts_take_the_extension_from_the_stored_key_else_the_file_name(): void
     {
-        $facts = fn (string $path, string $name) => Downloads::downloadFacts(new Download(['file_path' => $path, 'file_name' => $name]));
+        $facts = fn (string $path, string $name) => DownloadRules::downloadFacts(new Download(['file_path' => $path, 'file_name' => $name]));
         $this->assertSame(['url' => '/storage/downloads/abc.PDF', 'extension' => 'pdf', 'kind' => 'pdf'], $facts('downloads/abc.PDF', 'Handbook.docx'));
         $this->assertSame(['docx', 'doc'], [$facts('downloads/abc', 'Handbook.docx')['extension'], $facts('downloads/abc', 'Handbook.docx')['kind']]);
         $this->assertSame(['', 'other'], [$facts('downloads/abc', 'Handbook')['extension'], $facts('downloads/abc', 'Handbook')['kind']]);
@@ -118,7 +120,7 @@ class DownloadsPageTest extends TestCase
     {
         $row = new Download(['file_name' => 'Calendar.xlsx', 'file_path' => 'downloads/cal', 'file_size' => 10, 'tags' => '[]']);
         $row->created_at = $this->day(1);
-        $view = Downloads::toAdminDownload($row);
+        $view = AdminDownloads::toAdminDownload($row);
         $this->assertSame('/storage/downloads/cal', $view['url']);
         $this->assertSame('xlsx', $view['extension']);
         $this->assertSame('sheet', $view['kind']);
@@ -128,8 +130,8 @@ class DownloadsPageTest extends TestCase
     {
         $row = Download::query()->with('department')->where('file_name', 'Enrolment form')->firstOrFail();
         $this->assertNull($row->directory);
-        $view = Downloads::toAdminDownload($row);
-        $this->assertSame(Downloads::DEFAULT_DIRECTORY, $view['directory']);
+        $view = AdminDownloads::toAdminDownload($row);
+        $this->assertSame(DownloadRules::DEFAULT_DIRECTORY, $view['directory']);
         $this->assertSame([], $view['tags']);
         $this->assertNull($view['departmentName']);
     }
@@ -141,7 +143,7 @@ class DownloadsPageTest extends TestCase
 
     public function test_the_folder_map_merges_files_without_a_directory_into_general(): void
     {
-        $view = Downloads::getAdminFolders($this->admin(User::ROLE_SUPERADMIN, null), ['kind' => 'all'], fn (string $n) => "?folder={$n}");
+        $view = AdminDownloads::getAdminFolders($this->admin(User::ROLE_SUPERADMIN, null), ['kind' => 'all'], fn (string $n) => "?folder={$n}");
         $this->assertSame(4, $view['totalFiles']);
         $this->assertSame(400, $view['totalBytes']);
         $this->assertSame(
@@ -154,15 +156,15 @@ class DownloadsPageTest extends TestCase
     public function test_a_department_user_sees_their_department_but_shared_folders_stay_listed(): void
     {
         $user = $this->admin(User::ROLE_DEPARTMENT_USER, 10);
-        $view = Downloads::getAdminFolders($user, ['kind' => 'department', 'id' => 10, 'name' => 'CIT', 'slug' => 'cit'], fn (string $n) => "?folder={$n}");
+        $view = AdminDownloads::getAdminFolders($user, ['kind' => 'department', 'id' => 10, 'name' => 'CIT', 'slug' => 'cit'], fn (string $n) => "?folder={$n}");
         $this->assertSame(2, $view['totalFiles']);
         $this->assertSame([['Academics', 1], ['General', 1]], array_map(fn (array $f) => [$f['name'], $f['count']], $view['folders']));
     }
 
     public function test_the_general_directory_filter_includes_files_stored_without_one(): void
     {
-        $general = Download::query()->where(Downloads::directoryWhere(Downloads::DEFAULT_DIRECTORY))->pluck('file_name')->sort()->values()->all();
+        $general = Download::query()->where(DownloadRules::directoryWhere(DownloadRules::DEFAULT_DIRECTORY))->pluck('file_name')->sort()->values()->all();
         $this->assertSame(['Enrolment form', 'Handbook'], $general);
-        $this->assertSame(['Schedule', 'Syllabus'], Download::query()->where(Downloads::directoryWhere('Academics'))->pluck('file_name')->sort()->values()->all());
+        $this->assertSame(['Schedule', 'Syllabus'], Download::query()->where(DownloadRules::directoryWhere('Academics'))->pluck('file_name')->sort()->values()->all());
     }
 }

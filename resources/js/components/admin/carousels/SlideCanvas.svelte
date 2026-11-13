@@ -13,7 +13,8 @@
         type Guides,
         type Handle,
     } from '@/lib/carousel-editor';
-    import { CROP, measureLayerBoxes } from '@/lib/carousel-layout';
+    import { CROP } from '@/lib/carousel-frame';
+    import { measureLayerBoxes } from '@/lib/carousel-layout';
     import { SAFE_MARGIN, type Layer, type MobileOverride } from '@/lib/carousel-overlay';
     import { setMobile, type MobileBox } from '@/lib/carousel-overlay-mobile';
     import SlideStage from './SlideStage.svelte';

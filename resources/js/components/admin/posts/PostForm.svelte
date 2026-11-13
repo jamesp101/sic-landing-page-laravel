@@ -7,7 +7,7 @@
     import Field from '@/components/admin/shared/Field.svelte';
     import FormActions from '@/components/admin/shared/FormActions.svelte';
     import ImageField from '@/components/admin/shared/ImageField.svelte';
-    import { append, inputClass } from '@/components/admin/shared/form-utils';
+    import { append, inputClass, type DepartmentField } from '@/components/admin/shared/form-utils';
     import UnsavedChangesGuard from '@/components/admin/shared/UnsavedChangesGuard.svelte';
     import { unsavedChanges } from '@/components/admin/shared/unsaved-changes.svelte';
     import { cardClass, selectClass } from '@/components/admin/ui';
@@ -22,22 +22,16 @@
         /** ISO strings */
         startDate: string | null;
         endDate: string | null;
-        departmentId: number | null;
         isFeatured: boolean;
         hideAuthor: boolean;
         highlightImageUrl: string | null;
     }
 
     let {
-        departments,
-        isSuperAdmin,
-        defaultDepartmentId = null,
+        departmentField,
         post = null,
     }: {
-        departments: { id: number; name: string }[];
-        isSuperAdmin: boolean;
-        /** Admin scope's department, preselected when creating (superadmins may change it). */
-        defaultDepartmentId?: number | null;
+        departmentField: DepartmentField;
         post?: PostValues | null;
     } = $props();
 
@@ -55,15 +49,7 @@
     let type = $state(initial?.type ?? 'article');
     let startDate = $state(toLocalInput(initial?.startDate ?? null));
     let endDate = $state(toLocalInput(initial?.endDate ?? null));
-    let departmentId = $state(
-        initial?.departmentId
-            ? String(initial.departmentId)
-            : isSuperAdmin
-              ? initial
-                  ? ''
-                  : String(untrack(() => defaultDepartmentId) ?? '')
-              : String(untrack(() => departments)[0]?.id ?? ''),
-    );
+    let departmentId = $state(String(untrack(() => departmentField.value) ?? ''));
     let isFeatured = $state(initial?.isFeatured ?? false);
     let hideAuthor = $state(initial?.hideAuthor ?? false);
     let highlightImage = $state<File | null>(null);
@@ -161,8 +147,8 @@
                 <Field label="Department" id="departmentId" error={form.errors.departmentId}>
                     {#snippet children(props)}
                         <select {...props} bind:value={departmentId} class="{selectClass} w-full">
-                            {#if isSuperAdmin}<option value="">General landing page</option>{/if}
-                            {#each departments as dept (dept.id)}
+                            {#if departmentField.allowMain}<option value="">General landing page</option>{/if}
+                            {#each departmentField.options as dept (dept.id)}
                                 <option value={String(dept.id)}>{dept.name}</option>
                             {/each}
                         </select>

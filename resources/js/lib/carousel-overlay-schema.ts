@@ -8,6 +8,7 @@ import {
     BUTTON_VARIANTS,
     COLORS,
     FONTS,
+    LAYER_LIMITS,
     MAX_LAYERS,
     MAX_OVERLAY_JSON,
     OVERLAY_VERSION,
@@ -22,16 +23,6 @@ import {
     type Layer,
     type SlideMobile,
 } from './carousel-overlay';
-
-/** Numeric bounds of a Layer's geometry and look: the schema below validates against them and the designer clamps edits to them. */
-export const LAYER_LIMITS = {
-    x: [0, 100],
-    y: [0, 100],
-    w: [1, 100],
-    h: [1, 100],
-    rotation: [-180, 180],
-    opacity: [10, 100],
-} as const;
 
 const range = ([min, max]: readonly [number, number]) => z.number().min(min).max(max);
 const pct = range(LAYER_LIMITS.x);

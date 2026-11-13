@@ -2,6 +2,7 @@
 
 namespace App\Actions;
 
+use App\Admin\ActionField;
 use App\Admin\ActionInput;
 use App\Admin\DepartmentAccess;
 use App\Carousel\CarouselAdmin;
@@ -11,7 +12,6 @@ use App\Carousel\Slides;
 use App\Models\CarouselItem;
 use App\Storage\ImageFile;
 use App\Storage\Storage;
-use App\Support\Authz;
 use App\Support\RequestError;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -24,21 +24,17 @@ class CarouselsActions
 
     private const VIDEO_TOO_LONG = 'The video link is too long.';
 
+    #[Action(Access::User)]
     public function create(Request $request): array
     {
-        $input = ActionInput::validate(
-            $request,
-            ['image' => 'raw', 'overlay' => 'text', 'video' => 'text', 'departmentId' => 'int', 'showOnMain' => 'bool'],
-            [
-                'image' => ['required', ...ImageFile::imageFile(Storage::limit('image'), 'slide')],
-                'overlay' => ['nullable', 'string', 'max:60000'],
-                'video' => ['nullable', 'string', 'max:500'],
-                'departmentId' => ['nullable', 'integer'],
-                'showOnMain' => ['required', 'boolean'],
-            ],
-            ['image.required' => ImageFile::MISSING, 'overlay.max' => self::OVERLAY_TOO_LARGE, 'video.max' => self::VIDEO_TOO_LONG],
-        );
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, [
+            'image' => ActionField::raw(['required', ...ImageFile::imageFile(Storage::limit('image'), 'slide')], ['required' => ImageFile::MISSING]),
+            'overlay' => ActionField::text(['nullable', 'string', 'max:60000'], ['max' => self::OVERLAY_TOO_LARGE]),
+            'video' => ActionField::text(['nullable', 'string', 'max:500'], ['max' => self::VIDEO_TOO_LONG]),
+            'departmentId' => ActionField::int(['nullable', 'integer']),
+            'showOnMain' => ActionField::bool(['required', 'boolean']),
+        ]);
+        $actor = $request->user();
         $departmentId = DepartmentAccess::resolveWriteDepartment($actor, $input['departmentId'] ?? null);
         $content = ($input['overlay'] ?? '') !== ''
             ? $this->overlayData($input['overlay'])
@@ -57,20 +53,16 @@ class CarouselsActions
     }
 
     /** Saves the design (and optionally a replacement image) of one slide. */
+    #[Action(Access::User)]
     public function update(Request $request): array
     {
-        $input = ActionInput::validate(
-            $request,
-            ['id' => 'int', 'overlay' => 'text', 'video' => 'raw', 'image' => 'raw'],
-            [
-                'id' => ['required', 'integer'],
-                'overlay' => ['string', 'max:60000'],
-                'video' => ['nullable', 'string', 'max:500'],
-                'image' => ['nullable', ...ImageFile::imageFile(Storage::limit('image'), 'slide')],
-            ],
-            ['overlay.max' => self::OVERLAY_TOO_LARGE, 'video.max' => self::VIDEO_TOO_LONG],
-        );
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, [
+            'id' => ActionField::id(),
+            'overlay' => ActionField::text(['string', 'max:60000'], ['max' => self::OVERLAY_TOO_LARGE]),
+            'video' => ActionField::raw(['nullable', 'string', 'max:500'], ['max' => self::VIDEO_TOO_LONG]),
+            'image' => ActionField::raw(['nullable', ...ImageFile::imageFile(Storage::limit('image'), 'slide')]),
+        ]);
+        $actor = $request->user();
         /** @var CarouselItem $row */
         $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
         $content = $this->overlayData($input['overlay']);
@@ -84,14 +76,15 @@ class CarouselsActions
     }
 
     /** Where a slide is shown: the main page and/or one department. Department users cannot move it out of their department. */
+    #[Action(Access::User)]
     public function placement(Request $request): array
     {
-        $input = ActionInput::validate(
-            $request,
-            ['id' => 'int', 'showOnMain' => 'bool', 'departmentId' => 'int'],
-            ['id' => ['required', 'integer'], 'showOnMain' => ['nullable', 'boolean'], 'departmentId' => ['nullable', 'integer']],
-        );
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, [
+            'id' => ActionField::id(),
+            'showOnMain' => ActionField::bool(['nullable', 'boolean']),
+            'departmentId' => ActionField::int(['nullable', 'integer']),
+        ]);
+        $actor = $request->user();
         /** @var CarouselItem $row */
         $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
         $departmentId = $request->has('departmentId')
@@ -103,10 +96,11 @@ class CarouselsActions
     }
 
     /** Copies a slide (image file included) right after the original. */
+    #[Action(Access::User)]
     public function duplicate(Request $request): array
     {
-        $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, ['id' => ActionField::id()]);
+        $actor = $request->user();
         /** @var CarouselItem $row */
         $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
 
@@ -114,19 +108,11 @@ class CarouselsActions
     }
 
     /** Persists a new slide sequence (drag and drop). `ids` lists the reordered slides in their new order. */
+    #[Action(Access::User)]
     public function reorder(Request $request): array
     {
-        $input = ActionInput::validate(
-            $request,
-            ['ids' => 'raw'],
-            ['ids' => ['required', 'array', 'min:1', 'max:500'], 'ids.*' => ['required', self::jsonInt()]],
-            [
-                'ids.required' => 'Too small: expected array to have >=1 items',
-                'ids.min' => 'Too small: expected array to have >=1 items',
-                'ids.max' => 'Too big: expected array to have <=500 items',
-            ],
-        );
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, ['ids' => ActionField::list(500, ['*' => ['required', ActionField::jsonInt()]])]);
+        $actor = $request->user();
         $ids = array_map('intval', array_values($input['ids']));
         if (count(array_unique($ids)) !== count($ids)) {
             throw RequestError::badRequest('Duplicate slides in the order.');
@@ -148,10 +134,11 @@ class CarouselsActions
         return ['orders' => (object) $byId];
     }
 
+    #[Action(Access::User)]
     public function delete(Request $request): array
     {
-        $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
-        $actor = Authz::requireUser($request->user());
+        $input = ActionInput::validate($request, ['id' => ActionField::id()]);
+        $actor = $request->user();
         /** @var CarouselItem $row */
         $row = DepartmentAccess::loadScoped($actor, CarouselItem::class, $input['id']);
 
@@ -183,15 +170,5 @@ class CarouselsActions
     private function image(UploadedFile $file): UploadedFile
     {
         return ImageFile::upload($file, 'slide');
-    }
-
-    /** zod `z.number().int()` on JSON input: numeric strings are rejected. */
-    private static function jsonInt(): \Closure
-    {
-        return function (string $attribute, mixed $value, \Closure $fail): void {
-            if (! is_int($value)) {
-                $fail('Invalid input: expected number, received '.get_debug_type($value));
-            }
-        };
     }
 }

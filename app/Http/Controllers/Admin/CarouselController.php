@@ -33,12 +33,9 @@ class CarouselController extends Controller
 
         return view('admin.carousels.index', [
             'slides' => $slides,
-            'departments' => DepartmentAccess::departmentOptions($actor),
+            'departmentField' => DepartmentAccess::createDepartmentField($actor, $request),
             'initialId' => in_array($requested, $ids, true) ? $requested : ($ids[0] ?? null),
             'scopeName' => $superadmin ? AdminScope::scopeLabel($scope) : null,
-            'defaultDepartmentId' => AdminScope::scopeDefaultDepartment($scope),
-            'superadmin' => $superadmin,
-            'lockedDepartmentId' => $superadmin ? null : $actor->department_id,
         ]);
     }
 }

@@ -7,8 +7,9 @@ type Loader = () => Promise<{ default: Component<any> }>;
  * `<div data-island="admin/posts/PostForm" data-props="{…}">`. `loaders` maps the name (path under
  * `resources/js/components`, no extension) to its lazy import, so each island is its own chunk.
  * Server-rendered fallback markup inside the mount point is replaced. `data-island-ready` marks a mounted island.
- * An island marked `data-island-adopt` (the admin shell) wraps server-rendered page content instead: its child
- * nodes are kept and handed to the component as its `children` snippet.
+ * An island marked `data-island-adopt` (the admin shell) wraps server-rendered page content instead: the child nodes
+ * of its `data-island-children` element are kept and handed to the component as its `children` snippet; the
+ * server-rendered shell around them is replaced.
  */
 export function mountIslands(loaders: Record<string, Loader>, root: ParentNode = document): void {
     for (const target of root.querySelectorAll<HTMLElement>('[data-island]:not([data-island-ready])')) {
@@ -21,7 +22,12 @@ export function mountIslands(loaders: Record<string, Loader>, root: ParentNode =
         const props = JSON.parse(target.dataset.props || '{}');
         void load().then(({ default: component }) => {
             if (target.hasAttribute('data-island-adopt')) {
-                const nodes = [...target.childNodes];
+                const holder = target.querySelector<HTMLElement>('[data-island-children]');
+                if (!holder) {
+                    console.error(`Island ${name} adopts content but has no [data-island-children]`);
+                    return;
+                }
+                const nodes = [...holder.childNodes];
                 const children = createRawSnippet(() => ({
                     render: () => '<div style="display: contents"></div>',
                     setup: (element) => element.append(...nodes),

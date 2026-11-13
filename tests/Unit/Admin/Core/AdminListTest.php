@@ -78,14 +78,14 @@ class AdminListTest extends TestCase
 
     private function list(User $actor, string $query = '', array $scope = self::ALL, array $extra = []): ListState
     {
-        return AdminList::runList([
+        return AdminList::runList($extra + [
             'url' => "/admin/posts{$query}",
             'actor' => $actor,
             'scope' => $scope,
             'spec' => $this->spec(),
             'count' => fn (Closure $where) => Post::query()->where($where)->count(),
             'fetch' => fn (array $args) => AdminList::apply(Post::query(), $args)->get(),
-        ] + $extra);
+        ]);
     }
 
     private function titles(ListState $state): array
@@ -216,5 +216,41 @@ class AdminListTest extends TestCase
         $this->assertFalse($restricted('')->filtered);
         $this->assertTrue($restricted('?q=Beta')->filtered);
         $this->assertSame(1, $restricted('?q=Beta')->total);
+    }
+
+    public function test_sort_options_list_labelled_fields_with_toggling_links_and_the_active_one(): void
+    {
+        $extra = ['spec' => ['fields' => [
+            'title' => AdminList::sortColumn('title', 'asc', 'Title'),
+            'created' => AdminList::sortColumn('created_at', 'desc', 'Date'),
+            'hidden' => AdminList::sortColumn('id'),
+        ]] + $this->spec()];
+
+        $options = $this->list($this->admin, '?q=Alpha&page=2&sort=title&dir=asc', self::ALL, $extra)->sortOptions();
+        $this->assertSame([
+            ['label' => 'Title', 'field' => 'title', 'href' => '/admin/posts?q=Alpha&sort=title&dir=desc', 'active' => true],
+            ['label' => 'Date', 'field' => 'created', 'href' => '/admin/posts?q=Alpha&sort=created&dir=desc', 'active' => false],
+        ], $options);
+    }
+
+    public function test_clear_filter_href_drops_only_that_filter(): void
+    {
+        $state = $this->list($this->admin, '?q=Alpha&type=article&featured=yes&page=2', self::ALL, ['filters' => $this->filters()]);
+        $this->assertSame('/admin/posts?q=Alpha&featured=yes', $state->clearFilterHref('type'));
+    }
+
+    public function test_the_department_column_shows_only_when_the_scope_spans_all_departments(): void
+    {
+        $this->assertTrue($this->list($this->admin, '', self::ALL)->showDepartment);
+        $this->assertFalse($this->list($this->admin, '', self::CBA)->showDepartment);
+        $this->assertFalse($this->list($this->admin, '', ['kind' => 'main'])->showDepartment);
+        $this->assertFalse($this->list($this->cit, '', self::CBA)->showDepartment);
+    }
+
+    public function test_an_unrestricted_list_ignores_the_scope_but_search_still_narrows(): void
+    {
+        $unrestricted = fn (string $query) => $this->list($this->admin, $query, self::CBA, ['restriction' => AdminList::unrestricted()]);
+        $this->assertSame(10, $unrestricted('')->total);
+        $this->assertSame(1, $unrestricted('?q=Beta')->total);
     }
 }

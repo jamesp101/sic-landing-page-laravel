@@ -9,7 +9,6 @@ use App\Auth\PasswordLogin;
 use App\Auth\PasswordPolicy;
 use App\Auth\UserRules;
 use App\Models\User;
-use App\Support\Authz;
 use App\Support\Flash;
 use App\Support\RequestError;
 use Illuminate\Http\Request;
@@ -20,9 +19,10 @@ use Illuminate\Support\Facades\Hash;
 class AccountActions
 {
     /** `{ name, email, currentPassword? }` → `{ emailChanged }`. The current password is required only when the email changes. */
+    #[Action(Access::User)]
     public function updateProfile(Request $request): array
     {
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         $request->merge([
             'name' => is_string($request->input('name')) ? trim($request->input('name')) : null,
             'email' => is_string($request->input('email')) ? mb_strtolower(trim($request->input('email'))) : null,
@@ -73,9 +73,10 @@ class AccountActions
     }
 
     /** `{ currentPassword, password, passwordConfirmation }` → `{ ok: true }`. Ends the User's other sessions. */
+    #[Action(Access::User)]
     public function changePassword(Request $request): array
     {
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         $input = $request->validate([
             'currentPassword' => ['required', 'string'],
             'password' => ['required', 'string', 'min:'.PasswordPolicy::MIN_PASSWORD_LENGTH, 'max:'.PasswordPolicy::MAX_PASSWORD_LENGTH],
@@ -98,9 +99,10 @@ class AccountActions
     }
 
     /** `{ password }` → `{ redirect: '/' }`. Refused for the last Superadmin; a refused delete keeps the User signed in. */
+    #[Action(Access::User)]
     public function deleteAccount(Request $request): array
     {
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         $input = $request->validate(['password' => ['required', 'string']], ['password.required' => 'Enter your password to confirm.']);
         PasswordLogin::assertPassword($actor->id, $input['password']);
 
@@ -112,9 +114,10 @@ class AccountActions
     }
 
     /** `{ password }` → `{ ok: true }`: the secure-area check behind `/confirm-password`. */
+    #[Action(Access::User)]
     public function confirmPassword(Request $request): array
     {
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         $input = $request->validate(['password' => ['required', 'string']], ['password.required' => 'Enter your password.']);
         PasswordLogin::assertPassword($actor->id, $input['password']);
         $request->session()->put('auth.password_confirmed_at', time());

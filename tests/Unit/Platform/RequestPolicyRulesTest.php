@@ -128,7 +128,8 @@ class RequestPolicyRulesTest extends TestCase
 
     public function test_rejects_signed_out_rpc_calls_to_every_action_but_the_public_ones(): void
     {
-        $rejects = fn (string $method, string $path, bool $signedIn = false) => Rules::rejectsAnonymousAction($method, 'http://localhost'.$path, $signedIn);
+        $public = ['contact.send', 'auth.login', 'auth.forgotPassword', 'auth.resetPassword'];
+        $rejects = fn (string $method, string $path, bool $signedIn = false) => Rules::rejectsAnonymousAction($method, 'http://localhost'.$path, $signedIn, fn (string $name): bool => in_array($name, $public, true));
 
         $this->assertTrue($rejects('POST', '/_actions/posts.create'));
         $this->assertTrue($rejects('POST', '/_actions/account.deleteUser/'));
@@ -148,7 +149,7 @@ class RequestPolicyRulesTest extends TestCase
 
     public function test_never_rejects_a_signed_in_user(): void
     {
-        $this->assertFalse(Rules::rejectsAnonymousAction('POST', '/_actions/posts.create', true));
+        $this->assertFalse(Rules::rejectsAnonymousAction('POST', '/_actions/posts.create', true, fn (string $name): bool => false));
     }
 
     public function test_anonymous_action_response_is_a_401_in_the_action_error_envelope(): void
@@ -192,23 +193,6 @@ class RequestPolicyRulesTest extends TestCase
     public function test_payload_too_large_is_a_413(): void
     {
         $this->assertSame(413, Rules::payloadTooLargeResponse()->getStatusCode());
-    }
-
-    public function test_is_public_page_accepts_pages_a_visitor_navigates_to(): void
-    {
-        foreach (['/', '/posts', '/posts/enrollment-open', '/departments/cit', '/downloads', '/contact'] as $path) {
-            $this->assertTrue(Rules::isPublicPage($path), $path);
-        }
-    }
-
-    public function test_is_public_page_rejects_private_routes_assets_api_and_feeds(): void
-    {
-        foreach ([
-            '/login', '/forgot-password', '/admin/posts', '/dashboard', '/settings/profile', '/api/auth/session',
-            '/_actions/contact.send', '/storage/posts/a.webp', '/build/assets/app.js', '/rss.xml', '/sitemap.xml', '/csrf-token',
-        ] as $path) {
-            $this->assertFalse(Rules::isPublicPage($path), $path);
-        }
     }
 
     public function test_etag_matches_weakly_over_a_list_and_honours_star(): void

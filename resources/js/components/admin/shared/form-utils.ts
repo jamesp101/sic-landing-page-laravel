@@ -60,6 +60,17 @@ export function formatFileSize(bytes: number): string {
     return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
 }
 
+/** The Department field a form prints, finished by `DepartmentAccess::departmentField`: the islands decide nothing. */
+export interface DepartmentField {
+    options: { id: number; name: string }[];
+    /** Selected Department id; null = Main site. */
+    value: number | null;
+    /** A Department user cannot change it. */
+    locked: boolean;
+    /** The Main site is a choice (a "none" option). */
+    allowMain: boolean;
+}
+
 /** Appends a value to FormData: null/undefined are skipped, booleans become "true"/"false". */
 export function append(form: FormData, key: string, value: string | number | boolean | File | null | undefined): void {
     if (value === null || value === undefined) return;

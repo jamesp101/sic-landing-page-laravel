@@ -2,15 +2,17 @@
 
 namespace App\Actions;
 
+use App\Admin\ActionField;
 use App\Admin\ActionInput;
 use App\Admin\DepartmentAccess;
 use App\Admin\Slug;
+use App\Content\Content;
 use App\Content\ContentField;
 use App\Models\Department;
 use App\Storage\ImageFile;
+use App\Storage\ImageUpload;
 use App\Storage\Storage;
 use App\Storage\StoredFiles;
-use App\Support\Authz;
 use App\Support\Flash;
 use App\Support\RequestError;
 use Illuminate\Http\Request;
@@ -19,10 +21,10 @@ use Illuminate\Http\UploadedFile;
 /** `departments.*` actions (multipart for create/update, JSON for delete). */
 class DepartmentsActions
 {
+    #[Action(Access::Superadmin)]
     public function create(Request $request): array
     {
         $input = $this->input($request, false);
-        Authz::requireSuperAdmin($request->user());
 
         if (Department::query()->where('name', $input['name'])->exists()) {
             throw RequestError::conflict('A department with this name already exists.');
@@ -33,66 +35,44 @@ class DepartmentsActions
             'department',
         );
 
-        $department = StoredFiles::commitWithFiles([
-            'files' => ['logo' => $this->logo($input)],
-            'run' => fn (array $keys) => Department::query()->create([
-                'name' => $input['name'],
-                'slug' => $slug,
-                'description' => $input['description'] ?? null,
-                'hero_content' => $input['heroContent'] ?? null,
-                'logo_path' => $keys['logo'] ?? null,
-            ]),
-        ]);
+        $department = StoredFiles::save(
+            new Department,
+            ['name' => $input['name'], 'slug' => $slug, 'description' => $input['description'] ?? null, 'hero_content' => $input['heroContent'] ?? null],
+            ['logo_path' => $this->logo($input)],
+        );
         Flash::success('Department created successfully.');
 
         return ['id' => $department->id];
     }
 
+    #[Action(Access::User)]
     public function update(Request $request): array
     {
         $input = $this->input($request, true);
-        $actor = Authz::requireUser($request->user());
+        $actor = $request->user();
         $row = DepartmentAccess::loadOwnDepartment($actor, $input['id']);
-        $logo = $this->logo($input);
 
-        StoredFiles::commitWithFiles([
-            'files' => ['logo' => $logo],
-            'run' => fn (array $keys) => $row->update([
-                'name' => $input['name'],
-                'description' => $input['description'] ?? null,
-                'hero_content' => $input['heroContent'] ?? null,
-                'logo_path' => $keys['logo'] ?? $row->logo_path,
-            ]),
-            'stale' => [$logo ? $row->logo_path : null],
-        ]);
+        StoredFiles::save(
+            $row,
+            ['name' => $input['name'], 'description' => $input['description'] ?? null, 'hero_content' => $input['heroContent'] ?? null],
+            ['logo_path' => $this->logo($input)],
+        );
         Flash::success('Department details updated.');
 
         return ['id' => $row->id];
     }
 
+    #[Action(Access::Superadmin)]
     public function delete(Request $request): array
     {
-        $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
-        Authz::requireSuperAdmin($request->user());
-        $row = Department::query()
-            ->with([
-                'members:id,department_id,image_path',
-                'carouselItems:id,department_id,image_path,video_path',
-                'posts:id,department_id,highlight_image_path',
-                'downloads:id,department_id,file_path',
-            ])
-            ->find($input['id']);
+        $input = ActionInput::validate($request, ['id' => ActionField::id()]);
+        $row = Department::query()->find($input['id']);
         if (! $row) {
             throw RequestError::notFound();
         }
 
-        StoredFiles::deleteWithFiles(fn () => $row->delete(), [
-            $row->logo_path,
-            ...$row->members->pluck('image_path')->all(),
-            ...$row->carouselItems->flatMap(fn ($item) => [$item->image_path, $item->video_path])->all(),
-            ...$row->posts->pluck('highlight_image_path')->all(),
-            ...$row->downloads->pluck('file_path')->all(),
-        ]);
+        // The Department owns its logo, Member portraits, Slide photos, videos and Layer images, Highlight images and Downloads.
+        StoredFiles::delete($row);
         Flash::success('Department deleted successfully.');
 
         return ['id' => $input['id']];
@@ -100,31 +80,24 @@ class DepartmentsActions
 
     private function input(Request $request, bool $withId): array
     {
-        $types = ['name' => 'string', 'description' => 'raw', 'heroContent' => 'text', 'logo' => 'raw'];
-        $rules = [
-            'name' => ['required', 'string', 'max:255'],
-            'description' => ['nullable', 'string'],
-            'heroContent' => ['nullable', ...ContentField::rules(false)],
-            'logo' => ['nullable', ...ImageFile::imageFile(Storage::limit('image'), 'logo')],
-        ];
-        if ($withId) {
-            $types['id'] = 'int';
-            $rules['id'] = ['required', 'integer'];
-        }
-        $input = ActionInput::validate($request, $types, $rules, ['name.required' => 'The name is required.']);
+        $input = ActionInput::validate($request, [
+            'name' => ActionField::string(['required', 'string', 'max:255'], ['required' => 'The name is required.']),
+            'description' => ActionField::raw(['nullable', 'string']),
+            'heroContent' => ActionField::text(['nullable', ...ContentField::rules(false)]),
+            'logo' => ActionField::raw(['nullable', ...ImageFile::imageFile(Storage::limit('image'), 'logo')]),
+        ] + ($withId ? ['id' => ActionField::id()] : []));
         // The form always sends both fields: an emptied one is stored as '' (NULL only when the field is absent).
-        $input['heroContent'] = $request->has('heroContent') ? ContentField::normalized($input['heroContent'] ?? '') : null;
+        $input['heroContent'] = $request->has('heroContent') ? Content::forStorage($input['heroContent'])->value : null;
         $input['description'] = $request->has('description') ? ($input['description'] ?? '') : null;
 
         return $input;
     }
 
-    private function logo(array $input): ?array
+    /** The replacement logo, or null to keep the current one. */
+    private function logo(array $input): ?ImageUpload
     {
         $file = $input['logo'] ?? null;
 
-        return $file instanceof UploadedFile
-            ? ['prefix' => 'departments', 'file' => ImageFile::upload($file, 'logo'), 'variant' => true]
-            : null;
+        return $file instanceof UploadedFile ? ImageFile::upload($file, 'logo') : null;
     }
 }

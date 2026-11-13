@@ -2,18 +2,12 @@
 
 namespace App\Storage;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-use RuntimeException;
-
 /**
  * Storage cleanup: deletes stored files that no database row references and that are older than a grace period,
  * plus expired pending-upload rows (never their files directly).
  *
- * "Referenced" is decided generically: a file is kept when its key appears, as a bare key or inside any URL form
- * (`/storage/<key>`, the S3_PUBLIC_URL form), in ANY string/text column of ANY table (found from the database
- * schema, so new columns count automatically). Files younger than the grace period are never touched, so an upload
- * whose row is not committed yet is safe.
+ * "Referenced" is `StoredKeyReferences`' rule (any string column of any table, plus live Pending uploads). Files
+ * younger than the grace period are never touched, so an upload whose row is not committed yet is safe.
  *
  * An image variant (`Variants`) is never referenced by a row: it lives and dies with its original. While the
  * original is stored, the variant is neither a candidate nor counted; an unreferenced original is deleted together
@@ -27,89 +21,13 @@ final class StorageCleanup
 
     private const DEFAULT_BUDGET_MS = 40_000;
 
-    private const SCAN_BATCH = 500;
-
     private const DELETE_CHUNK = 25;
 
     private const SWEEP_ROUNDS = 20;
 
-    /** Framework tables: they hold sessions, cache entries and queue payloads, never a stored file's key. */
-    private const SKIPPED_TABLES = ['migrations', 'sessions', 'cache', 'cache_locks', 'jobs', 'job_batches', 'failed_jobs', 'password_reset_tokens'];
-
-    private const TEXT_TYPES = ['varchar', 'char', 'text', 'tinytext', 'mediumtext', 'longtext', 'string', 'character varying', 'nvarchar', 'nchar', 'json'];
-
     private static function nowMs(): int
     {
         return (int) floor(microtime(true) * 1000);
-    }
-
-    /**
-     * Every table with its string/text columns, from the database schema.
-     *
-     * @return list<array{table: string, columns: list<string>, id: bool}>
-     */
-    public static function stringTables(): array
-    {
-        $tables = [];
-        foreach (Schema::getTables() as $table) {
-            $name = $table['name'];
-            if ($name === PendingUploads::table() || in_array($name, self::SKIPPED_TABLES, true)) {
-                continue;
-            }
-            $columns = [];
-            $hasId = false;
-            foreach (Schema::getColumns($name) as $column) {
-                if ($column['name'] === 'id') {
-                    $hasId = true;
-                }
-                $type = strtolower((string) ($column['type_name'] ?? ''));
-                if (in_array($type, self::TEXT_TYPES, true)) {
-                    $columns[] = $column['name'];
-                }
-            }
-            if ($columns !== []) {
-                $tables[] = ['table' => $name, 'columns' => $columns, 'id' => $hasId];
-            }
-        }
-
-        return $tables;
-    }
-
-    /**
-     * Removes from `$unreferenced` every key found in a string column of any table.
-     *
-     * @param  array<string, int>  $unreferenced  key => size
-     * @param  ?int  $dryRunAt  Dry run: Pending uploads a sweep at this instant (ms) would remove are not counted as references, as the real run sweeps them first.
-     */
-    private static function scanReferences(array &$unreferenced, ?int $dryRunAt): void
-    {
-        $tables = self::stringTables();
-        if ($tables === []) {
-            throw new RuntimeException('Database schema not available: refusing to clean up.');
-        }
-        $matcher = new KeyMatcher(array_keys($unreferenced));
-        foreach (PendingUploads::livePendingKeys($dryRunAt) as $pendingKey) {
-            $matcher->find($pendingKey, function (string $key) use (&$unreferenced): void {
-                unset($unreferenced[$key]);
-            });
-        }
-        foreach ($tables as $table) {
-            $query = DB::table($table['table'])->select($table['columns']);
-            $rows = $table['id'] ? $query->addSelect('id')->lazyById(self::SCAN_BATCH) : $query->cursor();
-            foreach ($rows as $row) {
-                if ($unreferenced === []) {
-                    return;
-                }
-                foreach ($table['columns'] as $column) {
-                    $value = $row->{$column};
-                    if (is_string($value) && $value !== '') {
-                        $matcher->find($value, function (string $key) use (&$unreferenced): void {
-                            unset($unreferenced[$key]);
-                        });
-                    }
-                }
-            }
-        }
     }
 
     /**
@@ -177,7 +95,7 @@ final class StorageCleanup
         $candidateCount = count($candidates);
 
         $unreferenced = array_map(fn (array $info) => $info['size'], $candidates);
-        self::scanReferences($unreferenced, $dryRun ? $now : null);
+        StoredKeyReferences::removeReferenced($unreferenced, $dryRun ? $now : null);
 
         $ordered = array_keys($unreferenced);
         usort($ordered, fn (string $a, string $b) => $candidates[$a]['mtime'] <=> $candidates[$b]['mtime']);

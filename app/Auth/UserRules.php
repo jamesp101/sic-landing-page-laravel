@@ -2,8 +2,6 @@
 
 namespace App\Auth;
 
-use App\Models\Download;
-use App\Models\Post;
 use App\Models\User;
 use App\Storage\StoredFiles;
 use App\Support\RequestError;
@@ -85,20 +83,14 @@ final class UserRules
      */
     public static function deleteUserWithFiles(int $userId): void
     {
-        if (! User::query()->whereKey($userId)->exists()) {
-            throw RequestError::notFound();
-        }
-        $owned = [
-            ...Post::query()->where('user_id', $userId)->pluck('highlight_image_path')->all(),
-            ...Download::query()->where('user_id', $userId)->pluck('file_path')->all(),
-        ];
-        StoredFiles::deleteWithFiles(function () use ($userId): void {
+        $user = User::query()->find($userId) ?? throw RequestError::notFound();
+        StoredFiles::delete($user, function () use ($userId): void {
             self::superadminTransaction(function () use ($userId): void {
                 self::assertUserDeletable($userId);
-                DB::table(config('session.table', 'sessions'))->where('user_id', $userId)->delete();
+                PasswordLogin::endSessions($userId);
                 User::query()->whereKey($userId)->delete();
             });
-        }, $owned);
+        });
     }
 
     private static function conflict(): RequestError

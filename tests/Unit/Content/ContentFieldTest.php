@@ -49,12 +49,4 @@ final class ContentFieldTest extends TestCase
         $this->assertSame(['Invalid input: expected string, received number'], $this->errors(5, false));
         $this->assertSame(['Invalid input: expected string, received array'], $this->errors(['x'], false));
     }
-
-    public function test_normalized_returns_the_value_to_store(): void
-    {
-        $this->assertSame('{"type":"sic-blocks","version":1,"blocks":[{"id":"a1","type":"paragraph","props":{"text":"Hi","size":"base","tone":"default","align":"inherit"}}]}', ContentField::normalized(self::DOCUMENT));
-        $this->assertSame('# Title', ContentField::normalized('# Title'));
-        $this->assertSame('', ContentField::normalized(null));
-        $this->assertSame('', ContentField::normalized('{"type":"sic-blocks","version":1,"blocks":[]}'));
-    }
 }

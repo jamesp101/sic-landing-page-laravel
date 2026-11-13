@@ -6,7 +6,6 @@
     import { dndzone, type DndEvent } from 'svelte-dnd-action';
     import { EyeOff, GripVertical, Pencil, Plus, Redo2, TriangleAlert, Undo2 } from '@lucide/svelte';
     import { reloadView } from '@/lib/navigation';
-    import { DEFAULT_NAV_LINKS } from '@/lib/site-nav';
     import {
         canIndent,
         canOutdent,
@@ -312,18 +311,8 @@
 
     async function useDefaultMenu() {
         seeding = true;
-        for (const [index, link] of DEFAULT_NAV_LINKS.entries()) {
-            const { error } = await actions.navlinks.create({
-                ...link,
-                isActive: true,
-                order: index + 1,
-                parentId: null,
-            });
-            if (error) {
-                toast.error(parseActionError(error).message || 'The default menu could not be created.');
-                break;
-            }
-        }
+        const { error } = await actions.navlinks.useDefaultMenu({});
+        if (error) toast.error(parseActionError(error).message || 'The default menu could not be created.');
         await reloadView();
     }
 

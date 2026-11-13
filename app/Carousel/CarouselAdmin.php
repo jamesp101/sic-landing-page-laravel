@@ -3,20 +3,16 @@
 namespace App\Carousel;
 
 use App\Models\CarouselItem;
-use App\Models\Department;
-use App\Models\HeroSection;
-use App\Models\Post;
-use App\Models\Setting;
 use App\Storage\Storage;
 use App\Storage\StoredFiles;
-use Illuminate\Database\Eloquent\Builder;
+use App\Storage\StoredKeyReferences;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 
 /**
  * Slide writes that own files. A slide owns its photo, an uploaded background video (`video_path`) and the layer
- * images under `carousels/` nothing else uses; they are replaced, removed and deleted only through
- * `StoredFiles::commitWithFiles` `stale` / `deleteWithFiles`, and copied on duplicate.
+ * images under `carousels/` nothing else uses (declared by `CarouselItem::fileOwnership()`); they are written,
+ * replaced and deleted only through `StoredFiles::save` / `delete`, and copied on duplicate.
  *
  * Slide content is `['overlay' => ?string, 'title' => ?string, 'subtitle' => ?string, 'linkUrl' => ?string]`;
  * a slide video is `['videoPath' => ?string, 'videoUrl' => ?string]` (at most one is set).
@@ -48,20 +44,13 @@ final class CarouselAdmin
     }
 
     /**
-     * True when a stored video is referenced by something other than slide `$exceptId`: another slide, post or hero
-     * content, or a setting. A slide may only adopt a video nothing else uses, so replacing or deleting its video
-     * can never remove another row's file.
+     * True when a stored video is referenced by anything other than slide `$exceptId` (`StoredKeyReferences`' rule:
+     * another slide, any content, any setting). A slide may only adopt a video nothing else uses, so replacing or
+     * deleting its video can never remove another row's file.
      */
     public static function videoUsedElsewhere(string $key, ?int $exceptId = null): bool
     {
-        $slides = CarouselItem::query()->where('video_path', $key)->when($exceptId !== null, fn (Builder $q) => $q->where('id', '!=', $exceptId))->count();
-
-        return $slides > 0
-            || self::contains(Post::query(), 'content', $key)
-            || self::contains(HeroSection::query(), 'content', $key)
-            || self::contains(Department::query(), 'hero_content', $key)
-            || self::contains(Department::query(), 'description', $key)
-            || self::contains(Setting::query(), 'value', $key);
+        return StoredKeyReferences::isReferenced($key, (new CarouselItem)->getTable(), $exceptId);
     }
 
     /** Parses the designer's `video` field and checks the slide (`$slideId`, none for a new slide) may own that file. */
@@ -88,50 +77,21 @@ final class CarouselAdmin
     public static function updateSlide(CarouselItem $row, array $input): CarouselItem
     {
         $video = $input['video'] ?? ['videoPath' => $row->video_path, 'videoUrl' => $row->video_url];
-        $image = $input['image'] ?? null;
-        $videoChanged = $video['videoPath'] !== $row->video_path;
-        $oldImage = $row->image_path;
-        $oldVideo = $row->video_path;
-        $kept = self::overlayImageSrcs($input['content']['overlay']);
-        $droppedSrcs = array_values(array_filter(self::overlayImageSrcs($row->overlay), fn (string $src): bool => ! in_array($src, $kept, true)));
 
-        return StoredFiles::commitWithFiles([
-            'files' => ['image' => $image ? ['prefix' => 'carousels', 'file' => $image, 'variant' => true] : null],
-            'adopted' => $videoChanged ? [$video['videoPath']] : [],
-            'run' => function (array $keys) use ($row, $input, $video): CarouselItem {
-                $row->update([
-                    ...self::contentColumns($input['content']),
-                    'image_path' => $keys['image'] ?? $row->image_path,
-                    'video_path' => $video['videoPath'],
-                    'video_url' => $video['videoUrl'],
-                ]);
-
-                return $row;
-            },
-            'stale' => fn (): array => [
-                $image ? $oldImage : null,
-                $videoChanged ? $oldVideo : null,
-                ...self::unusedLayerImageKeys($droppedSrcs),
-            ],
-        ]);
+        return StoredFiles::save($row, [
+            ...self::contentColumns($input['content']),
+            'video_path' => $video['videoPath'],
+            'video_url' => $video['videoUrl'],
+        ], ['image_path' => $input['image'] ?? null]);
     }
 
     /** Deletes a slide and every file it owned: photo, uploaded video and layer images nothing else uses. */
     public static function deleteSlide(CarouselItem $row): array
     {
         $id = $row->id;
-        $imagePath = $row->image_path;
-        $videoPath = $row->video_path;
-        $srcs = self::overlayImageSrcs($row->overlay);
+        StoredFiles::delete($row);
 
-        return StoredFiles::deleteWithFiles(
-            function () use ($row, $id): array {
-                $row->delete();
-
-                return ['id' => $id];
-            },
-            fn (): array => [$imagePath, $videoPath, ...self::unusedLayerImageKeys($srcs)],
-        );
+        return ['id' => $id];
     }
 
     /**
@@ -143,19 +103,14 @@ final class CarouselAdmin
     {
         $last = (int) CarouselItem::query()->max('order');
 
-        return StoredFiles::commitWithFiles([
-            'files' => ['image' => ['prefix' => 'carousels', 'file' => $input['image'], 'variant' => true]],
-            'adopted' => [$input['video']['videoPath']],
-            'run' => fn (array $keys): CarouselItem => CarouselItem::query()->create([
-                ...self::contentColumns($input['content']),
-                'video_path' => $input['video']['videoPath'],
-                'video_url' => $input['video']['videoUrl'],
-                'order' => $last + 1,
-                'department_id' => $input['departmentId'],
-                'show_on_main' => $input['showOnMain'],
-                'image_path' => $keys['image'],
-            ]),
-        ]);
+        return StoredFiles::save(new CarouselItem, [
+            ...self::contentColumns($input['content']),
+            'video_path' => $input['video']['videoPath'],
+            'video_url' => $input['video']['videoUrl'],
+            'order' => $last + 1,
+            'department_id' => $input['departmentId'],
+            'show_on_main' => $input['showOnMain'],
+        ], ['image_path' => $input['image']]);
     }
 
     /**
@@ -166,24 +121,26 @@ final class CarouselAdmin
     {
         $temporary = [];
         try {
-            $files = [
-                'image' => self::copyOf($row->image_path, 'carousels', true, $temporary),
-                'video' => $row->video_path ? self::copyOf($row->video_path, 'videos', false, $temporary) : null,
+            $uploads = [
+                'image_path' => self::copyOf($row->image_path, $temporary),
+                'video_path' => $row->video_path ? self::copyOf($row->video_path, $temporary) : null,
             ];
+            $layerFiles = [];
             $layerCopies = [];
             foreach (self::overlayImageSrcs($row->overlay) as $index => $src) {
                 $key = self::ownedImageKey($src);
                 if ($key === null) {
                     continue;
                 }
-                $files["layer{$index}"] = self::copyOf($key, 'carousels', false, $temporary);
+                $copy = self::copyOf($key, $temporary);
+                $layerFiles["layer{$index}"] = $copy === null ? null : ['prefix' => 'carousels', 'file' => $copy];
                 $layerCopies[$src] = "layer{$index}";
             }
             $doc = OverlaySchema::parseOverlayDocument($row->overlay);
 
-            return StoredFiles::commitWithFiles([
-                'files' => $files,
-                'run' => function (array $keys) use ($row, $doc, $layerCopies): CarouselItem {
+            return StoredFiles::save(
+                new CarouselItem,
+                function (array $keys) use ($row, $doc, $layerCopies): array {
                     $overlay = $row->overlay;
                     if ($doc !== null) {
                         $layers = array_map(function (array $layer) use ($keys, $layerCopies): array {
@@ -194,24 +151,27 @@ final class CarouselAdmin
                         $overlay = Overlay::serializeOverlay($layers, $doc['mobile']);
                     }
 
-                    return DB::transaction(function () use ($row, $keys, $overlay): CarouselItem {
+                    return [
+                        'title' => $row->title,
+                        'subtitle' => $row->subtitle,
+                        'link_url' => $row->link_url,
+                        'overlay' => $overlay,
+                        'video_url' => $row->video_url,
+                        'order' => $row->order + 1,
+                        'department_id' => $row->department_id,
+                        'show_on_main' => $row->show_on_main,
+                        'image_path' => $keys['image_path'] ?? $row->image_path,
+                    ];
+                },
+                $uploads,
+                $layerFiles,
+                function (CarouselItem $copy, array $attributes) use ($row): void {
+                    DB::transaction(function () use ($copy, $attributes, $row): void {
                         CarouselItem::query()->where('order', '>', $row->order)->increment('order');
-
-                        return CarouselItem::query()->create([
-                            'title' => $row->title,
-                            'subtitle' => $row->subtitle,
-                            'link_url' => $row->link_url,
-                            'overlay' => $overlay,
-                            'video_path' => $keys['video'] ?? null,
-                            'video_url' => $row->video_url,
-                            'order' => $row->order + 1,
-                            'department_id' => $row->department_id,
-                            'show_on_main' => $row->show_on_main,
-                            'image_path' => $keys['image'] ?? $row->image_path,
-                        ]);
+                        $copy->fill($attributes)->save();
                     });
                 },
-            ]);
+            );
         } finally {
             foreach ($temporary as $path) {
                 @unlink($path);
@@ -260,7 +220,7 @@ final class CarouselAdmin
                 continue;
             }
             // Match the bare key: with S3_PUBLIC_URL one key has two URL forms (route and CDN).
-            $used = self::contains(CarouselItem::query(), 'overlay', $key) || CarouselItem::query()->where('image_path', $key)->exists();
+            $used = CarouselItem::query()->whereRaw('instr(overlay, ?) > 0', [$key])->exists() || CarouselItem::query()->where('image_path', $key)->exists();
             if (! $used) {
                 $unused[] = $key;
             }
@@ -311,19 +271,12 @@ final class CarouselAdmin
         ];
     }
 
-    /** Substring match without LIKE wildcards. */
-    private static function contains(Builder $query, string $column, string $needle): bool
-    {
-        return $query->whereRaw("instr({$column}, ?) > 0", [$needle])->exists();
-    }
-
     /**
-     * A copy of a stored object, to be stored under `$prefix`; null when the source is missing.
+     * A copy of a stored object, ready to store again; null when the source is missing.
      *
      * @param  list<string>  $temporary  collects the temp files to delete after the commit
-     * @return array{prefix: string, file: UploadedFile, variant: bool}|null
      */
-    private static function copyOf(string $key, string $prefix, bool $variant, array &$temporary): ?array
+    private static function copyOf(string $key, array &$temporary): ?UploadedFile
     {
         $stored = Storage::read($key);
         if ($stored === null) {
@@ -333,10 +286,6 @@ final class CarouselAdmin
         file_put_contents($path, $stored->contents());
         $temporary[] = $path;
 
-        return [
-            'prefix' => $prefix,
-            'variant' => $variant,
-            'file' => new UploadedFile($path, basename($key), $stored->contentType ?? 'application/octet-stream', null, true),
-        ];
+        return new UploadedFile($path, basename($key), $stored->contentType ?? 'application/octet-stream', null, true);
     }
 }

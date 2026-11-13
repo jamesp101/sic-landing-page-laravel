@@ -1,5 +1,5 @@
 /**
- * Pure helpers for the slide designer: undo history, snapping, move/resize geometry,
+ * Pure helpers for the slide designer: snapping, move/resize geometry,
  * z-order and slide ordering. No DOM, no Svelte, so it is unit-testable.
  * All geometry is in percent of the slide.
  */
@@ -19,44 +19,6 @@ export const NUDGE = 1;
 export const NUDGE_BIG = 2;
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
-
-// ---------------------------------------------------------------------------
-// Undo / redo (immutable)
-// ---------------------------------------------------------------------------
-
-export interface History<T> {
-    past: T[];
-    present: T;
-    future: T[];
-    /** Edits with the same key within COALESCE_MS replace the previous entry (typing, sliders). */
-    key: string | null;
-    at: number;
-}
-
-export const HISTORY_LIMIT = 100;
-export const COALESCE_MS = 800;
-
-export function createHistory<T>(present: T): History<T> {
-    return { past: [], present, future: [], key: null, at: 0 };
-}
-
-export function commit<T>(history: History<T>, next: T, key: string | null = null, now = Date.now()): History<T> {
-    const coalesce = key !== null && key === history.key && now - history.at < COALESCE_MS && history.past.length > 0;
-    const past = coalesce ? history.past : [...history.past, history.present].slice(-HISTORY_LIMIT);
-    return { past, present: next, future: [], key, at: now };
-}
-
-export function undo<T>(history: History<T>): History<T> {
-    if (history.past.length === 0) return history;
-    const present = history.past[history.past.length - 1];
-    return { past: history.past.slice(0, -1), present, future: [history.present, ...history.future], key: null, at: 0 };
-}
-
-export function redo<T>(history: History<T>): History<T> {
-    if (history.future.length === 0) return history;
-    const [present, ...future] = history.future;
-    return { past: [...history.past, history.present], present, future, key: null, at: 0 };
-}
 
 // ---------------------------------------------------------------------------
 // Move + snap

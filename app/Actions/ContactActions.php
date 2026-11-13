@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 class ContactActions
 {
     /** @return array{sent: true} */
+    #[Action(Access::Public)]
     public function send(Request $request): array
     {
         $input = Contact::input($request->only(['name', 'email', 'subject', 'message', 'website']));

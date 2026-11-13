@@ -59,7 +59,7 @@ class SeedTest extends TestCase
         $post = Post::where('title', DemoData::POSTS['aiLab']['title'])->firstOrFail();
         $this->assertSame(User::where('email', 'cit@sic.edu.ph')->value('id'), $post->user_id);
         $this->assertSame(Department::where('slug', 'cit')->value('id'), $post->department_id);
-        $this->assertSame(Content::searchTextOf($post->content), $post->search_text);
+        $this->assertSame(Content::forStorage($post->content)->searchText, $post->search_text);
         $this->assertStringContainsString(DemoData::AI_LAB_HEADING, $post->search_text);
 
         $event = Post::where('title', DemoData::POSTS['foundationWeek']['title'])->firstOrFail();
@@ -132,7 +132,7 @@ class SeedTest extends TestCase
         $this->artisan('sic:backfill-search')->expectsOutputToContain('posts: 1 of '.Post::count().' updated.')->assertSuccessful();
 
         $fresh = DB::table('posts')->where('id', $post->id)->first();
-        $this->assertSame(Content::searchTextOf($post->content), $fresh->search_text);
+        $this->assertSame(Content::forStorage($post->content)->searchText, $fresh->search_text);
         $this->assertSame($updatedAt, $fresh->updated_at);
         $this->assertNotSame('', HeroSection::firstOrFail()->search_text);
 

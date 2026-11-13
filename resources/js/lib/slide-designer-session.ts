@@ -9,19 +9,9 @@
  * `LAYER_LIMITS` through `patchSelected`. The carousel actions arrive as a {@link DesignerPort}; object URLs for
  * chosen image files as {@link ObjectUrls}.
  */
+import { duplicateLayer, moveLayer, patchLayer, type Box, type ZMove } from './carousel-editor';
 import {
-    commit,
-    createHistory,
-    duplicateLayer,
-    moveLayer,
-    patchLayer,
-    redo,
-    undo,
-    type Box,
-    type History,
-    type ZMove,
-} from './carousel-editor';
-import {
+    LAYER_LIMITS,
     MAX_LAYERS,
     newLayerId,
     serializeOverlay,
@@ -29,9 +19,16 @@ import {
     type MobileOverride,
     type SlideMobile,
 } from './carousel-overlay';
-import { resetMobile, setMobile } from './carousel-overlay-mobile';
-import { LAYER_LIMITS, parseOverlayStrict } from './carousel-overlay-schema';
+import {
+    focusMobile,
+    nudgeOnPhone,
+    patchLayerMobile,
+    resetAllMobile,
+    resetLayerMobile,
+} from './carousel-overlay-mobile';
+import { parseOverlayStrict } from './carousel-overlay-schema';
 import type { DesignerSlide } from './designer-slide';
+import { commit, createHistory, redo, undo, type UndoHistory } from './undo-history';
 
 export interface Draft {
     /** String(id) for saved slides, "new" for the one unsaved slide. */
@@ -44,7 +41,7 @@ export interface Draft {
     departmentId: number | null;
     showOnMain: boolean;
     title: string;
-    history: History<Layer[]>;
+    history: UndoHistory<Layer[]>;
     /** Phone settings of the slide (photo focal point); null = centred. */
     mobile: SlideMobile | null;
     /** Background video: an uploaded file's URL or a YouTube link; '' = none. */
@@ -225,14 +222,6 @@ function clampPatch(patch: Partial<Layer>): Partial<Layer> {
     return safe as Partial<Layer>;
 }
 
-/** Width/height a hand-placed phone layer stores, taken from its rendered box. */
-function placedSize(layer: Layer, box: Box): MobileOverride {
-    const size: MobileOverride = {};
-    if (layer.type === 'text' || layer.type === 'shape' || layer.type === 'image') size.w = box.w;
-    if (layer.type === 'shape' || layer.type === 'image') size.h = box.h;
-    return size;
-}
-
 export class SlideDesignerSession {
     #drafts: Draft[];
     #activeKey: string | null;
@@ -289,7 +278,7 @@ export class SlideDesignerSession {
         const { selected, layers } = this.#view;
         if (!selected) return;
         this.#applyLayers(
-            layers.map((layer) => (layer.id === selected.id ? setMobile(layer, patch) : layer)),
+            patchLayerMobile(layers, selected.id, patch),
             coalesceKey ? `${selected.id}:m:${coalesceKey}` : undefined,
         );
     }
@@ -298,7 +287,7 @@ export class SlideDesignerSession {
     resetSelectedMobile(): boolean {
         const { selected, layers } = this.#view;
         if (!selected) return false;
-        this.#applyLayers(layers.map((layer) => (layer.id === selected.id ? resetMobile(layer) : layer)));
+        this.#applyLayers(resetLayerMobile(layers, selected.id));
         return true;
     }
 
@@ -309,14 +298,14 @@ export class SlideDesignerSession {
         this.#update(active.key, (draft) => ({
             ...draft,
             mobile: null,
-            history: commit(draft.history, draft.history.present.map(resetMobile), null, this.#now()),
+            history: commit(draft.history, resetAllMobile(draft.history.present), null, this.#now()),
         }));
         this.#publish();
         return true;
     }
 
     setFocus(focus: { x: number; y: number }): void {
-        this.#update(this.#activeKey, (draft) => ({ ...draft, mobile: { focus } }));
+        this.#update(this.#activeKey, (draft) => ({ ...draft, mobile: focusMobile(focus) }));
         this.#publish();
     }
 
@@ -365,14 +354,7 @@ export class SlideDesignerSession {
         const { selected } = this.#view;
         if (!selected) return;
         if (box) {
-            this.patchMobile(
-                {
-                    x: clamp(box.x + dx, [LAYER_LIMITS.x[0], LAYER_LIMITS.x[1] - box.w]),
-                    y: clamp(box.y + dy, [LAYER_LIMITS.y[0], LAYER_LIMITS.y[1] - box.h]),
-                    ...placedSize(selected, box),
-                },
-                'nudge',
-            );
+            this.patchMobile(nudgeOnPhone(selected, box, dx, dy), 'nudge');
             return;
         }
         const maxX = 'w' in selected ? LAYER_LIMITS.x[1] - selected.w : LAYER_LIMITS.x[1];
@@ -620,7 +602,7 @@ export class SlideDesignerSession {
         this.#publish();
     }
 
-    #travel(change: (history: History<Layer[]>) => History<Layer[]>): void {
+    #travel(change: (history: UndoHistory<Layer[]>) => UndoHistory<Layer[]>): void {
         this.#update(this.#activeKey, (draft) => ({ ...draft, history: change(draft.history) }));
         this.#publish();
     }

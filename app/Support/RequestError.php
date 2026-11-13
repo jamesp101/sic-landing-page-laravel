@@ -11,6 +11,8 @@ use RuntimeException;
  */
 class RequestError extends RuntimeException
 {
+    public const SIGN_IN_REQUIRED = 'Sign in required.';
+
     public const BAD_REQUEST = 'BAD_REQUEST';
 
     public const UNAUTHORIZED = 'UNAUTHORIZED';
@@ -36,7 +38,7 @@ class RequestError extends RuntimeException
     ];
 
     private const DEFAULT_MESSAGE = [
-        self::UNAUTHORIZED => 'Sign in required.',
+        self::UNAUTHORIZED => self::SIGN_IN_REQUIRED,
         self::FORBIDDEN => 'Forbidden.',
         self::NOT_FOUND => 'Not found.',
     ];

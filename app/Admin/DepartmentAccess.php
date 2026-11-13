@@ -15,7 +15,7 @@ use Illuminate\Http\Request;
 /**
  * The Department-user rule, stated once: a Superadmin sees and changes every Department's rows (and the main
  * page / General, `department_id` null); any other actor sees and changes only their own Department's rows.
- * Reads (`restrictedDepartmentId`, `visibleDepartments`, `departmentOptions`, `formProps`), writes
+ * Reads (`restrictedDepartmentId`, `visibleDepartments`, `departmentOptions`, `departmentField`), writes
  * (`resolveWriteDepartment`) and loads (`loadScoped`, `loadScopedMany`, `loadOwnDepartment`, `loadMember`)
  * all go through here. `AdminScope` builds list filters from `restrictedDepartmentId`.
  */
@@ -70,22 +70,35 @@ final class DepartmentAccess
     }
 
     /**
-     * Admin scope props of a Rich content editor form island: the Departments the actor may pick, whether they
-     * are a Superadmin, and (create forms only, `$request` given) the Department the current scope preselects.
+     * The finished Department field of a form for a row that exists (`$departmentId` is its Department, null =
+     * Main site): what the island prints and never decides. A Superadmin chooses among every Department and the
+     * Main site (`allowMain`); any other actor is `locked` to their own Department. `value` is the selected
+     * Department id (null = Main site, or a Department user without a Department, who has no option at all).
      *
-     * @return array{departments: list<array{id: int, name: string}>, isSuperAdmin: bool, defaultDepartmentId?: ?int}
+     * @return array{options: list<array{id: int, name: string}>, value: ?int, locked: bool, allowMain: bool}
      */
-    public static function formProps(User $actor, ?Request $request = null): array
+    public static function departmentField(User $actor, ?int $departmentId): array
     {
-        $props = [
-            'departments' => self::departmentOptions($actor),
-            'isSuperAdmin' => Authz::isSuperAdmin($actor),
-        ];
-        if ($request !== null) {
-            $props['defaultDepartmentId'] = AdminScope::scopeDefaultDepartment(AdminScope::current($request));
-        }
+        $options = self::departmentOptions($actor);
+        $superadmin = Authz::isSuperAdmin($actor);
 
-        return $props;
+        return [
+            'options' => $options,
+            'value' => $superadmin ? $departmentId : ($options[0]['id'] ?? null),
+            'locked' => ! $superadmin,
+            'allowMain' => $superadmin,
+        ];
+    }
+
+    /**
+     * The Department field of a create form: a Superadmin starts on the Admin scope's Department (the Main site
+     * unless the scope is one Department), a Department user on their own.
+     *
+     * @return array{options: list<array{id: int, name: string}>, value: ?int, locked: bool, allowMain: bool}
+     */
+    public static function createDepartmentField(User $actor, Request $request): array
+    {
+        return self::departmentField($actor, AdminScope::scopeDefaultDepartment(AdminScope::current($request)));
     }
 
     /** Throws BAD_REQUEST unless the department exists. */

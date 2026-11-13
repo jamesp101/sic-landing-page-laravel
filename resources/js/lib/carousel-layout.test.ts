@@ -1,72 +1,11 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, test } from 'vitest';
-import {
-    FRAME_ASPECT_CLASS,
-    HERO_HEIGHT,
-    HERO_PHONE_IMAGE_WIDTH,
-    PHONE_FRAME,
-    PHONE_MAX_REM,
-    WIDE_MIN_REM,
-    heroImageSizes,
-    layerClasses,
-    layerPresentation,
-    measureLayerBox,
-    measureLayerBoxes,
-    type SlideMode,
-} from './carousel-layout';
-import { TYPE_SCALE, defaultLayer, type Layer } from './carousel-overlay';
-import { resolveMobile, type MobileBox } from './carousel-overlay-mobile';
+import { layerClasses, layerPresentation, measureLayerBox, measureLayerBoxes, type SlideMode } from './carousel-layout';
+import { defaultLayer, type Layer } from './carousel-overlay';
+import type { MobileBox } from './carousel-overlay-mobile';
 
 const src = fileURLToPath(new URL('../../', import.meta.url));
-const layoutCss = readFileSync(`${src}css/slide-layout.css`, 'utf8');
-
-function sourceFiles(dir: string): string[] {
-    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-        const path = `${dir}${entry.name}`;
-        if (entry.isDirectory()) return entry.name === 'generated' ? [] : sourceFiles(`${path}/`);
-        return /\.(svelte|blade\.php|ts|css)$/.test(entry.name) ? [path] : [];
-    });
-}
-
-describe('slide-layout.css agrees with the layout module', () => {
-    test('phone breakpoint, frame and hero heights', () => {
-        expect(layoutCss).toContain(`@media (max-width: ${PHONE_MAX_REM}rem)`);
-        expect(layoutCss).toContain(`@container hero (max-width: ${PHONE_MAX_REM}rem)`);
-        expect(layoutCss).toContain(`@media (min-width: ${WIDE_MIN_REM}rem)`);
-        expect(layoutCss).toContain(`aspect-ratio: ${PHONE_FRAME.w} / ${PHONE_FRAME.h};`);
-        expect(FRAME_ASPECT_CLASS.phone).toBe(`aspect-[${PHONE_FRAME.w}/${PHONE_FRAME.h}]`);
-        expect(layoutCss).toMatch(new RegExp(`\\.slide-hero \\{[^}]*--hh: ${HERO_HEIGHT.tall.base}px`));
-        expect(layoutCss).toMatch(new RegExp(`\\.slide-hero-short \\{\\s*--hh: ${HERO_HEIGHT.short.base}px`));
-        expect(layoutCss).toMatch(
-            new RegExp(`min-width[^{]*\\{\\s*\\.slide-hero \\{\\s*--hh: ${HERO_HEIGHT.tall.wide}px`),
-        );
-        expect(layoutCss).toMatch(new RegExp(`\\.slide-hero-short \\{\\s*--hh: ${HERO_HEIGHT.short.wide}px`));
-    });
-
-    test('no other source file hard-codes them', () => {
-        const owners = ['carousel-layout.ts', 'carousel-layout.test.ts', 'slide-layout.css'];
-        const offenders = sourceFiles(src)
-            .filter((file) => !owners.some((owner) => file.endsWith(`/${owner}`)))
-            .filter((file) =>
-                /39\.99|aspect-\[4\/5\]|aspect-ratio: 4 \/ 5|--hh:|@container hero/.test(readFileSync(file, 'utf8')),
-            )
-            .map((file) => file.slice(src.length));
-        expect(offenders).toEqual([]);
-    });
-});
-
-describe('hero image sizes', () => {
-    test('a phone hero draws the 16:9 photo as wide as its height requires', () => {
-        // 500 px tall at 16:9 is 888.9 px; 400 px tall is 711.1 px.
-        expect(HERO_PHONE_IMAGE_WIDTH).toEqual({ tall: 889, short: 712 });
-    });
-
-    test('sizes switch from the phone width to the viewport at the phone breakpoint', () => {
-        expect(heroImageSizes(true)).toBe('(max-width: 39.99rem) 889px, 100vw');
-        expect(heroImageSizes(false)).toBe('(max-width: 39.99rem) 712px, 100vw');
-    });
-});
 
 describe('layerPresentation', () => {
     const heading: Layer = {
@@ -91,28 +30,16 @@ describe('layerPresentation', () => {
         auto: true,
     };
 
-    test('public layers sit at their desktop box and carry the phone box as custom properties', () => {
-        const look = layerPresentation(heading, 3, stacked, 'public');
-        expect(look.style).toBe(
-            `z-index:3;left:10%;top:20%;width:50%;opacity:0.8;transform:rotate(5deg);--fs:${TYPE_SCALE.heading.lg};--mx:6%;--my:40%;--mw:auto;--mh:auto;--mfs:7`,
-        );
-        expect(look.phoneClass).toBe('sl-m sl-mauto');
-        expect(look.textColor).toBe('text-brand-800 sl-onphoto');
-    });
-
-    test('a hand-placed layer keeps its dark colour on phones; a hidden one is removed', () => {
-        expect(layerPresentation(heading, 1, { ...stacked, auto: false }, 'public')).toMatchObject({
-            phoneClass: 'sl-m ',
-            textColor: 'text-brand-800',
-        });
-        expect(layerPresentation(heading, 1, { ...stacked, hidden: true }, 'public').phoneClass).toBe('sl-mhide');
+    test('a hand-placed layer keeps its dark colour on phones; an automatic one turns white', () => {
+        expect(layerPresentation(heading, 1, { ...stacked, auto: false }, 'phone').textColor).toBe('text-brand-800');
+        expect(layerPresentation(heading, 1, stacked, 'phone').textColor).toBe('text-white');
     });
 
     test('the desktop preview ignores the phone box', () => {
         const look = layerPresentation(heading, 1, stacked, 'desktop');
         expect(look.style).not.toContain('--mx');
         expect(look.style).toContain('left:10%');
-        expect(look).toMatchObject({ phoneClass: '', textColor: 'text-brand-800' });
+        expect(look.textColor).toBe('text-brand-800');
     });
 
     test('the phone preview applies the phone box directly', () => {
@@ -123,35 +50,22 @@ describe('layerPresentation', () => {
         expect(ghost.style).toContain('opacity:0.3');
         expect(ghost.ghostClass).toContain('outline-dashed');
     });
-
-    test('a layer of an automatic phone layout resolves the same box in preview and public', () => {
-        const layers = [heading];
-        const box = resolveMobile(layers).get('h') ?? null;
-        expect(box).not.toBeNull();
-        expect(layerPresentation(heading, 1, box, 'phone').style).toContain(`left:${box?.x}%`);
-        expect(layerPresentation(heading, 1, box, 'public').style).toContain(`--mx:${box?.x}%`);
-    });
 });
 
 describe('layerClasses', () => {
-    // Shared with tests/Unit/Carousel/LayoutTest.php: both implementations must produce these exact strings.
+    // Shared with tests/Unit/Carousel/LayoutTest.php: the designer boxes (`preview`) must produce these exact strings.
+    // The public cases are PHP-only (`Layout::stage`).
     const { cases } = JSON.parse(readFileSync(`${src}../tests/Unit/Carousel/fixtures/layer-classes.json`, 'utf8')) as {
-        cases: { layer: Layer; box: MobileBox | null; mode: SlideMode; preview: boolean; out: string }[];
+        cases: { layer: Layer; box: MobileBox | null; mode: SlideMode | 'public'; preview: boolean; out: string }[];
     };
+    const designer = cases.filter((c): c is typeof c & { mode: SlideMode } => c.preview);
 
-    test.each(cases.map((c) => [`${c.layer.id} ${c.mode} ${c.box ? JSON.stringify(c.box) : 'no box'}`, c] as const))(
+    test.each(designer.map((c) => [`${c.layer.id} ${c.mode} ${c.box ? JSON.stringify(c.box) : 'no box'}`, c] as const))(
         'matches the shared fixture: %s',
         (_name, c) => {
-            expect(layerClasses(c.layer, layerPresentation(c.layer, 1, c.box, c.mode), c.preview)).toBe(c.out);
+            expect(layerClasses(c.layer, layerPresentation(c.layer, 1, c.box, c.mode))).toBe(c.out);
         },
     );
-
-    test('only the public button lifts on hover', () => {
-        const button = cases.find((c) => c.layer.type === 'button' && !c.preview);
-        const preview = cases.find((c) => c.layer.type === 'button' && c.preview);
-        expect(button?.out).toContain('hover:-translate-y-0.5');
-        expect(preview?.out).not.toContain('hover:-translate-y-0.5');
-    });
 });
 
 describe('measuring', () => {

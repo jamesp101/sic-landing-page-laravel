@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Validator;
 
 /**
  * Input of an action: JSON bodies arrive typed, multipart forms as strings (booleans as "true"/"false", numbers
- * as digits, empty fields as ""). `types` says how each field is read, so both shapes validate the same way:
+ * as digits, empty fields as ""). Each `ActionField` says how its field is read, so both shapes validate the same way:
  * `int`, `bool`, `string` (trimmed; empty = null), `text` (untrimmed; absent = "") or `raw` (files and anything else, untouched).
  * Failures are ValidationExceptions (rendered as the action input error with per-field messages).
  */
@@ -31,34 +31,40 @@ final class ActionInput
     ];
 
     /**
-     * @param  array<string, 'int'|'bool'|'string'|'text'|'raw'>  $types
-     * @param  array<string, mixed>  $rules  Laravel rules by field
-     * @param  array<string, string>  $messages  Laravel custom messages (`field.rule` => text)
+     * @param  array<string, ActionField>  $fields
      * @return array<string, mixed> the validated (typed) fields
      */
-    public static function validate(Request $request, array $types, array $rules, array $messages = []): array
+    public static function validate(Request $request, array $fields): array
     {
         $input = $request->all();
         $data = [];
-        $missing = [];
+        $rules = [];
+        $messages = [];
         $isForm = ! $request->isJson();
-        foreach ($types as $field => $type) {
-            if ($isForm && $type === 'bool') {
+        foreach ($fields as $name => $field) {
+            if ($isForm && $field->type === 'bool') {
                 // What Astro's form actions did for `z.boolean()`: "true" / "false" as such, any other
                 // submitted value is true, an absent field (an unchecked box) is false. JSON stays strict.
-                $value = $input[$field] ?? null;
-                $data[$field] = match (true) {
+                $value = $input[$name] ?? null;
+                $data[$name] = match (true) {
                     $value === 'true' => true,
                     $value === 'false' => false,
-                    default => array_key_exists($field, $input),
+                    default => array_key_exists($name, $input),
                 };
             } else {
-                $data[$field] = self::coerce($input[$field] ?? null, $type);
+                $data[$name] = self::coerce($input[$name] ?? null, $field->type);
             }
-            $missing["{$field}.required"] = self::MISSING[$type];
+            $rules[$name] = $field->rules;
+            foreach ($field->nested as $path => $nestedRules) {
+                $rules["{$name}.{$path}"] = $nestedRules;
+            }
+            foreach ($field->messages as $key => $text) {
+                $messages["{$name}.{$key}"] = $text;
+            }
+            $messages += ["{$name}.required" => self::MISSING[$field->type]];
         }
 
-        return Validator::make($data, $rules, $messages + $missing + self::DEFAULT_MESSAGES)->validate();
+        return Validator::make($data, $rules, $messages + self::DEFAULT_MESSAGES)->validate();
     }
 
     private static function coerce(mixed $value, string $type): mixed

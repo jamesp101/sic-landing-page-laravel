@@ -7,7 +7,7 @@ namespace App\Storage;
  * (`posts/abc.webp` → `posts/abc.w640.webp`). Each kind of image has its own widths: Highlight images
  * (`posts/<name>`) 640 px for cards and the Post hero, Slide photos (`carousels/<name>`) 960 px for the first
  * paint, Department logos (`departments/<name>`) and Member portraits (`members/<name>`) 128 px for the cards and
- * the org chart. Variants are written in the same `StoredFiles::commitWithFiles` commit as the original, removed
+ * the org chart. Variants are written in the same `StoredFiles::save` commit as the original, removed
  * with it, and kept by the storage cleanup while the original is. Pure key logic, free of the storage disk.
  */
 final class Variants

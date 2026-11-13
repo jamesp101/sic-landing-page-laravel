@@ -2,11 +2,12 @@
 
 namespace App\Actions;
 
+use App\Admin\ActionField;
 use App\Admin\ActionInput;
 use App\Admin\NavLinkRules;
 use App\Admin\NavTree;
 use App\Models\NavigationLink;
-use App\Support\Authz;
+use App\Site\SiteNav;
 use App\Support\Flash;
 use App\Support\RequestError;
 use Closure;
@@ -16,12 +17,10 @@ use Illuminate\Support\Facades\DB;
 /** `navlinks.*` actions (JSON). Superadmins only. */
 class NavlinksActions
 {
-    private const TYPES = ['label' => 'string', 'url' => 'string', 'order' => 'int', 'isActive' => 'bool', 'parentId' => 'int'];
-
+    #[Action(Access::Superadmin)]
     public function create(Request $request): array
     {
         $input = $this->input($request, false);
-        Authz::requireSuperAdmin($request->user());
         NavLinkRules::assertValidParent($input['parentId'] ?? null);
         $link = NavigationLink::query()->create($this->columns($input));
         Flash::success('Navigation link created.');
@@ -29,10 +28,10 @@ class NavlinksActions
         return ['id' => $link->id];
     }
 
+    #[Action(Access::Superadmin)]
     public function update(Request $request): array
     {
         $input = $this->input($request, true);
-        Authz::requireSuperAdmin($request->user());
         $link = NavigationLink::query()->find($input['id'], ['id']);
         if (! $link) {
             throw RequestError::notFound();
@@ -45,25 +44,16 @@ class NavlinksActions
     }
 
     /** Applies the whole tree (parent + position of every listed link) in one transaction. */
+    #[Action(Access::Superadmin)]
     public function reorder(Request $request): array
     {
-        $input = ActionInput::validate(
-            $request,
-            ['items' => 'raw'],
-            [
-                'items' => ['required', 'array', 'min:1', 'max:500'],
-                'items.*.id' => ['required', self::jsonInt()],
-                'items.*.parentId' => ['present', 'nullable', self::jsonInt()],
-                'items.*.order' => ['required', self::jsonInt(), 'numeric', 'min:0'],
-            ],
-            [
-                'items.required' => 'Too small: expected array to have >=1 items',
-                'items.min' => 'Too small: expected array to have >=1 items',
-                'items.max' => 'Too big: expected array to have <=500 items',
-                'items.*.order.min' => 'Too small: expected number to be >=0',
-            ],
-        );
-        Authz::requireSuperAdmin($request->user());
+        $input = ActionInput::validate($request, [
+            'items' => ActionField::list(500, [
+                '*.id' => ['required', ActionField::jsonInt()],
+                '*.parentId' => ['present', 'nullable', ActionField::jsonInt()],
+                '*.order' => ['required', ActionField::jsonInt(), 'numeric', 'min:0'],
+            ], ['*.order.min' => 'Too small: expected number to be >=0']),
+        ]);
         $items = array_map(fn (array $item): array => [
             'id' => (int) $item['id'],
             'parentId' => $item['parentId'] === null ? null : (int) $item['parentId'],
@@ -86,10 +76,36 @@ class NavlinksActions
         return ['count' => count($items)];
     }
 
+    /**
+     * Creates the Default menu (`SiteNav::DEFAULT_NAV_LINKS`) in one transaction; refused while any Navigation link exists.
+     * Returns the new tree so the editor can refresh from one request.
+     */
+    #[Action(Access::Superadmin)]
+    public function useDefaultMenu(Request $request): array
+    {
+        DB::transaction(function (): void {
+            if (NavigationLink::query()->lockForUpdate()->exists()) {
+                throw RequestError::conflict('Navigation links already exist, so the default menu was not created.');
+            }
+            foreach (SiteNav::DEFAULT_NAV_LINKS as $index => $link) {
+                NavigationLink::query()->create([
+                    'label' => $link['label'],
+                    'url' => $link['url'],
+                    'order' => $index + 1,
+                    'is_active' => true,
+                    'parent_id' => null,
+                ]);
+            }
+        });
+        Flash::success('Default menu created.');
+
+        return ['links' => NavTree::stored()];
+    }
+
+    #[Action(Access::Superadmin)]
     public function delete(Request $request): array
     {
-        $input = ActionInput::validate($request, ['id' => 'int'], ['id' => ['required', 'integer']]);
-        Authz::requireSuperAdmin($request->user());
+        $input = ActionInput::validate($request, ['id' => ActionField::id()]);
         $link = NavigationLink::query()->find($input['id'], ['id']);
         if (! $link) {
             throw RequestError::notFound();
@@ -102,31 +118,17 @@ class NavlinksActions
 
     private function input(Request $request, bool $withId): array
     {
-        $types = self::TYPES;
-        $rules = [
-            'label' => ['bail', 'required', 'string', 'max:255'],
-            'url' => ['bail', 'required', 'string', 'max:255', function (string $attribute, mixed $value, Closure $fail): void {
+        return ActionInput::validate($request, [
+            'label' => ActionField::string(['bail', 'required', 'string', 'max:255'], ['required' => 'The label is required.']),
+            'url' => ActionField::string(['bail', 'required', 'string', 'max:255', function (string $attribute, mixed $value, Closure $fail): void {
                 if (NavTree::navUrlError((string) $value) !== null) {
                     $fail(NavTree::URL_ERROR);
                 }
-            }],
-            'order' => ['required', 'integer'],
-            'isActive' => ['required', 'boolean'],
-            'parentId' => ['nullable', 'integer'],
-        ];
-        if ($withId) {
-            $types['id'] = 'int';
-            $rules['id'] = ['required', 'integer'];
-        }
-
-        return ActionInput::validate($request, $types, $rules, [
-            'label.required' => 'The label is required.',
-            'label.max' => 'Too big: expected string to have <=255 characters',
-            'url.max' => 'Too big: expected string to have <=255 characters',
-            'url.required' => 'The URL is required.',
-            'order.required' => 'The order must be a number.',
-            'order.integer' => 'The order must be a number.',
-        ]);
+            }], ['required' => 'The URL is required.']),
+            'order' => ActionField::int(['required', 'integer'], ['required' => 'The order must be a number.', 'integer' => 'The order must be a number.']),
+            'isActive' => ActionField::bool(['required', 'boolean']),
+            'parentId' => ActionField::int(['nullable', 'integer']),
+        ] + ($withId ? ['id' => ActionField::id()] : []));
     }
 
     private function columns(array $input): array
@@ -138,15 +140,5 @@ class NavlinksActions
             'is_active' => $input['isActive'],
             'parent_id' => $input['parentId'] ?? null,
         ];
-    }
-
-    /** zod `z.number().int()` on JSON input: numeric strings are rejected. */
-    private static function jsonInt(): Closure
-    {
-        return function (string $attribute, mixed $value, Closure $fail): void {
-            if (! is_int($value)) {
-                $fail('Invalid input: expected number, received '.get_debug_type($value));
-            }
-        };
     }
 }

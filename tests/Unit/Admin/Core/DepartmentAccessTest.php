@@ -10,6 +10,7 @@ use App\Models\Post;
 use App\Models\User;
 use App\Support\RequestError;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\Request;
 use Tests\TestCase;
 
 class DepartmentAccessTest extends TestCase
@@ -133,12 +134,48 @@ class DepartmentAccessTest extends TestCase
         $this->assertSame('FORBIDDEN', $this->code(fn () => DepartmentAccess::loadOwnDepartment($this->unassigned, 10)));
     }
 
-    public function test_form_props_carry_the_admin_scope(): void
+    public function test_the_department_field_of_an_existing_row(): void
     {
-        $props = DepartmentAccess::formProps($this->cit);
-        $this->assertSame([['id' => 10, 'name' => 'CIT']], $props['departments']);
-        $this->assertFalse($props['isSuperAdmin']);
-        $this->assertArrayNotHasKey('defaultDepartmentId', $props);
-        $this->assertTrue(DepartmentAccess::formProps($this->admin)['isSuperAdmin']);
+        $cit = [['id' => 10, 'name' => 'CIT']];
+        $all = [['id' => 11, 'name' => 'CBA'], ['id' => 10, 'name' => 'CIT']];
+
+        // A Superadmin chooses: the row's Department, or the Main site (null).
+        $this->assertSame(['options' => $all, 'value' => 11, 'locked' => false, 'allowMain' => true], DepartmentAccess::departmentField($this->admin, 11));
+        $this->assertNull(DepartmentAccess::departmentField($this->admin, null)['value']);
+
+        // A Department user is fixed to their own Department and cannot pick the Main site.
+        $this->assertSame(['options' => $cit, 'value' => 10, 'locked' => true, 'allowMain' => false], DepartmentAccess::departmentField($this->cit, 10));
+
+        // Without a Department there is nothing to select.
+        $this->assertSame(['options' => [], 'value' => null, 'locked' => true, 'allowMain' => false], DepartmentAccess::departmentField($this->unassigned, null));
+    }
+
+    public function test_the_department_field_of_a_create_form_follows_the_admin_scope(): void
+    {
+        $field = fn (User $actor, ?string $scopeCookie) => DepartmentAccess::createDepartmentField($actor, $this->requestAs($actor, $scopeCookie));
+
+        // A Superadmin starts on the scoped Department, else on the Main site.
+        $scoped = $field($this->admin, '11');
+        $this->assertSame([11, false, true], [$scoped['value'], $scoped['locked'], $scoped['allowMain']]);
+        $this->assertNull($field($this->admin, null)['value']);
+        $this->assertNull($field($this->admin, 'main')['value']);
+        $this->assertNull($field($this->admin, 'all')['value']);
+
+        // A Department user starts on their own Department whatever the cookie says.
+        $own = $field($this->cit, null);
+        $this->assertSame([10, true, false], [$own['value'], $own['locked'], $own['allowMain']]);
+        $this->assertSame(10, $field($this->cit, '11')['value']);
+        $this->assertSame([['id' => 10, 'name' => 'CIT']], $field($this->cit, '11')['options']);
+    }
+
+    private function requestAs(User $actor, ?string $scopeCookie): Request
+    {
+        $request = Request::create('/');
+        if ($scopeCookie !== null) {
+            $request->headers->set('Cookie', "admin_scope={$scopeCookie}");
+        }
+        $request->setUserResolver(fn () => $actor);
+
+        return $request;
     }
 }

@@ -4,45 +4,13 @@ import {
     assignOrders,
     snapWidth,
     clampToSlide,
-    commit,
-    createHistory,
     duplicateLayer,
     moveLayer,
     patchLayer,
-    redo,
     resizeBox,
     snapMove,
-    undo,
 } from './carousel-editor';
 import { defaultLayer, type Layer } from './carousel-overlay';
-
-describe('history', () => {
-    test('undo and redo walk the stack and a new commit clears redo', () => {
-        let h = createHistory(0);
-        h = commit(h, 1);
-        h = commit(h, 2);
-        h = undo(h);
-        expect(h.present).toBe(1);
-        h = redo(h);
-        expect(h.present).toBe(2);
-        h = undo(undo(h));
-        expect(h.present).toBe(0);
-        expect(undo(h)).toBe(h);
-        h = commit(h, 9);
-        expect(h.future).toEqual([]);
-        expect(redo(h)).toBe(h);
-    });
-
-    test('same-key edits inside the window coalesce into one undo step', () => {
-        let h = createHistory('a');
-        h = commit(h, 'ab', 'text', 1000);
-        h = commit(h, 'abc', 'text', 1200);
-        expect(h.past).toEqual(['a']);
-        h = commit(h, 'abcd', 'text', 5000);
-        expect(h.past).toEqual(['a', 'abc']);
-        expect(undo(undo(h)).present).toBe('a');
-    });
-});
 
 describe('snapMove', () => {
     test('snaps box centre and edges to the slide guides', () => {

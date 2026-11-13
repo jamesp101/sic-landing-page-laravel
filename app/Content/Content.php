@@ -39,9 +39,25 @@ final class Content
             && (bool) preg_match(Js::rx('/^\s*\{\s*"type"\s*:\s*"'.Blocks\Limits::DOCUMENT_TYPE.'"/'), $content);
     }
 
+    /** The last parsed value and its parse: validating a value and then storing it (see `forStorage`) parses once. */
+    private static ?string $lastContent = null;
+
+    private static ?RichContent $lastParsed = null;
+
     public static function parseContent(?string $content): RichContent
     {
-        $source = Js::scrub($content ?? '');
+        $content ??= '';
+        if ($content !== self::$lastContent || self::$lastParsed === null) {
+            self::$lastParsed = self::classify($content);
+            self::$lastContent = $content;
+        }
+
+        return self::$lastParsed;
+    }
+
+    private static function classify(string $content): RichContent
+    {
+        $source = Js::scrub($content);
         $format = $source === '' ? 'empty' : (self::isBlockDocument($source) ? 'blocks' : 'markdown');
 
         if ($format === 'blocks') {
@@ -108,9 +124,14 @@ final class Content
         return self::parseContent($content)->check();
     }
 
-    /** Stored content → plain text (markup stripped, whitespace collapsed): the `search_text` column of posts and hero sections, meta descriptions and feeds. */
-    public static function searchTextOf(?string $content): string
+    /**
+     * The one write entry for a Rich content column: validated input → what to store (normalised value plus
+     * the `search_text` of Posts and Hero sections), from one parse. Call it after `ContentField::rules()`
+     * accepted the input; an invalid value gives empty strings. The Welcome hero and Department hero content
+     * take `->value` only.
+     */
+    public static function forStorage(?string $content): StoredContent
     {
-        return self::parseContent($content)->text();
+        return self::parseContent($content)->forStorage();
     }
 }

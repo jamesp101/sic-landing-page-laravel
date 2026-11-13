@@ -1,6 +1,6 @@
 /*
- * Slide layout (CSS half). The facts below are defined in src/lib/carousel-layout.ts; media and container
- * queries cannot read TypeScript, so src/lib/carousel-layout.test.ts fails when this file and the constants
+ * Slide layout (CSS half). The facts below are defined in resources/js/lib/carousel-frame.ts; media and container
+ * queries cannot read TypeScript, so resources/js/lib/carousel-frame.test.ts fails when this file and the constants
  * disagree. No other stylesheet or component may repeat them.
  *
  * The hero is a size container named "hero". Overlay layers live on a 16:9 stage that covers it exactly like the

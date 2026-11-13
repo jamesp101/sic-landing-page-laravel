@@ -71,7 +71,9 @@ final class Slides
 
     /**
      * The public Carousel's Slides matching `$where`, in sequence order. `$where` is a Closure over the query or a
-     * column map (`['showOnMain' => true]` / `['show_on_main' => true]`, `['departmentId' => 3]`).
+     * column map (`['showOnMain' => true]` / `['show_on_main' => true]`, `['departmentId' => 3]`). A public Slide
+     * carries no raw Layers: `stage` is every Layer already presented (`Layout::stage`, Mobile layout included) and
+     * `focus` the photo's phone focal point, so both renderers only print.
      *
      * @param  Closure|array<string, mixed>  $where
      * @return list<array<string, mixed>>
@@ -94,8 +96,8 @@ final class Slides
                 'id' => $row->id,
                 'imageUrl' => Storage::storedUrl($row->image_path),
                 'imageMediumUrl' => Storage::variantUrl($row->image_path, Variants::SLIDE_WIDTH),
-                'layers' => $doc['layers'],
-                'mobile' => $doc['mobile'],
+                'stage' => Layout::stage($doc['layers']),
+                'focus' => OverlayMobile::slideFocus($doc['mobile']),
                 'video' => self::slideVideoView(self::columns($row)),
             ];
         })->all();

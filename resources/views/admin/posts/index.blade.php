@@ -10,7 +10,7 @@
     $columns = [
         ['title', 'Post'],
         ['type', 'Type'],
-        ...($showDepartment ? [['department', 'Department']] : []),
+        ...($list->showDepartment ? [['department', 'Department']] : []),
         ['featured', 'Featured'],
     ];
 @endphp
@@ -88,7 +88,7 @@
                                 <td class="px-4 py-3">
                                     <span class="{{ Ui::PILL }} capitalize {{ $typeClass[$post->type] ?? '' }}">{{ $post->type }}</span>
                                 </td>
-                                @if ($showDepartment)
+                                @if ($list->showDepartment)
                                     <td class="px-4 py-3 text-muted-foreground">
                                         <span class="block max-w-40 truncate" title="{{ $post->department?->name ?? 'General (all departments)' }}">
                                             {{ $post->department?->name ?? 'General (all departments)' }}

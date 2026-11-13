@@ -8,7 +8,7 @@ use App\Carousel\OverlayMobile;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
-/** Port of carousel-layout.test.ts (the CSS-agreement and DOM-measuring parts stay with the client module). */
+/** Port of carousel-frame.test.ts and carousel-layout.test.ts (the CSS-agreement and DOM-measuring parts stay with the client modules). */
 class LayoutTest extends TestCase
 {
     private static function fixture(): array
@@ -117,5 +117,63 @@ class LayoutTest extends TestCase
         $box = OverlayMobile::resolveMobile([$heading])['h'];
         $this->assertStringContainsString("left:{$box['x']}%", Layout::layerPresentation($heading, 1, $box, 'phone')['style']);
         $this->assertStringContainsString("--mx:{$box['x']}%", Layout::layerPresentation($heading, 1, $box, 'public')['style']);
+    }
+
+    /** @return array<string, mixed> */
+    private function layer(string $type, array $over = []): array
+    {
+        return [...Overlay::defaultLayer($type), ...$over];
+    }
+
+    public function test_each_layer_kind_is_presented_as_its_own_element(): void
+    {
+        $element = fn (array $layer): array => Layout::layerElement($layer, 1, null);
+
+        $this->assertSame(['h2', 'Your headline', false], [...array_values(array_intersect_key($element($this->layer('text')), ['tag' => 1, 'text' => 1, 'arrow' => 1]))]);
+        $this->assertSame('p', $element($this->layer('text', ['role' => 'subtitle']))['tag']);
+        $this->assertSame(['span', 'New'], [$element($this->layer('badge'))['tag'], $element($this->layer('badge'))['text']]);
+
+        $shape = $element($this->layer('shape'));
+        $this->assertSame(['div', null, 'true'], [$shape['tag'], $shape['text'], $shape['attrs']['aria-hidden']]);
+
+        $image = $element($this->layer('image', ['src' => '/storage/a.webp', 'alt' => 'Seal']));
+        $this->assertSame('img', $image['tag']);
+        $this->assertSame(['src' => '/storage/a.webp', 'alt' => 'Seal', 'loading' => 'lazy', 'decoding' => 'async'], array_diff_key($image['attrs'], ['class' => 1, 'style' => 1]));
+        $this->assertStringContainsString('object-contain', $image['attrs']['class']);
+    }
+
+    public function test_a_button_is_a_link_with_an_arrow_and_only_external_links_get_rel(): void
+    {
+        $internal = Layout::layerElement($this->layer('button', ['href' => '/posts']), 1, null);
+        $this->assertSame(['a', 'Learn more', true, '/posts'], [$internal['tag'], $internal['text'], $internal['arrow'], $internal['attrs']['href']]);
+        $this->assertArrayNotHasKey('rel', $internal['attrs']);
+
+        $external = Layout::layerElement($this->layer('button', ['href' => 'https://example.org']), 1, null);
+        $this->assertSame('noopener noreferrer', $external['attrs']['rel']);
+    }
+
+    public function test_the_stage_lists_every_layer_in_reading_order_with_its_phone_box_in_the_element(): void
+    {
+        $low = $this->layer('badge', ['id' => '2', 'y' => 60]);
+        $high = $this->layer('text', ['id' => '1', 'y' => 10, 'mobile' => ['x' => 5, 'y' => 15]]);
+
+        $stage = Layout::stage([$low, $high]);
+
+        // Numeric-string ids must survive as string values (PHP would turn them into int array keys).
+        $this->assertSame(['1', '2'], array_column($stage, 'id'));
+        $this->assertSame(['h2', 'span'], array_column($stage, 'tag'));
+        $this->assertStringContainsString('--mx:5%', $stage[0]['attrs']['style']);
+        $this->assertStringContainsString('sl-m', $stage[0]['attrs']['class']);
+        $this->assertStringContainsString('z-index:2', $stage[0]['attrs']['style']);
+        $this->assertStringContainsString('--mx:', $stage[1]['attrs']['style']);
+    }
+
+    public function test_only_the_public_button_lifts_on_hover(): void
+    {
+        $button = $this->layer('button');
+        $look = Layout::layerPresentation($button, 1, null, 'public');
+
+        $this->assertStringContainsString('hover:-translate-y-0.5', Layout::layerClasses($button, $look, false));
+        $this->assertStringNotContainsString('hover:-translate-y-0.5', Layout::layerClasses($button, $look, true));
     }
 }

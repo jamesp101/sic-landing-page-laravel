@@ -3,10 +3,11 @@
 namespace App\Admin;
 
 use App\Carousel\JsText;
+use App\Models\NavigationLink;
 use App\Site\SiteNav;
 
 /**
- * Pure helpers for the two-level navigation tree (shared by the admin page and the reorder action).
+ * Navigation tree rules and assembly (shared by the admin page and the actions; `stored()` is the only query).
  * Rule: top-level links may have children; a link that has children can never become a child itself.
  *
  * A node is `['id' => int, 'label' => string, 'url' => string, 'isActive' => bool, 'order' => int, 'children' => list<node>]`;
@@ -21,6 +22,39 @@ final class NavTree
     public const URL_ERROR = 'Use a path such as /posts or a full https:// URL.';
 
     private const WHITESPACE = '/[\s\x{feff}]/u';
+
+    /** The stored Navigation links as nodes: top-level links in order, each with its children. @return list<array> */
+    public static function stored(): array
+    {
+        $all = NavigationLink::query()->orderBy('order')->orderBy('id')->get();
+        $toNode = fn (NavigationLink $link): array => [
+            'id' => $link->id,
+            'label' => $link->label,
+            'url' => $link->url,
+            'isActive' => $link->is_active,
+            'order' => $link->order,
+            'children' => [],
+        ];
+
+        return $all->whereNull('parent_id')->map(fn (NavigationLink $top): array => [
+            ...$toNode($top),
+            'children' => $all->where('parent_id', $top->id)->map($toNode)->values()->all(),
+        ])->values()->all();
+    }
+
+    /** Every URL in a tree of nodes (top-level links and their children). @return list<string> */
+    public static function urls(array $tree): array
+    {
+        $urls = [];
+        foreach ($tree as $node) {
+            $urls[] = $node['url'];
+            foreach ($node['children'] as $child) {
+                $urls[] = $child['url'];
+            }
+        }
+
+        return $urls;
+    }
 
     /** The links every site has; the editor offers them as suggestions and treats them as known paths. */
     public const PAGE_SUGGESTIONS = [

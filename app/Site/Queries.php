@@ -2,8 +2,6 @@
 
 namespace App\Site;
 
-use App\Admin\OrgTree;
-use App\Admin\Search;
 use App\Carousel\Slides;
 use App\Content\Content;
 use App\Content\WelcomeHero;
@@ -12,8 +10,10 @@ use App\Models\HeroSection;
 use App\Models\Member;
 use App\Models\NavigationLink;
 use App\Models\Post;
+use App\OrgChart\OrgTree;
 use App\Storage\Storage;
 use App\Storage\Variants;
+use App\Support\Search;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -75,17 +75,6 @@ final class Queries
     {
         return Department::query()->orderBy('name')->get(self::DEPARTMENT_COLUMNS)
             ->map(fn (Department $row) => self::toDepartmentSummary($row))->all();
-    }
-
-    /**
-     * Every Department's name and slug, by name: what the Departments menu and the admin's link suggestions list.
-     *
-     * @return list<array{name: string, slug: string}>
-     */
-    public static function getNavDepartments(): array
-    {
-        return Department::query()->orderBy('name')->get(['name', 'slug'])
-            ->map(fn (Department $row) => ['name' => $row->name, 'slug' => $row->slug])->all();
     }
 
     /** @return array{carousel: array, latestPosts: array, welcomeHero: ?string, heroSections: array, layout: array} */

@@ -9,7 +9,6 @@ use App\Auth\PasswordLogin;
 use App\Auth\PasswordPolicy;
 use App\Auth\RateLimit;
 use App\Models\User;
-use App\Support\Authz;
 use App\Support\RequestError;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -20,6 +19,7 @@ use Illuminate\Support\Facades\URL;
 class AuthActions
 {
     /** `auth.login` (public): `{ email, password, remember }` → `{ ok: true }`. */
+    #[Action(Access::Public)]
     public function login(Request $request): array
     {
         $input = $request->validate([
@@ -33,6 +33,7 @@ class AuthActions
     }
 
     /** `auth.logout`: signs the current session out. */
+    #[Action(Access::User)]
     public function logout(Request $request): null
     {
         AuthSession::signOut($request);
@@ -44,6 +45,7 @@ class AuthActions
      * `auth.forgotPassword` (public): `{ email }`. Always succeeds, so it does not reveal which addresses have a
      * User. The work (token write, mail) runs after the response, so response time does not reveal it either.
      */
+    #[Action(Access::Public)]
     public function forgotPassword(Request $request): null
     {
         RateLimit::assertAuthRequestQuota($request->ip() ?? 'unknown', 'forgotPassword');
@@ -64,6 +66,7 @@ class AuthActions
     }
 
     /** `auth.resetPassword` (public): `{ token, email, password }`. A reset ends every session of the User. */
+    #[Action(Access::Public)]
     public function resetPassword(Request $request): null
     {
         RateLimit::assertAuthRequestQuota($request->ip() ?? 'unknown', 'resetPassword');
@@ -90,9 +93,10 @@ class AuthActions
     }
 
     /** `auth.sendVerificationEmail`: mails the signed-in User a signed `/verify-email/{id}/{hash}` link. */
+    #[Action(Access::User)]
     public function sendVerificationEmail(Request $request): null
     {
-        $user = Authz::requireUser($request->user());
+        $user = $request->user();
         if ($user->email_verified) {
             return null;
         }

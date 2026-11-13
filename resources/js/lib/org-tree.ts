@@ -1,7 +1,7 @@
 import type { TreeEditOps } from './tree-edit-session';
 
 /**
- * Pure helpers for the department org chart editor (the server enforces its own rules in `app/Admin/OrgTree.php`).
+ * Pure helpers for the department org chart editor (the server enforces its own rules in `app/OrgChart/OrgTree.php`).
  * Siblings are ordered by (`order`, `id`) exactly like the public chart; every move renumbers the
  * affected sibling lists 1..n and reports only the rows that actually changed.
  */

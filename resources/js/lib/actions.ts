@@ -4,6 +4,7 @@
  * `input` is a plain object (sent as JSON) or FormData (multipart). `error` is an ActionError; a validation
  * failure is an ActionError with `fields` (see `isInputError`).
  */
+import type { ActionModules } from './action-names';
 import { csrfHeaders, resetCsrf } from './csrf';
 
 export type ActionErrorCode =
@@ -105,9 +106,9 @@ export async function callAction<T = any>(name: string, input?: unknown): Promis
 
 type ActionFn = (input?: any) => Promise<ActionResult>;
 
-/** `actions.posts.create(input)` → `callAction('posts.create', input)`. */
-export const actions: Record<string, Record<string, ActionFn>> = new Proxy(
-    {},
+/** `actions.posts.create(input)` → `callAction('posts.create', input)`. Only the names in `ACTION_NAMES` (= ActionRegistry) type-check. */
+export const actions: { [M in keyof ActionModules]: { [A in ActionModules[M][number]]: ActionFn } } = new Proxy(
+    {} as never,
     {
         get: (_, module: string) =>
             new Proxy(

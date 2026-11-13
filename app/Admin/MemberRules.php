@@ -3,6 +3,7 @@
 namespace App\Admin;
 
 use App\Models\Member;
+use App\OrgChart\OrgTree;
 use App\Support\RequestError;
 
 /** Rules for org-chart members that need the database. */

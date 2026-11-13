@@ -36,19 +36,13 @@ export async function postImage(original: File, kind: UploadKind): Promise<{ url
     const form = new FormData();
     form.append('image', file);
     form.append('kind', kind);
-    const response = await fetch('/api/admin/uploads/image', {
-        method: 'POST',
-        headers: { Accept: 'application/json', ...(await csrfHeaders()) },
-        body: form,
-    }).catch(() => null);
-    const body: unknown = await response?.json().catch(() => null);
-    if (!response?.ok) {
-        const message = body && typeof body === 'object' && 'message' in body ? String(body.message) : '';
-        throw new Error(message || 'Upload failed. Please try again.');
-    }
-    if (!body || typeof body !== 'object' || !('url' in body) || typeof body.url !== 'string') {
-        throw new Error('Upload failed. Please try again.');
-    }
+    const fallback = 'Upload failed. Please try again.';
+    const body = await requestJson(
+        '/api/admin/uploads/image',
+        { method: 'POST', headers: { Accept: 'application/json', ...(await csrfHeaders()) }, body: form },
+        fallback,
+    );
+    if (typeof body.url !== 'string') throw new Error(fallback);
     return { url: body.url, file };
 }
 
@@ -63,17 +57,26 @@ function messageOf(body: unknown): string {
     return body && typeof body === 'object' && 'message' in body ? String(body.message) : '';
 }
 
-/** POSTs `payload` as JSON and returns the parsed JSON object; throws the server's message, else `fallback`. */
-async function postJson(url: string, payload: unknown, fallback: string): Promise<Record<string, unknown>> {
-    const response = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(await csrfHeaders()) },
-        body: JSON.stringify(payload),
-    }).catch(() => null);
+/** Sends `init` and returns the parsed JSON object; throws the server's message, else `fallback`. */
+async function requestJson(url: string, init: RequestInit, fallback: string): Promise<Record<string, unknown>> {
+    const response = await fetch(url, init).catch(() => null);
     const body: unknown = await response?.json().catch(() => null);
     if (!response?.ok) throw new Error(messageOf(body) || fallback);
     if (!body || typeof body !== 'object') throw new Error(fallback);
     return body as Record<string, unknown>;
+}
+
+/** POSTs `payload` as JSON and returns the parsed JSON object; throws the server's message, else `fallback`. */
+async function postJson(url: string, payload: unknown, fallback: string): Promise<Record<string, unknown>> {
+    return requestJson(
+        url,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(await csrfHeaders()) },
+            body: JSON.stringify(payload),
+        },
+        fallback,
+    );
 }
 
 /**
@@ -113,20 +116,48 @@ async function putFile(
 }
 
 /**
+ * The browser-direct upload sequence: POST `{ fileName, contentType, size }` to `grantUrl` for `{ key, url }` (and,
+ * for videos, the `contentType` the PUT must send), PUT the bytes to that target, then, with `completeUrl`, POST
+ * `{ key }` to claim the upload and return its `{ url }`. `onProgress` gets 0–1 for the PUT.
+ */
+async function uploadViaGrant(options: {
+    grantUrl: string;
+    completeUrl?: string;
+    file: File;
+    contentType: string;
+    onProgress?: (fraction: number) => void;
+}): Promise<{ key: string; url?: string }> {
+    const { grantUrl, completeUrl, file, contentType, onProgress } = options;
+    const grant = await postJson(
+        grantUrl,
+        { fileName: file.name, contentType, size: file.size },
+        'Could not start the upload.',
+    );
+    if (typeof grant.key !== 'string' || typeof grant.url !== 'string') throw new Error('Could not start the upload.');
+    const putType = typeof grant.contentType === 'string' ? grant.contentType : contentType;
+    onProgress?.(0);
+    await putFile(grant.url, putType, file, onProgress);
+    if (!completeUrl) return { key: grant.key };
+
+    const done = await postJson(completeUrl, { key: grant.key }, 'Could not finish the upload.');
+    if (typeof done.url !== 'string') throw new Error('Could not finish the upload.');
+    onProgress?.(1);
+    return { key: grant.key, url: done.url };
+}
+
+/**
  * Uploads a Download file straight to the S3 bucket through a presigned URL (request bodies over
  * ~4.5 MB never reach the server) and returns its stored key. `onProgress` gets 0–100. Throws an
  * `Error` with a user-presentable message when the upload fails.
  */
 export async function uploadDownloadDirect(file: File, onProgress?: (percent: number) => void): Promise<string> {
-    const contentType = file.type || 'application/octet-stream';
-    const grant = await postJson(
-        '/api/admin/uploads/direct',
-        { fileName: file.name, contentType, size: file.size },
-        'Could not start the upload.',
-    );
-    if (typeof grant.key !== 'string' || typeof grant.url !== 'string') throw new Error('Could not start the upload.');
-    await putFile(grant.url, contentType, file, onProgress && ((fraction) => onProgress(Math.round(fraction * 100))));
-    return grant.key;
+    const { key } = await uploadViaGrant({
+        grantUrl: '/api/admin/uploads/direct',
+        file,
+        contentType: file.type || 'application/octet-stream',
+        onProgress: onProgress && ((fraction) => onProgress(Math.round(fraction * 100))),
+    });
+    return key;
 }
 
 /**
@@ -142,22 +173,13 @@ export async function uploadVideo(file: File, onProgress?: (fraction: number) =>
     if (file.size > VIDEO_MAX_BYTES)
         throw new Error(`The video must not be larger than ${VIDEO_MAX_BYTES / 1024 / 1024} MB.`);
 
-    const grant = await postJson(
-        '/api/admin/uploads/video',
-        { fileName: file.name, contentType, size: file.size },
-        'Could not start the upload.',
-    );
-    if (typeof grant.key !== 'string' || typeof grant.url !== 'string' || typeof grant.contentType !== 'string') {
-        throw new Error('Could not start the upload.');
-    }
-    onProgress?.(0);
-    await putFile(grant.url, grant.contentType, file, onProgress);
-    const done = await postJson(
-        '/api/admin/uploads/video/complete',
-        { key: grant.key },
-        'Could not finish the upload.',
-    );
-    if (typeof done.url !== 'string') throw new Error('Could not finish the upload.');
-    onProgress?.(1);
-    return { url: done.url };
+    const { url } = await uploadViaGrant({
+        grantUrl: '/api/admin/uploads/video',
+        completeUrl: '/api/admin/uploads/video/complete',
+        file,
+        contentType,
+        onProgress,
+    });
+    if (url === undefined) throw new Error('Could not finish the upload.');
+    return { url };
 }

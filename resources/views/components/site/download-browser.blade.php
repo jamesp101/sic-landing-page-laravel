@@ -1,4 +1,4 @@
-{{-- Renders `Downloads::getDownloadsPage()` (downloads, groups, folders, selected, allHref, totalCount). --}}
+{{-- Renders `Site\Downloads::getDownloadsPage()` (downloads, groups, folders, selected, allHref, totalCount). --}}
 @props(['downloads', 'groups', 'folders', 'selected', 'allHref', 'totalCount'])
 @php
     $folderLink = 'flex min-h-11 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm transition duration-200 ease-out hover:border-gold-500 hover:shadow-brand-sm';

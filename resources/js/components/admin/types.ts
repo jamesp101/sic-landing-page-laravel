@@ -11,10 +11,12 @@ export interface AdminUser {
     role: string;
 }
 
+/** One admin sidebar link, as `App\Admin\AdminNav::items` lists it: `icon` is a Lucide name, `active` the current page. */
 export interface NavItem {
     title: string;
     href: string;
-    icon?: import('svelte').Component<{ class?: string }>;
+    icon: string;
+    active: boolean;
 }
 
 export interface ScopeOption {

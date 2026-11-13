@@ -3,15 +3,14 @@
     import { dndzone, type DndEvent } from 'svelte-dnd-action';
     import { onMount } from 'svelte';
     import { flip } from 'svelte/animate';
-    import { inputClass, primaryButtonClass } from '../shared/form-utils';
+    import { inputClass, primaryButtonClass, type DepartmentField } from '../shared/form-utils';
     import SlideStage from './SlideStage.svelte';
     import type { StripSlide } from '@/lib/slide-designer-session';
 
     let {
         slides,
         activeKey,
-        departments,
-        superadmin,
+        departmentField,
         busy = false,
         onselect,
         onadd,
@@ -23,8 +22,7 @@
     }: {
         slides: StripSlide[];
         activeKey: string | null;
-        departments: { id: number; name: string }[];
-        superadmin: boolean;
+        departmentField: DepartmentField;
         busy?: boolean;
         onselect: (key: string) => void;
         onadd: () => void;
@@ -57,7 +55,7 @@
 
     const saved = $derived(slides.filter((slide) => slide.id !== null));
     const departmentNameOf = (slide: StripSlide) =>
-        departments.find((department) => department.id === slide.departmentId)?.name ?? 'Department';
+        departmentField.options.find((department) => department.id === slide.departmentId)?.name ?? 'Department';
     const draft = $derived(slides.find((slide) => slide.id === null) ?? null);
     const byKey = $derived(Object.fromEntries(saved.map((slide) => [slide.key, slide])));
     const duration = $derived(reducedMotion ? 0 : 160);
@@ -190,7 +188,7 @@
                                 />{/if}
                             {slide.showOnMain ? 'Shown on main page' : 'Hidden from main page'}
                         </button>
-                        {#if superadmin}
+                        {#if !departmentField.locked}
                             <div class="px-2 py-1">
                                 <label
                                     for="menu-dept-{slide.key}"
@@ -209,8 +207,8 @@
                                                 : null,
                                         })}
                                 >
-                                    <option value="">None (main page only)</option>
-                                    {#each departments as department (department.id)}
+                                    {#if departmentField.allowMain}<option value="">None (main page only)</option>{/if}
+                                    {#each departmentField.options as department (department.id)}
                                         <option value={String(department.id)}>{department.name}</option>
                                     {/each}
                                 </select>

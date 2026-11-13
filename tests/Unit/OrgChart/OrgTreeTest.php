@@ -1,8 +1,8 @@
 <?php
 
-namespace Tests\Unit\Admin\Trees;
+namespace Tests\Unit\OrgChart;
 
-use App\Admin\OrgTree as T;
+use App\OrgChart\OrgTree as T;
 use PHPUnit\Framework\TestCase;
 
 /** The server-side org chart rules; the editor's tree moves live in org-tree.ts. */

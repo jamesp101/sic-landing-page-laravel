@@ -5,9 +5,8 @@ namespace App\Http\Controllers\Admin;
 use App\Admin\AdminPage;
 use App\Admin\NavTree;
 use App\Http\Controllers\Controller;
-use App\Models\NavigationLink;
+use App\Models\Department;
 use App\Models\Post;
-use App\Site\Queries;
 use App\Site\SiteNav;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -18,22 +17,10 @@ class NavLinkController extends Controller
     {
         AdminPage::resolve($request, ['superAdmin' => true]);
 
-        $all = NavigationLink::query()->orderBy('order')->orderBy('id')->get();
-        $toNode = fn (NavigationLink $link): array => [
-            'id' => $link->id,
-            'label' => $link->label,
-            'url' => $link->url,
-            'isActive' => $link->is_active,
-            'order' => $link->order,
-            'children' => [],
-        ];
-        $links = $all->whereNull('parent_id')->map(fn (NavigationLink $top): array => [
-            ...$toNode($top),
-            'children' => $all->where('parent_id', $top->id)->map($toNode)->values()->all(),
-        ])->values()->all();
-
-        $linkedSlugs = NavTree::postSlugsLinked($all->pluck('url'));
-        $departments = Queries::getNavDepartments();
+        $links = NavTree::stored();
+        $linkedSlugs = NavTree::postSlugsLinked(NavTree::urls($links));
+        $departments = Department::query()->orderBy('name')->get(['name', 'slug'])
+            ->map(fn (Department $row): array => ['name' => $row->name, 'slug' => $row->slug])->all();
         $newestPosts = Post::query()->orderByDesc('created_at')->orderByDesc('id')->limit(30)->get(['title', 'slug']);
         $linkedPosts = $linkedSlugs === [] ? collect() : Post::query()->whereIn('slug', $linkedSlugs)->get(['slug']);
 

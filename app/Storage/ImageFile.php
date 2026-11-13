@@ -10,7 +10,7 @@ use Throwable;
 
 /**
  * Raster image input: only the declared type and size are checked while validating (nothing is decoded, so a
- * signed-out or failing request costs nothing). `StoredFiles::commitWithFiles` and the image intake then call
+ * signed-out or failing request costs nothing). `StoredFiles::save` and the image intake then call
  * `storedImage`, which re-encodes an `ImageUpload` as WebP for its target, so every stored image upload is WebP.
  */
 final class ImageFile
@@ -30,7 +30,7 @@ final class ImageFile
     /**
      * Validation rules for an uploaded raster image of at most `$maxBytes`: type and size only. Add `'required'`
      * (message `ImageFile::MISSING`) or `'nullable'` in front as the field needs. After validating, wrap the file
-     * with `upload()` before handing it to `StoredFiles::commitWithFiles`.
+     * with `upload()` before handing it to `StoredFiles::save`.
      *
      * @return list<ValidationRule>
      */

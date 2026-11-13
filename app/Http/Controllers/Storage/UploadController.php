@@ -2,15 +2,10 @@
 
 namespace App\Http\Controllers\Storage;
 
-use App\Auth\RateLimit;
 use App\Http\Controllers\Controller;
-use App\Storage\DirectUpload;
-use App\Storage\DownloadIntake;
-use App\Storage\FileTypes;
 use App\Storage\ImageIntake;
 use App\Storage\PendingUploads;
 use App\Storage\Storage;
-use App\Storage\UploadRequest;
 use App\Storage\VideoIntake;
 use App\Support\Authz;
 use App\Support\RequestError;
@@ -46,24 +41,8 @@ class UploadController extends Controller
     public function direct(Request $request): JsonResponse
     {
         $user = Authz::requireUser($request->user());
-        if (! Storage::directUploads()) {
-            throw RequestError::notFound('Direct uploads are not enabled.');
-        }
 
-        $upload = UploadRequest::readUploadRequest($request);
-        // Downloads keep their own allowlist: every file type except videos, which only the video upload accepts.
-        if (! FileTypes::isAllowedContentType($upload['contentType']) || FileTypes::isVideoUpload($upload['fileName'], $upload['contentType'])) {
-            throw RequestError::unprocessable('This file type is not allowed.');
-        }
-        if ($upload['size'] > Storage::limit('download')) {
-            throw RequestError::unprocessable(DownloadIntake::DOWNLOAD_TOO_LARGE);
-        }
-        RateLimit::assertUploadQuota($user->id);
-
-        $key = DirectUpload::newDirectUploadKey($upload['fileName'], $upload['contentType']);
-        PendingUploads::registerPendingUpload($key, $user->id);
-
-        return response()->json(['key' => $key, 'url' => Storage::presignUpload($key, $upload['contentType'], $upload['size'])]);
+        return response()->json(PendingUploads::grant(PendingUploads::DOWNLOAD, $user->id, $request));
     }
 
     /**
@@ -75,20 +54,8 @@ class UploadController extends Controller
     public function video(Request $request): JsonResponse
     {
         $user = Authz::requireUser($request->user());
-        $upload = UploadRequest::readUploadRequest($request);
-        $checked = VideoIntake::validateVideoUpload($upload);
-        if (! $checked['ok']) {
-            throw RequestError::unprocessable($checked['message']);
-        }
-        RateLimit::assertUploadQuota($user->id);
 
-        $key = DirectUpload::newDirectUploadKey($upload['fileName'], $checked['contentType'], DirectUpload::VIDEO_UPLOAD_PREFIX);
-        PendingUploads::registerPendingUpload($key, $user->id);
-        $url = Storage::directUploads()
-            ? Storage::presignUpload($key, $checked['contentType'], $upload['size'])
-            : '/api/admin/uploads/video?'.http_build_query(['key' => $key, 'size' => (string) $upload['size']], '', '&', PHP_QUERY_RFC1738);
-
-        return response()->json(['key' => $key, 'url' => $url, 'contentType' => $checked['contentType']]);
+        return response()->json(PendingUploads::grant(PendingUploads::VIDEO, $user->id, $request));
     }
 
     /**
@@ -120,7 +87,7 @@ class UploadController extends Controller
         if (! is_array($body) || ! is_string($body['key'] ?? null)) {
             throw RequestError::badRequest('Expected a JSON body with a key.');
         }
-        $uploaded = VideoIntake::complete($user->id, $body['key']);
+        $uploaded = PendingUploads::claim(PendingUploads::VIDEO, $user->id, $body['key']);
 
         return response()->json(['url' => Storage::storageRouteUrl($uploaded['key'])]);
     }

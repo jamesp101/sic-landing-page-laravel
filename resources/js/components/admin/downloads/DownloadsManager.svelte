@@ -23,8 +23,10 @@
         Tag,
         Trash,
     } from '@lucide/svelte';
+    import { untrack } from 'svelte';
     import ConfirmDialog from '@/components/admin/ConfirmDialog.svelte';
     import {
+        type DepartmentField,
         inputClass,
         parseActionError,
         primaryButtonClass,
@@ -76,14 +78,12 @@
 
     let {
         downloads,
-        departments,
+        departmentField,
         manager,
-        isSuperAdmin,
     }: {
         downloads: DownloadRow[];
-        departments: { id: number; name: string }[];
+        departmentField: DepartmentField;
         manager: ListView;
-        isSuperAdmin: boolean;
     } = $props();
 
     const kindClass: Record<FileKind, string> = {
@@ -109,7 +109,7 @@
     let copied = $state(false);
 
     let folderName = $state('');
-    let folderDept = $state('');
+    let folderDept = $state(String(untrack(() => departmentField.value) ?? ''));
 
     const session = createDownloadsSession({
         port: {
@@ -503,8 +503,9 @@
             <div class="space-y-1.5">
                 <label for="folder_dept" class="block text-sm font-semibold">Owning department</label>
                 <select id="folder_dept" bind:value={folderDept} class="{selectClass} w-full">
-                    {#if isSuperAdmin}<option value="">General (all departments)</option>{/if}
-                    {#each departments as dept (dept.id)}<option value={String(dept.id)}>{dept.name}</option>{/each}
+                    {#if departmentField.allowMain}<option value="">General (all departments)</option>{/if}
+                    {#each departmentField.options as dept (dept.id)}<option value={String(dept.id)}>{dept.name}</option
+                        >{/each}
                 </select>
             </div>
             {#if view.folder.error}<p class="text-xs text-destructive" role="alert">{view.folder.error}</p>{/if}

@@ -2,13 +2,17 @@
 
 namespace App\Storage;
 
+use Closure;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Log;
+use LogicException;
 use Throwable;
 
 /**
  * Stored-file lifecycle: the one place that decides when uploaded files are written and removed around a database
- * write.
+ * write. Which files a row owns is not told per call: each model declares it ({@see OwnsFiles},
+ * {@see FileOwnership}) and the keys to keep, replace or remove are read off the row.
  *
  * Rules: new files are stored first; if the commit fails the new files are removed and the error is rethrown; if
  * it succeeds the stale files are removed. Cleanup failures are logged and never undo a new file or fail the request.
@@ -16,64 +20,80 @@ use Throwable;
 final class StoredFiles
 {
     /**
-     * Stores the new files, runs the commit, then removes stale keys (see the class rules).
+     * Stores the new files, writes the row, then removes the files the write made stale (see the class rules).
      *
-     * `$commit` keys:
-     * - `files`: name => `['prefix' => string, 'file' => UploadedFile|ImageUpload, 'variant' => bool]` or null/absent
-     *   (skipped). `variant` also stores the image's variants in the same commit (a failure is logged; the page falls
-     *   back to the original).
-     * - `adopted`: keys already stored (e.g. a direct upload) that belong to the commit and are removed if it fails.
-     * - `run`: `callable(array $keys)` writing the row(s); `$keys[name]` is the stored key of each new file, null for
-     *   an empty one.
-     * - `stale`: keys that became unused because the commit succeeded: a list, or a callable returning one (run after
-     *   the commit, e.g. to find files no row references any more).
+     * - `$row`: the model to write; a new instance creates it. Returned after the write.
+     * - `$attributes`: the columns to set, or `fn(array $keys): array` when they need the stored keys.
+     * - `$uploads`: declared file column => upload (`UploadedFile`/`ImageUpload`) or null to keep the column. The new
+     *   key is written to that column; the declaration gives the directory and whether Image variants are stored in
+     *   the same commit (a variant failure is logged; the page falls back to the original).
+     * - `$extras`: name => `['prefix' => string, 'file' => upload, 'variants'?: bool]` or null: files stored in the
+     *   same commit that no column holds; the caller places `$keys[name]` inside `$attributes` (Layer images).
+     * - `$write`: `fn(Model $row, array $attributes)` replacing the default `fill()->save()` (e.g. inside a transaction).
      *
-     * @param  array{files?: array<string, array{prefix: string, file: UploadedFile, variant?: bool}|null>, adopted?: iterable<?string>, run: callable, stale?: iterable<?string>|callable|null}  $commit
+     * A declared file column set to a key already stored (a direct upload) is adopted: removed if the write fails.
+     * Stale: the previous key of every declared column the write changed, plus embedded keys the row no longer
+     * references and nothing else does.
+     *
+     * @param  array<string, mixed>|Closure  $attributes
+     * @param  array<string, mixed>  $uploads
+     * @param  array<string, array{prefix: string, file: mixed, variants?: bool}|null>  $extras
      */
-    public static function commitWithFiles(array $commit): mixed
+    public static function save(Model $row, array|Closure $attributes, array $uploads = [], array $extras = [], ?Closure $write = null): Model
     {
-        $keys = [];
+        $ownership = self::ownershipOf($row);
+        $before = $row->exists ? $row->only($ownership->readColumns()) : [];
         $stored = [];
-        foreach ($commit['adopted'] ?? [] as $key) {
-            if ($key !== null && $key !== '') {
-                $stored[] = $key;
-            }
-        }
         try {
-            foreach ($commit['files'] ?? [] as $name => $upload) {
-                $keys[$name] = null;
-                if (! $upload) {
-                    continue;
-                }
-                // Image conversion happens here, after the caller's sign-in and ownership checks.
-                $file = ImageFile::storedImage($upload['file']);
-                $key = Storage::put($upload['prefix'], $file);
-                $stored[] = $key;
-                $keys[$name] = $key;
-                if (! empty($upload['variant'])) {
-                    self::storeVariant($key, $file);
+            $keys = [];
+            foreach ($uploads as $column => $upload) {
+                $declared = $ownership->columns[$column] ?? throw new LogicException($row::class." declares no file column {$column}.");
+                $keys[$column] = $upload ? self::store($declared['prefix'], $upload, $declared['variants'], $stored) : null;
+            }
+            foreach ($extras as $name => $extra) {
+                $keys[$name] = $extra ? self::store($extra['prefix'], $extra['file'], $extra['variants'] ?? false, $stored) : null;
+            }
+            $values = $attributes instanceof Closure ? $attributes($keys) : $attributes;
+            foreach (array_keys($uploads) as $column) {
+                if ($keys[$column] !== null) {
+                    $values[$column] = $keys[$column];
                 }
             }
-            $result = ($commit['run'])($keys);
-            self::cleanup($commit['stale'] ?? null, 'replaced');
+            foreach (array_keys($ownership->columns) as $column) {
+                $key = $values[$column] ?? null;
+                if ($key !== null && $key !== '' && $key !== ($before[$column] ?? null) && ! in_array($key, $stored, true)) {
+                    $stored[] = $key;
+                }
+            }
+            $write === null ? $row->fill($values)->save() : $write($row, $values);
+            self::cleanup(fn (): array => self::staleKeys($row, $ownership, $before), 'replaced');
 
-            return $result;
+            return $row;
         } catch (Throwable $error) {
-            // `cleanup` never throws, so this only sees conversion / put / commit failures.
+            // `cleanup` never throws, so this only sees conversion / put / write failures.
             self::removeAll($stored, 'rolled back');
             throw $error;
         }
     }
 
     /**
-     * Runs the row delete, then removes the files the row owned.
-     *
-     * @param  iterable<?string>|callable  $owned
+     * Runs the row delete (`$run`, default `$row->delete()`), then removes the files the row owned: its declared
+     * columns, the rows it cascades to (recursively), and embedded keys nothing references any more. Keys are read
+     * before the delete; a failed delete keeps every file.
      */
-    public static function deleteWithFiles(callable $run, iterable|callable $owned): mixed
+    public static function delete(Model $row, ?Closure $run = null): mixed
     {
-        $result = $run();
-        self::cleanup($owned, 'deleted');
+        $keys = [];
+        $embedded = [];
+        self::collectOwned($row, $keys, $embedded);
+        $result = $run === null ? $row->delete() : $run();
+        self::cleanup(function () use ($keys, $embedded): array {
+            foreach ($embedded as [$unused, $candidates]) {
+                array_push($keys, ...$unused($candidates));
+            }
+
+            return $keys;
+        }, 'deleted');
 
         return $result;
     }
@@ -88,14 +108,11 @@ final class StoredFiles
         self::removeAll($keys, $context);
     }
 
-    /** @param  iterable<?string>|callable|null  $stale */
-    private static function cleanup(iterable|callable|null $stale, string $context): void
+    /** @param  Closure(): iterable<?string>  $keys */
+    private static function cleanup(Closure $keys, string $context): void
     {
-        if ($stale === null) {
-            return;
-        }
         try {
-            self::removeAll((! is_array($stale) && is_callable($stale)) ? $stale() : $stale, $context);
+            self::removeAll($keys(), $context);
         } catch (Throwable $error) {
             Log::error("Stored file cleanup failed ({$context})", ['exception' => $error]);
         }
@@ -115,6 +132,76 @@ final class StoredFiles
                 Storage::remove($key);
             } catch (Throwable $error) {
                 Log::error("Stored file cleanup failed ({$context}): {$key}", ['exception' => $error]);
+            }
+        }
+    }
+
+    /**
+     * Stores one upload and records its key (and, for variants, the variants) for rollback.
+     *
+     * @param  list<string>  $stored
+     */
+    private static function store(string $prefix, mixed $upload, bool $variants, array &$stored): string
+    {
+        // Image conversion happens here, after the caller's sign-in and ownership checks.
+        $file = ImageFile::storedImage($upload);
+        $key = Storage::put($prefix, $file);
+        $stored[] = $key;
+        if ($variants) {
+            self::storeVariant($key, $file);
+        }
+
+        return $key;
+    }
+
+    private static function ownershipOf(Model $row): FileOwnership
+    {
+        return $row instanceof OwnsFiles ? $row::fileOwnership() : throw new LogicException($row::class.' does not declare the files it owns.');
+    }
+
+    /**
+     * Keys a write made stale: replaced declared keys, and embedded keys the new value dropped that nothing uses.
+     *
+     * @param  array<string, mixed>  $before
+     * @return list<?string>
+     */
+    private static function staleKeys(Model $row, FileOwnership $ownership, array $before): array
+    {
+        $stale = [];
+        foreach (array_keys($ownership->columns) as $column) {
+            $old = $before[$column] ?? null;
+            if ($old !== null && $old !== $row->getAttribute($column)) {
+                $stale[] = $old;
+            }
+        }
+        foreach ($ownership->embedded as $column => $embedded) {
+            $kept = $embedded['keys']($row->getAttribute($column));
+            $dropped = array_values(array_filter($embedded['keys']($before[$column] ?? null), fn (string $ref): bool => ! in_array($ref, $kept, true)));
+            array_push($stale, ...$embedded['unused']($dropped));
+        }
+
+        return $stale;
+    }
+
+    /**
+     * @param  list<?string>  $keys
+     * @param  list<array{0: Closure, 1: list<string>}>  $embedded  unused-filter and the references it applies to
+     */
+    private static function collectOwned(Model $row, array &$keys, array &$embedded): void
+    {
+        $ownership = self::ownershipOf($row);
+        foreach (array_keys($ownership->columns) as $column) {
+            $keys[] = $row->getAttribute($column);
+        }
+        foreach ($ownership->embedded as $column => $declared) {
+            $embedded[] = [$declared['unused'], $declared['keys']($row->getAttribute($column))];
+        }
+        foreach ($ownership->cascades as $relation) {
+            $query = $row->{$relation}();
+            $childOwnership = self::ownershipOf($query->getRelated());
+            $columns = $childOwnership->cascades === [] ? $childOwnership->readColumns() : [];
+            foreach ($query->get($columns === [] ? ['*'] : $columns) as $child) {
+                self::collectOwned($child, $keys, $embedded);
             }
         }
     }

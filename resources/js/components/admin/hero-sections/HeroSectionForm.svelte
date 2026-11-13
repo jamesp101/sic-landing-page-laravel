@@ -8,28 +8,22 @@
     import FormActions from '@/components/admin/shared/FormActions.svelte';
     import UnsavedChangesGuard from '@/components/admin/shared/UnsavedChangesGuard.svelte';
     import { unsavedChanges } from '@/components/admin/shared/unsaved-changes.svelte';
-    import { inputClass } from '@/components/admin/shared/form-utils';
+    import { inputClass, type DepartmentField } from '@/components/admin/shared/form-utils';
     import { cardClass, selectClass } from '@/components/admin/ui';
 
     interface HeroValues {
         id: number;
-        title: string | null;
+        title: string;
         content: string;
         order: number;
         isActive: boolean;
-        departmentId: number | null;
     }
 
     let {
-        departments,
-        isSuperAdmin,
-        defaultDepartmentId = null,
+        departmentField,
         section = null,
     }: {
-        departments: { id: number; name: string }[];
-        isSuperAdmin: boolean;
-        /** Admin scope's department, preselected when creating (superadmins may change it). */
-        defaultDepartmentId?: number | null;
+        departmentField: DepartmentField;
         section?: HeroValues | null;
     } = $props();
 
@@ -38,15 +32,7 @@
     let content = $state(initial?.content ?? '');
     let order = $state(initial?.order ?? 0);
     let isActive = $state(initial?.isActive ?? true);
-    let departmentId = $state(
-        initial?.departmentId
-            ? String(initial.departmentId)
-            : isSuperAdmin
-              ? initial
-                  ? ''
-                  : String(untrack(() => defaultDepartmentId) ?? '')
-              : String(untrack(() => departments)[0]?.id ?? ''),
-    );
+    let departmentId = $state(String(untrack(() => departmentField.value) ?? ''));
 
     const unsaved = unsavedChanges(() => [title, content, order, isActive, departmentId]);
 
@@ -76,8 +62,8 @@
             <Field label="Page location" id="departmentId" error={form.errors.departmentId}>
                 {#snippet children(props)}
                     <select {...props} bind:value={departmentId} class="{selectClass} w-full">
-                        {#if isSuperAdmin}<option value="">Welcome page (main landing)</option>{/if}
-                        {#each departments as dept (dept.id)}
+                        {#if departmentField.allowMain}<option value="">Welcome page (main landing)</option>{/if}
+                        {#each departmentField.options as dept (dept.id)}
                             <option value={String(dept.id)}>{dept.name}</option>
                         {/each}
                     </select>

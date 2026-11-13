@@ -1,14 +1,17 @@
 /**
  * Phone layout of a slide: the 4:5 frame, the phone type scale, per-layer overrides and the automatic
- * stacked layout for layers that have no hand-placed position. Pure (no DOM, no zod); the public
- * carousel, the designer canvas and the unit tests all call `resolveMobile`.
+ * stacked layout for layers that have no hand-placed position. Pure (no DOM, no zod); the designer
+ * canvas (live editing) and the unit tests call `resolveMobile`. The public carousel gets its Mobile layout resolved by
+ * the server (`OverlayMobile::resolveMobile` through `Layout::stage`), so this module is not part of the public bundle.
  *
  * Geometry is in percent of the 4:5 frame: x/w of its width, y/h of its height. The frame is 1.25 times as
  * tall as it is wide, so a length of `n` percent of the width is `n / 1.25` percent of the height.
  * Text heights cannot be measured here, so they are estimated from the text (see `footprint`); the estimate
  * errs on the tall side so stacked layers never touch.
  */
+import type { Box } from './carousel-editor';
 import {
+    LAYER_LIMITS,
     SIZES,
     readingOrder,
     scaleKind,
@@ -107,6 +110,46 @@ export function resetMobile(layer: Layer): Layer {
         size: undefined,
         hidden: undefined,
     });
+}
+
+/** Applies `patch` to the phone overrides of the layer `id`; other layers are untouched. */
+export function patchLayerMobile(layers: Layer[], id: string, patch: MobileOverride): Layer[] {
+    return layers.map((layer) => (layer.id === id ? setMobile(layer, patch) : layer));
+}
+
+/** Restores the automatic phone layout of the layer `id`. */
+export function resetLayerMobile(layers: Layer[], id: string): Layer[] {
+    return layers.map((layer) => (layer.id === id ? resetMobile(layer) : layer));
+}
+
+/** Restores the automatic phone layout of every layer. */
+export function resetAllMobile(layers: Layer[]): Layer[] {
+    return layers.map(resetMobile);
+}
+
+/** The phone settings of a slide whose photo is centred on `focus`. */
+export const focusMobile = (focus: { x: number; y: number }): SlideMobile => ({ focus });
+
+const clampTo = (value: number, [min, max]: readonly [number, number]) => Math.min(max, Math.max(min, value));
+
+/** Width/height a hand-placed phone layer stores, taken from its rendered box. */
+function placedSize(layer: Layer, box: Box): MobileOverride {
+    const size: MobileOverride = {};
+    if (layer.type === 'text' || layer.type === 'shape' || layer.type === 'image') size.w = box.w;
+    if (layer.type === 'shape' || layer.type === 'image') size.h = box.h;
+    return size;
+}
+
+/**
+ * The phone override for moving `layer` by (dx, dy) percent from its rendered `box`: a hand-placed position kept
+ * inside the slide, with the box's size.
+ */
+export function nudgeOnPhone(layer: Layer, box: Box, dx: number, dy: number): MobileOverride {
+    return {
+        x: clampTo(box.x + dx, [LAYER_LIMITS.x[0], LAYER_LIMITS.x[1] - box.w]),
+        y: clampTo(box.y + dy, [LAYER_LIMITS.y[0], LAYER_LIMITS.y[1] - box.h]),
+        ...placedSize(layer, box),
+    };
 }
 
 // ---------------------------------------------------------------------------

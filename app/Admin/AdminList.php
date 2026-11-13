@@ -4,6 +4,7 @@ namespace App\Admin;
 
 use App\Models\User;
 use App\Support\Pagination;
+use App\Support\Search;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -21,20 +22,30 @@ final class AdminList
 
     /**
      * A sortable field: `$orderBy(string $dir): Closure(Builder)` applies the ordering; `$defaultDir` is the
-     * direction used when the list is first sorted by it.
+     * direction used when the list is first sorted by it. A `$label` makes it one of the list's `sortOptions`
+     * (pages that render sort links outside a table header).
      *
      * @param  Closure(string): Closure  $orderBy
-     * @return array{orderBy: Closure, defaultDir: string}
+     * @return array{orderBy: Closure, defaultDir: string, label: ?string}
      */
-    public static function sortBy(Closure $orderBy, string $defaultDir = 'asc'): array
+    public static function sortBy(Closure $orderBy, string $defaultDir = 'asc', ?string $label = null): array
     {
-        return ['orderBy' => $orderBy, 'defaultDir' => $defaultDir];
+        return ['orderBy' => $orderBy, 'defaultDir' => $defaultDir, 'label' => $label];
     }
 
     /** `sortBy` for one column (`'created_at'`). */
-    public static function sortColumn(string $column, string $defaultDir = 'asc'): array
+    public static function sortColumn(string $column, string $defaultDir = 'asc', ?string $label = null): array
     {
-        return self::sortBy(fn (string $dir) => fn (Builder $q) => $q->orderBy($column, $dir), $defaultDir);
+        return self::sortBy(fn (string $dir) => fn (Builder $q) => $q->orderBy($column, $dir), $defaultDir, $label);
+    }
+
+    /**
+     * `restriction` of a list whose rows no Admin scope narrows (the users list: superadmin-only, every user
+     * is listed). Search and filters still apply on top of it.
+     */
+    public static function unrestricted(): Closure
+    {
+        return static fn (Builder $q) => $q;
     }
 
     /** Ordering closure for `spec['tiebreak']`. */
@@ -81,14 +92,14 @@ final class AdminList
      *     url: string,
      *     actor: User,
      *     scope: array,
-     *     spec: array{fields: array<string, array{orderBy: Closure, defaultDir: string}>, defaultSort: string, tiebreak: Closure, search?: list<string>, perPage?: int},
+     *     spec: array{fields: array<string, array{orderBy: Closure, defaultDir: string, label: ?string}>, defaultSort: string, tiebreak: Closure, search?: list<string>, perPage?: int},
      *     filters?: array<string, array{parse: Closure, where: Closure}>,
      *     restriction?: Closure,
      *     count: Closure(Closure): int,
      *     fetch: Closure(array): iterable
      * }  $input  `url`: request path with query (`$request->getRequestUri()`) or a full URL. `restriction`
      *            replaces the Admin scope for lists that are not department-owned rows (the departments list is
-     *            restricted by id, the users list is superadmin-only); it is still ANDed, so search cannot widen it.
+     *            restricted by id, the users list is `unrestricted()`); it is still ANDed, so search cannot widen it.
      */
     public static function runList(array $input): ListState
     {
@@ -165,6 +176,8 @@ final class AdminList
             params: $params,
             filterNames: array_map('strval', array_keys($declared)),
             fields: $spec['fields'],
+            // A single department or the Main site: the Department column adds nothing.
+            showDepartment: $scope['kind'] === 'all',
         );
     }
 

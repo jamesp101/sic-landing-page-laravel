@@ -9,9 +9,8 @@
             name="admin/downloads/DownloadsManager"
             :props="[
                 'downloads' => $downloads,
-                'departments' => $departments,
+                'departmentField' => $departmentField,
                 'manager' => $manager,
-                'isSuperAdmin' => $superadmin,
             ]"
         />
         <x-admin.list-pagination :list="$list" />

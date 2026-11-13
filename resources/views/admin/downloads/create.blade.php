@@ -15,11 +15,9 @@
         <x-island
             name="admin/downloads/DownloadUploadForm"
             :props="[
-                'departments' => $departments,
                 'defaultDirectory' => $defaultDirectory,
                 'directories' => $directories,
-                'isSuperAdmin' => $isSuperAdmin,
-                'defaultDepartmentId' => $defaultDepartmentId,
+                'departmentField' => $departmentField,
                 'maxMb' => $maxMb,
                 'uploadMode' => $uploadMode,
             ]"

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Content;
 
+use App\Content\Blocks\PlainText;
 use Closure;
 
 /**
@@ -55,6 +56,20 @@ final class RichContent
     public function check(): array
     {
         return $this->once('check', $this->check);
+    }
+
+    /** The write-side result of this parse: normalised value and `search_text` (see {@see Content::forStorage()}). */
+    public function forStorage(): StoredContent
+    {
+        $checked = $this->check();
+        if (! $checked['ok']) {
+            return new StoredContent('', '');
+        }
+
+        // A block document's text comes from its normalised form, so `sic:backfill-search` finds nothing to change.
+        $text = $this->format === 'blocks' ? PlainText::blocksToPlainText($checked['value']) : $this->text();
+
+        return new StoredContent($checked['value'], $text);
     }
 
     private function once(string $key, Closure $compute): mixed

@@ -36,8 +36,8 @@ final class PasswordLogin
 
     /**
      * Ends the User's sessions in one write (rows of the `sessions` table, so they stop at once): all of them, or
-     * all but `$exceptSessionId` (the session the caller is using). The one place that does it; also used when a
-     * changed email address must sign out other devices.
+     * all but `$exceptSessionId` (the session the caller is using). The one writer of the `sessions` table: also used
+     * when a changed email address must sign out other devices and when a User is deleted.
      */
     public static function endSessions(int $userId, ?string $exceptSessionId = null): void
     {

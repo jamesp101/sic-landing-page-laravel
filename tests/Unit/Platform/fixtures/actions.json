@@ -1,0 +1,17 @@
+{
+    "actions": {
+        "account": ["changePassword", "confirmPassword", "deleteAccount", "updateProfile"],
+        "auth": ["forgotPassword", "login", "logout", "resetPassword", "sendVerificationEmail"],
+        "carousels": ["create", "delete", "duplicate", "placement", "reorder", "update"],
+        "contact": ["send"],
+        "departments": ["create", "delete", "update"],
+        "directories": ["create", "delete"],
+        "downloads": ["create", "delete"],
+        "heroSections": ["create", "delete", "update"],
+        "members": ["create", "delete", "reorder", "update"],
+        "navlinks": ["create", "delete", "reorder", "update", "useDefaultMenu"],
+        "posts": ["create", "delete", "update"],
+        "settings": ["updateLanding"],
+        "users": ["create", "delete", "update"]
+    }
+}
