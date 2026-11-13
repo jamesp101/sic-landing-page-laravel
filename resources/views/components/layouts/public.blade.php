@@ -1,16 +1,16 @@
 {{--
     Public page shell: skip link, header, <main id="main">, footer, and layout-level JSON-LD (WebSite on the home
     page, BreadcrumbList when crumbs are given).
-    Props: `seo` (page SEO array of App\Site\Seo, `breadcrumbs` included), `layout` (App\Site\Queries::layout(), started
+    Props: `seo` (page SEO array of App\Site\Seo, `breadcrumbs` included), `layout` (App\Site\SiteLayout::read(), started
     here when omitted), `bodyClass`, `minimal` (skip database lookups; used by the 500 page).
 --}}
 @props(['seo' => [], 'layout' => null, 'bodyClass' => '', 'minimal' => false])
 @php
-    use App\Site\Queries;
     use App\Site\Seo;
+    use App\Site\SiteLayout;
 
     $breadcrumbs = $seo['breadcrumbs'] ?? [];
-    $layout = $minimal ? ['navLinks' => [], 'departments' => []] : ($layout ?? Queries::layout());
+    $layout = $minimal ? ['navLinks' => [], 'departments' => []] : ($layout ?? SiteLayout::read());
     $context = Seo::context(request());
     $site = Seo::siteUrl($context);
     $canonicalUrl = Seo::canonicalHref($seo['canonical'] ?? null, $context);

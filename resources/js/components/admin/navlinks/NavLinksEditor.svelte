@@ -9,25 +9,19 @@
     import {
         canIndent,
         canOutdent,
-        cloneTree,
         findNode,
-        indent,
         locate,
-        moveDown,
-        moveUp,
-        navTreeOps,
-        navWarnings,
         opensDropdown,
-        outdent,
-        proposeNavTree,
+        navWarnings,
         type LinkSuggestion,
-        type NavChange,
         type NavNode,
         type NavPatch,
     } from '@/lib/nav-tree';
-    import { createTreeEditSession, type EditResult, type TreeEditPort } from '@/lib/tree-edit-session';
+    import { createNavLinksSession, type NavLinksPort, type NavMove, type NavResult } from '@/lib/nav-links-session';
     import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
     import ConfirmDialog from '../ConfirmDialog.svelte';
+    import { ariaKeysOf } from '../shared/keymap-core';
+    import { isTypingTarget, REDO_CHORDS, UNDO_CHORDS, undoRedoOf } from '../shared/undo-keys';
     import { parseActionError, primaryButtonClass, secondaryButtonClass } from '../shared/form-utils';
     import NavHeaderPreview from './NavHeaderPreview.svelte';
     import NavKindBadge from './NavKindBadge.svelte';
@@ -52,43 +46,24 @@
     const smallButton =
         'inline-flex h-8 items-center gap-1.5 rounded-lg border border-border-strong bg-surface px-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-surface-alt';
 
-    const port: TreeEditPort<NavNode[], NavChange> = {
-        async save(change, confirmed) {
-            if (change.kind === 'tree') {
-                const { error } = await actions.navlinks.reorder({ items: change.items });
-                return error ? { ok: false, message: parseActionError(error).message } : { ok: true };
-            }
-            const pos = locate(confirmed, change.id);
-            if (!pos) return { ok: false, message: 'This link no longer exists.' };
-            const parent = pos.parentIndex === null ? null : confirmed[pos.parentIndex];
-            const node = parent ? parent.children[pos.index] : confirmed[pos.index];
-            const { error } = await actions.navlinks.update({
-                id: node.id,
-                label: change.patch.label ?? node.label,
-                url: node.url,
-                order: node.order,
-                isActive: change.patch.isActive ?? node.isActive,
-                parentId: parent?.id ?? null,
-            });
-            return error
-                ? { ok: false, message: parseActionError(error).message || 'The link could not be updated.' }
-                : { ok: true };
+    const port: NavLinksPort = {
+        async reorder(items) {
+            const { error } = await actions.navlinks.reorder({ items });
+            return error ? { ok: false, message: parseActionError(error).message } : { ok: true };
+        },
+        async update(link) {
+            const { error } = await actions.navlinks.update(link);
+            return error ? { ok: false, message: parseActionError(error).message } : { ok: true };
         },
     };
-    // The session owns the confirmed and optimistic trees, the save queue, rollback and undo history.
-    // `tops` is what the user sees; it follows the session and may hold a drag in progress.
-    const session = createTreeEditSession({
-        tree: untrack(() => cloneTree(links)),
+    // The session owns the tree (including a drag in progress), the save queue, rollback and undo history.
+    const session = createNavLinksSession({
+        links: untrack(() => links),
         port,
-        ops: navTreeOps,
-        fallbackMessage: 'The order could not be saved.',
-        onChange(next) {
-            if (next.tree !== view.tree) tops = cloneTree(next.tree);
-            view = next;
-        },
+        onChange: (next) => (view = next),
     });
     let view = $state.raw(session.snapshot());
-    let tops = $state<NavNode[]>(untrack(() => cloneTree(links)));
+    const tops = $derived(view.tree);
     const saving = $derived(view.pending);
     let dragDisabled = $state(true);
     let selectedId = $state<number | null>(null);
@@ -120,52 +95,35 @@
     const find = (id: number) => findNode(tops, id);
 
     /** Reports a finished save: the failure toast and announcement, or the success note. Returns whether it was saved. */
-    async function finish(pending: Promise<EditResult>, note?: string): Promise<boolean> {
+    async function finish(pending: Promise<NavResult>, note?: string): Promise<boolean> {
         const result = await pending;
-        if (result.status === 'reverted') {
+        if (result.status === 'invalid') toast.error(result.message);
+        else if (result.status === 'reverted') {
             toast.error(result.message);
             announcement = result.announcement;
         } else if (result.status === 'saved' && note) toast.success(note);
         return result.status === 'saved';
     }
 
-    /** Proposes `next` as the new tree; the session saves it, or the rule's message says why it cannot be. */
-    async function commit(next: NavNode[]) {
-        const proposal = proposeNavTree(view.tree, next);
-        if ('error' in proposal) {
-            tops = cloneTree(view.tree);
-            toast.error(proposal.error);
-            return;
-        }
-        const pending = session.edit(proposal.change);
-        tops = cloneTree(view.tree);
-        await finish(pending, 'Order saved.');
-    }
-
     // ---- drag and drop (mouse, touch) -------------------------------------------------------------
 
     function onTopConsider(event: CustomEvent<DndEvent<NavNode>>) {
         dragging = true;
-        tops = event.detail.items;
+        session.dragTops(event.detail.items);
     }
 
     function onTopFinalize(event: CustomEvent<DndEvent<NavNode>>) {
-        tops = event.detail.items;
+        session.dragTops(event.detail.items);
         settle();
-    }
-
-    function setChildren(topId: number, items: NavNode[]) {
-        const top = findNode(tops, topId);
-        if (top) top.children = items;
     }
 
     function onChildConsider(topId: number, event: CustomEvent<DndEvent<NavNode>>) {
         dragging = true;
-        setChildren(topId, event.detail.items);
+        session.dragChildren(topId, event.detail.items);
     }
 
     function onChildFinalize(topId: number, event: CustomEvent<DndEvent<NavNode>>) {
-        setChildren(topId, event.detail.items);
+        session.dragChildren(topId, event.detail.items);
         settle();
     }
 
@@ -175,7 +133,7 @@
         settleTimer = setTimeout(() => {
             dragDisabled = true;
             dragging = false;
-            void commit(tops);
+            void finish(session.drop(), 'Order saved.');
         }, 0);
     }
 
@@ -186,19 +144,19 @@
 
     // ---- keyboard / button moves ----------------------------------------------------------------------
 
-    async function apply(id: number, result: NavNode[] | null, message: string) {
-        if (!result || saving) return;
+    async function apply(id: number, move: NavMove, message: string) {
+        if (saving) return;
         selectedId = id;
-        announcement = message;
-        await commit(result);
+        const saved = await finish(session.move(id, move), 'Order saved.');
+        if (saved) announcement = message;
         await tick();
         document.querySelector<HTMLElement>(`[data-handle="${id}"]`)?.focus();
     }
 
-    const up = (id: number) => apply(id, moveUp(tops, id), `${find(id)?.label} moved up.`);
-    const down = (id: number) => apply(id, moveDown(tops, id), `${find(id)?.label} moved down.`);
-    const nest = (id: number) => apply(id, indent(tops, id), `${find(id)?.label} is now a sub-link.`);
-    const unnest = (id: number) => apply(id, outdent(tops, id), `${find(id)?.label} is now a top-level link.`);
+    const up = (id: number) => apply(id, 'up', `${find(id)?.label} moved up.`);
+    const down = (id: number) => apply(id, 'down', `${find(id)?.label} moved down.`);
+    const nest = (id: number) => apply(id, 'indent', `${find(id)?.label} is now a sub-link.`);
+    const unnest = (id: number) => apply(id, 'outdent', `${find(id)?.label} is now a top-level link.`);
 
     function onHandleKeydown(event: KeyboardEvent, node: NavNode) {
         if (event.altKey || event.ctrlKey || event.metaKey) return;
@@ -226,11 +184,10 @@
     }
 
     function onWindowKeydown(event: KeyboardEvent) {
-        if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== 'z') return;
-        const target = event.target as HTMLElement | null;
-        if (target?.closest('input, textarea, select, [contenteditable="true"], [role="dialog"]')) return;
+        const direction = undoRedoOf(event);
+        if (!direction || isTypingTarget(event.target)) return;
         event.preventDefault();
-        void travel(event.shiftKey ? 'redo' : 'undo');
+        void travel(direction);
     }
 
     // ---- active toggle, delete ---------------------------------------------------------------------
@@ -238,7 +195,7 @@
     /** Saves a label/visibility change optimistically; reverts on failure. Returns whether it was saved. */
     async function updateNode(node: NavNode, patch: NavPatch): Promise<boolean> {
         if (saving) return false;
-        return finish(session.edit({ kind: 'patch', id: node.id, patch }, { record: false }));
+        return finish(session.patch(node.id, patch));
     }
 
     async function toggleActive(node: NavNode) {
@@ -541,7 +498,7 @@
                             type="button"
                             class={toolbarIconButton}
                             aria-label="Undo"
-                            aria-keyshortcuts="Control+Z Meta+Z"
+                            aria-keyshortcuts={ariaKeysOf(UNDO_CHORDS)}
                             disabled={saving || !view.canUndo}
                             onclick={() => travel('undo')}
                         >
@@ -554,7 +511,7 @@
                             type="button"
                             class={toolbarIconButton}
                             aria-label="Redo"
-                            aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
+                            aria-keyshortcuts={ariaKeysOf(REDO_CHORDS)}
                             disabled={saving || !view.canRedo}
                             onclick={() => travel('redo')}
                         >

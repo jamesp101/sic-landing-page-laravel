@@ -1,0 +1,37 @@
+{
+  "_doc": "Members are [id, parentId, order]. Shapes: a leaf is its id, a Manager with Direct reports is [id, [shapes]]. Placements are {id, parentId, order}. 'dean' is 1 Dean > (2 CS head > 4, 3 IS head > 5), 6 Registrar.",
+  "dean": [[1, null, 1], [2, 1, 1], [3, 1, 2], [4, 2, 1], [5, 3, 1], [6, null, 2]],
+  "buildOrgTree": [
+    { "name": "nests by parent", "members": "dean", "shape": [[1, [[2, [4]], [3, [5]]]], 6] },
+    { "name": "sorts siblings by order then id", "members": [[3, null, 2], [2, null, 1], [1, null, 1]], "shape": [1, 2, 3] },
+    { "name": "dangling parent is a root", "members": [[1, 99, 1], [2, 1, 1]], "shape": [[1, [2]]] },
+    { "name": "cycle is surfaced as a root", "members": [[1, 2, 1], [2, 1, 1], [3, null, 1]], "shape": [3, [1, [2]]] },
+    { "name": "self parent is surfaced as a root", "members": [[1, 1, 1]], "shape": [1] },
+    { "name": "no members", "members": [], "shape": [] }
+  ],
+  "wouldCycle": [
+    { "name": "self", "members": "dean", "id": 1, "parentId": 1, "result": true },
+    { "name": "descendant", "members": "dean", "id": 1, "parentId": 4, "result": true },
+    { "name": "grandchild", "members": "dean", "id": 2, "parentId": 4, "result": true },
+    { "name": "cousin", "members": "dean", "id": 2, "parentId": 3, "result": false },
+    { "name": "to top level", "members": "dean", "id": 4, "parentId": null, "result": false },
+    { "name": "to own manager", "members": "dean", "id": 4, "parentId": 2, "result": false }
+  ],
+  "reparentOnDelete": [
+    { "name": "reports move up into the deleted slot, keeping order", "members": [[1, null, 1], [2, 1, 1], [3, 1, 2], [4, 2, 1], [5, 3, 1], [6, null, 2], [7, 1, 3]], "id": 2, "placements": [{ "id": 4, "parentId": 1, "order": 1 }], "shape": [[1, [4, [3, [5]], 7]], 6] },
+    { "name": "reports of a root become roots between the neighbouring roots", "members": "dean", "id": 1, "placements": [{ "id": 2, "parentId": null, "order": 1 }, { "id": 3, "parentId": null, "order": 2 }, { "id": 6, "parentId": null, "order": 3 }], "shape": [[2, [4]], [3, [5]], 6] },
+    { "name": "last root leaf needs no renumbering", "members": "dean", "id": 6, "placements": [], "shape": [[1, [[2, [4]], [3, [5]]]]] },
+    { "name": "unknown id", "members": "dean", "id": 99, "placements": [], "shape": [[1, [[2, [4]], [3, [5]]]], 6] }
+  ],
+  "placementsError": [
+    { "name": "valid move", "members": "dean", "placements": [{ "id": 4, "parentId": 3, "order": 2 }], "error": null },
+    { "name": "valid move to top level", "members": "dean", "placements": [{ "id": 2, "parentId": null, "order": 1 }], "error": null },
+    { "name": "unknown id", "members": "dean", "placements": [{ "id": 99, "parentId": null, "order": 1 }], "error": "A member does not belong to this department." },
+    { "name": "unknown parent", "members": "dean", "placements": [{ "id": 2, "parentId": 99, "order": 1 }], "error": "The selected parent does not belong to this department." },
+    { "name": "duplicate", "members": "dean", "placements": [{ "id": 2, "parentId": 1, "order": 1 }, { "id": 2, "parentId": 1, "order": 2 }], "error": "A member is listed more than once." },
+    { "name": "self parent", "members": "dean", "placements": [{ "id": 2, "parentId": 2, "order": 1 }], "error": "A member cannot report to itself." },
+    { "name": "under own descendant", "members": "dean", "placements": [{ "id": 1, "parentId": 4, "order": 1 }], "error": "A member cannot report to itself or to one of its own subordinates." },
+    { "name": "under own grandchild", "members": "dean", "placements": [{ "id": 2, "parentId": 4, "order": 1 }], "error": "A member cannot report to itself or to one of its own subordinates." },
+    { "name": "swap that closes a loop", "members": "dean", "placements": [{ "id": 2, "parentId": 4, "order": 1 }, { "id": 4, "parentId": 1, "order": 2 }], "error": null }
+  ]
+}

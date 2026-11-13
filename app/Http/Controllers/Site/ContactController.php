@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Site;
 use App\Actions\ContactActions;
 use App\Http\Controllers\Controller;
 use App\Site\PostFilters;
-use App\Site\Queries;
+use App\Site\SiteLayout;
 use App\Support\RequestError;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -52,7 +52,7 @@ class ContactController extends Controller
     private function page(array $values = [], array $fieldErrors = [], ?string $formError = null, bool $sent = false): View
     {
         return view('site.contact', [
-            'layout' => Queries::layout(),
+            'layout' => SiteLayout::read(),
             'values' => $values,
             'fieldErrors' => $fieldErrors,
             'formError' => $formError,

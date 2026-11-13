@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
-use App\Site\Queries;
+use App\Site\DepartmentPages;
 use App\Site\Seo;
 use App\Support\RequestError;
 use Illuminate\Contracts\View\View;
@@ -13,8 +13,10 @@ class DepartmentController extends Controller
 {
     public function __invoke(Request $request, string $slug): View
     {
-        $page = Queries::getDepartmentPage($slug, Seo::siteUrl(Seo::context($request))) ?? throw RequestError::notFound();
+        $page = DepartmentPages::read($slug) ?? throw RequestError::notFound();
+        $site = Seo::siteUrl(Seo::context($request));
+        $seo = Seo::departmentPageSeo($page['department'], $page['members'], $page['carousel'][0]['imageUrl'] ?? null, $site);
 
-        return view('site.departments.show', $page);
+        return view('site.departments.show', [...$page, 'seo' => $seo]);
     }
 }

@@ -6,6 +6,7 @@
 
 import { NUDGE, NUDGE_BIG } from '@/lib/carousel-editor';
 import { ariaKeysOf, resolveShortcut, type KeyEventLike, type Shortcut } from '../shared/keymap-core';
+import { REDO_CHORDS, UNDO_CHORDS } from '../shared/undo-keys';
 
 export type { KeyEventLike };
 
@@ -40,16 +41,8 @@ export interface DesignerKeyContext {
 
 export const DESIGNER_SHORTCUTS: readonly Shortcut<DesignerCommand, When>[] = [
     { command: 'save', label: 'Save the slide', chords: [{ key: 's', mod: true }], when: 'always' },
-    { command: 'undo', label: 'Undo', chords: [{ key: 'z', mod: true }], when: 'idle' },
-    {
-        command: 'redo',
-        label: 'Redo',
-        chords: [
-            { key: 'z', mod: true, shift: true },
-            { key: 'y', mod: true },
-        ],
-        when: 'idle',
-    },
+    { command: 'undo', label: 'Undo', chords: UNDO_CHORDS, when: 'idle' },
+    { command: 'redo', label: 'Redo', chords: REDO_CHORDS, when: 'idle' },
     { command: 'duplicate', label: 'Duplicate the layer', chords: [{ key: 'd', mod: true }], when: 'idle-selection' },
     {
         command: 'remove',

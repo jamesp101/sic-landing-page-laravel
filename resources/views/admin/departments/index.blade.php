@@ -88,7 +88,7 @@
                                             aria-label="Edit {{ $dept->name }}"
                                             title="Edit info"
                                         >
-                                            <x-admin.icon name="pencil" class="h-4 w-4" />
+                                            <x-icon name="pencil" class="h-4 w-4" />
                                         </a>
                                         <a
                                             href="/admin/departments/{{ $dept->id }}/members"
@@ -96,7 +96,7 @@
                                             aria-label="Org chart of {{ $dept->name }}"
                                             title="Org chart"
                                         >
-                                            <x-admin.icon name="network" class="h-4 w-4" />
+                                            <x-icon name="network" class="h-4 w-4" />
                                         </a>
                                         @if ($superadmin)
                                             <x-admin.delete-row-button kind="department" :id="$dept->id" :name="$dept->name" />

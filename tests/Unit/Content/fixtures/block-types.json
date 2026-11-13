@@ -1,0 +1,26 @@
+{
+  "types": [
+    "section",
+    "row",
+    "grid",
+    "columns",
+    "spacer",
+    "divider",
+    "heading",
+    "paragraph",
+    "list",
+    "quote",
+    "button",
+    "badges",
+    "card",
+    "image",
+    "album",
+    "table",
+    "accordion",
+    "callout",
+    "stats",
+    "video",
+    "event",
+    "markdown"
+  ]
+}

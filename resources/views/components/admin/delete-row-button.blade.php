@@ -19,5 +19,5 @@
     title="{{ $label }}"
     class="{{ \App\Admin\Ui::DANGER_ICON_BUTTON }}"
 >
-    <x-admin.icon name="trash" class="h-4 w-4" />
+    <x-icon name="trash" class="h-4 w-4" />
 </button>

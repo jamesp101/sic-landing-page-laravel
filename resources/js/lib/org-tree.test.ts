@@ -12,13 +12,9 @@ import {
     moveToRoot,
     nextOrder,
     parentOptions,
-    placementsError,
     positionOf,
-    removeMember,
-    reparentOnDelete,
     siblingsOf,
     subtreeIds,
-    wouldCycle,
     orgTreeOps,
     type OrgMember,
     type OrgNode,
@@ -47,45 +43,10 @@ const shape = (nodes: OrgNode[]): unknown[] =>
     nodes.map((n) => (n.children.length ? [n.member.id, shape(n.children)] : n.member.id));
 const shapeOf = (members: OrgMember[]) => shape(buildOrgTree(members));
 
-describe('buildOrgTree', () => {
-    it('nests by parent and sorts siblings by order then id', () => {
-        expect(shapeOf(sample())).toEqual([
-            [
-                1,
-                [
-                    [2, [4]],
-                    [3, [5]],
-                ],
-            ],
-            6,
-        ]);
-        expect(shapeOf([m(3, null, 2), m(2, null, 1), m(1, null, 1)])).toEqual([1, 2, 3]);
-    });
-
-    it('treats dangling parents as roots and surfaces cycles', () => {
-        expect(shapeOf([m(1, 99, 1), m(2, 1, 1)])).toEqual([[1, [2]]]);
-        const looped = buildOrgTree([m(1, 2, 1), m(2, 1, 1), m(3, null, 1)]);
-        expect(looped.map((n) => n.member.id).sort((a, b) => a - b)).toEqual([1, 3]);
-        const ids = (nodes: OrgNode[]): number[] => nodes.flatMap((n) => [n.member.id, ...ids(n.children)]);
-        expect(ids(looped).sort((a, b) => a - b)).toEqual([1, 2, 3]);
-    });
-
-    it('returns an empty forest for no members', () => {
-        expect(buildOrgTree([])).toEqual([]);
-    });
-});
-
 describe('cycle detection', () => {
     it('subtreeIds includes the root and all descendants', () => {
         expect([...subtreeIds(sample(), 2)].sort((a, b) => a - b)).toEqual([2, 4]);
         expect([...subtreeIds(sample(), 1)].sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5]);
-    });
-
-    it('wouldCycle rejects self and descendants but allows others', () => {
-        expect(wouldCycle(sample(), 1, 1)).toBe(true);
-        expect(wouldCycle(sample(), 1, 4)).toBe(true);
-        expect(wouldCycle(sample(), 2, 3)).toBe(false);
-        expect(wouldCycle(sample(), 4, null)).toBe(false);
     });
 
     it('hasCycle finds loops in a full parent map', () => {
@@ -239,60 +200,6 @@ describe('keyboardMove', () => {
         expect(apply(6, 'in')).toEqual([[1, [[2, [4]], [3, [5]], 6]]]);
         expect(apply(2, 'in')).toBeNull();
         expect(keyboardMove(sample(), 99, 'up')).toBeNull();
-    });
-});
-
-describe('reparentOnDelete', () => {
-    it('moves reports up to the manager in the deleted member’s slot, keeping order', () => {
-        const members = [...sample(), m(7, 1, 3)];
-        const payload = reparentOnDelete(members, 2);
-        expect(payload).toEqual([{ id: 4, parentId: 1, order: 1 }]);
-        expect(shapeOf(removeMember(members, 2))).toEqual([[1, [4, [3, [5]], 7]], 6]);
-    });
-
-    it('makes reports of a root top-level, between the neighbouring roots', () => {
-        const payload = reparentOnDelete(sample(), 1);
-        expect(payload).toEqual([
-            { id: 2, parentId: null, order: 1 },
-            { id: 3, parentId: null, order: 2 },
-            { id: 6, parentId: null, order: 3 },
-        ]);
-        expect(shapeOf(removeMember(sample(), 1))).toEqual([[2, [4]], [3, [5]], 6]);
-    });
-
-    it('is empty for a leaf whose siblings need no renumbering, and for unknown ids', () => {
-        expect(reparentOnDelete(sample(), 6)).toEqual([]);
-        expect(reparentOnDelete(sample(), 99)).toEqual([]);
-        expect(shapeOf(removeMember(sample(), 6))).toEqual([
-            [
-                1,
-                [
-                    [2, [4]],
-                    [3, [5]],
-                ],
-            ],
-        ]);
-    });
-});
-
-describe('placementsError', () => {
-    it('accepts a valid payload', () => {
-        expect(placementsError(sample(), [{ id: 4, parentId: 3, order: 2 }])).toBeNull();
-        expect(placementsError(sample(), [{ id: 2, parentId: null, order: 1 }])).toBeNull();
-    });
-
-    it('rejects foreign ids, foreign parents, duplicates, self parents and cycles', () => {
-        expect(placementsError(sample(), [{ id: 99, parentId: null, order: 1 }])).toMatch(/department/);
-        expect(placementsError(sample(), [{ id: 2, parentId: 99, order: 1 }])).toMatch(/parent/);
-        expect(
-            placementsError(sample(), [
-                { id: 2, parentId: 1, order: 1 },
-                { id: 2, parentId: 1, order: 2 },
-            ]),
-        ).toMatch(/more than once/);
-        expect(placementsError(sample(), [{ id: 2, parentId: 2, order: 1 }])).toMatch(/itself/);
-        expect(placementsError(sample(), [{ id: 1, parentId: 4, order: 1 }])).toMatch(/subordinates/);
-        expect(placementsError(sample(), [{ id: 2, parentId: 4, order: 1 }])).toMatch(/subordinates/);
     });
 });
 

@@ -69,7 +69,7 @@
                                             />
                                         @else
                                             <div class="flex h-10 w-16 shrink-0 items-center justify-center rounded-md {{ $typeClass[$post->type] ?? 'bg-secondary text-secondary-foreground' }}">
-                                                <x-admin.icon :name="$icon" class="h-5 w-5" />
+                                                <x-icon :name="$icon" class="h-5 w-5" />
                                             </div>
                                         @endif
                                         <div class="min-w-0">
@@ -98,7 +98,7 @@
                                 <td class="px-4 py-3">
                                     @if ($post->is_featured)
                                         <span class="{{ Ui::PILL }} bg-file-archive-bg text-file-archive-fg">
-                                            <x-admin.icon name="star" class="h-3 w-3 fill-current" /> Featured
+                                            <x-icon name="star" class="h-3 w-3 fill-current" /> Featured
                                         </span>
                                     @else
                                         <span class="text-muted-foreground" aria-label="Not featured">–</span>
@@ -112,7 +112,7 @@
                                             aria-label="Edit post {{ $post->title }}"
                                             title="Edit post"
                                         >
-                                            <x-admin.icon name="pencil" class="h-4 w-4" />
+                                            <x-icon name="pencil" class="h-4 w-4" />
                                         </a>
                                         <x-admin.delete-row-button kind="post" :id="$post->id" :name="$post->title" />
                                     </div>

@@ -79,10 +79,12 @@ final class RegistryTest extends TestCase
         return Schema::validateDocument(self::decoded(self::documentOf($blocks)))['ok'];
     }
 
-    public function test_the_fixtures_cover_every_type_in_palette_order(): void
+    public function test_the_registry_lists_the_fixture_types_in_palette_order(): void
     {
-        $this->assertSame(Registry::types(), array_keys(self::FIXTURES));
-        $this->assertCount(22, Registry::types());
+        $listed = json_decode((string) file_get_contents(__DIR__.'/fixtures/block-types.json'), true, 512, JSON_THROW_ON_ERROR)['types'];
+
+        $this->assertSame($listed, Registry::types());
+        $this->assertSame($listed, array_keys(self::FIXTURES));
     }
 
     #[DataProvider('types')]

@@ -43,7 +43,7 @@
                                 {{ $stat['label'] }}
                             </h3>
                             <div class="shrink-0 rounded-lg bg-gold-500/10 p-2 text-gold-600 dark:text-gold-400">
-                                <x-admin.icon :name="$stat['icon']" class="h-5 w-5" />
+                                <x-icon :name="$stat['icon']" class="h-5 w-5" />
                             </div>
                         </div>
                         <p class="mt-4 text-3xl font-extrabold tabular-nums text-foreground">{{ $stat['value'] }}</p>
@@ -66,7 +66,7 @@
                     >
                         <div class="space-y-2">
                             <div class="w-fit rounded-lg bg-gold-500/10 p-2.5 text-gold-600 dark:text-gold-400">
-                                <x-admin.icon :name="$task['icon']" class="h-6 w-6" />
+                                <x-icon :name="$task['icon']" class="h-6 w-6" />
                             </div>
                             <h3 class="mt-3 font-bold text-foreground transition-colors group-hover:text-link">
                                 {{ $task['title'] }}
@@ -74,7 +74,7 @@
                             <p class="text-sm leading-relaxed text-muted-foreground">{{ $task['text'] }}</p>
                         </div>
                         <span class="mt-6 flex items-center gap-1.5 text-sm font-bold text-link transition-[gap] duration-200 ease-out group-hover:gap-2.5">
-                            {{ $task['cta'] }} <x-admin.icon name="arrow-right" class="h-3.5 w-3.5" />
+                            {{ $task['cta'] }} <x-icon name="arrow-right" class="h-3.5 w-3.5" />
                         </span>
                     </a>
                 @endforeach

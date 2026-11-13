@@ -5,7 +5,9 @@ namespace Tests\Feature\Site;
 use App\Content\Content;
 use App\Models\NavigationLink;
 use App\Models\Post;
-use App\Site\Queries;
+use App\Site\Posts;
+use App\Site\Seo;
+use App\Site\SiteLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -61,16 +63,16 @@ class PostsPageTest extends TestCase
 
     public function test_posts_page_hands_over_the_layout_beside_the_list_and_is_null_past_the_last_page(): void
     {
-        $page = Queries::getPostsPage(['sort' => 'newest'], 1, 10, self::SITE);
+        $page = Posts::listingPage(['sort' => 'newest'], 1, 10);
         $this->assertCount(4, $page['result']['items']);
         $this->assertSame(['CBA', 'CIT'], array_column($page['layout']['departments'], 'name'));
         $this->assertSame([], $page['layout']['navLinks']);
-        $this->assertNull(Queries::getPostsPage(['sort' => 'newest'], 2, 10, self::SITE));
+        $this->assertNull(Posts::listingPage(['sort' => 'newest'], 2, 10));
     }
 
     public function test_excerpts_equal_parsing_the_content_for_block_markdown_and_unindexed_posts(): void
     {
-        $items = Queries::listPosts([], 10)['items'];
+        $items = Posts::list([], 10)['items'];
         $this->assertSame(Content::excerptOf($this->blockContent), $this->excerpt($items, 'block'));
         $this->assertSame(Content::excerptOf($this->markdownContent), $this->excerpt($items, 'markdown'));
         $this->assertSame(Content::excerptOf($this->markdownContent), $this->excerpt($items, 'legacy'));
@@ -81,7 +83,7 @@ class PostsPageTest extends TestCase
 
     public function test_the_card_image_variant_of_a_highlight_image(): void
     {
-        $items = Queries::listPosts([], 10)['items'];
+        $items = Posts::list([], 10)['items'];
         $by = array_column($items, null, 'slug');
         $this->assertSame('/storage/posts/abc.webp', $by['block']['imageUrl']);
         $this->assertSame('/storage/posts/abc.w640.webp', $by['block']['imageSmallUrl']);
@@ -91,7 +93,7 @@ class PostsPageTest extends TestCase
     public function test_listing_loads_content_only_for_posts_without_search_text(): void
     {
         DB::enableQueryLog();
-        Queries::listPosts([], 10);
+        Posts::list([], 10);
         foreach (DB::getQueryLog() as $query) {
             if (preg_match('/["`]content["`]/', $query['query'])) {
                 $this->assertStringContainsString(' in (', $query['query']);
@@ -102,16 +104,16 @@ class PostsPageTest extends TestCase
     public function test_an_unknown_post_starts_no_layout_query_and_a_found_one_hands_them_over(): void
     {
         DB::enableQueryLog();
-        $this->assertNull(Queries::getPostPage('nope', self::SITE));
+        $this->assertNull(Posts::page('nope'));
         $this->assertStringNotContainsString('navigation_links', implode(' ', array_column(DB::getQueryLog(), 'query')));
-        $page = Queries::getPostPage('markdown', self::SITE);
+        $page = Posts::page('markdown');
         $this->assertIsArray($page['layout']['navLinks']);
         $this->assertIsArray($page['layout']['departments']);
     }
 
     public function test_the_post_page_excerpt_comes_from_the_content(): void
     {
-        $page = Queries::getPostPage('markdown', self::SITE);
+        $page = Posts::page('markdown');
         $this->assertSame(Content::excerptOf($this->markdownContent), $page['post']['excerpt']);
         $this->assertContains(Content::excerptOf($this->blockContent), array_column($page['related'], 'excerpt'));
     }
@@ -119,13 +121,13 @@ class PostsPageTest extends TestCase
     public function test_a_hidden_author_is_dropped_and_the_json_ld_is_attributed_to_the_college(): void
     {
         $this->makePost('anonymous', ['hide_author' => true, 'created_at' => $this->day(6)]);
-        $hidden = Queries::getPostPage('anonymous', self::SITE);
+        $hidden = Posts::page('anonymous');
         $this->assertNull($hidden['post']['authorName']);
-        $this->assertStringNotContainsString('Owner', json_encode($hidden['seo']));
+        $this->assertStringNotContainsString('Owner', json_encode(Seo::postPageSeo($hidden['post'], self::SITE)));
 
-        $shown = Queries::getPostPage('markdown', self::SITE);
+        $shown = Posts::page('markdown');
         $this->assertSame('Owner', $shown['post']['authorName']);
-        $this->assertStringContainsString('"name":"Owner"', json_encode($shown['seo']));
+        $this->assertStringContainsString('"name":"Owner"', json_encode(Seo::postPageSeo($shown['post'], self::SITE)));
     }
 
     public function test_related_posts_list_the_newest_of_the_same_department_then_the_newest_of_the_same_type(): void
@@ -139,7 +141,7 @@ class PostsPageTest extends TestCase
         $this->makePost('event', ['type' => 'event', 'created_at' => $this->day(20)]);
         $this->makePost('self', ['department_id' => 1, 'created_at' => $this->day(5)]);
 
-        $slugs = fn (string $slug) => array_column(Queries::getPostPage($slug, self::SITE)['related'], 'slug');
+        $slugs = fn (string $slug) => array_column(Posts::page($slug)['related'], 'slug');
         $this->assertSame(['d2', 'd1', 't-new'], $slugs('self'));
         $this->assertSame(['t-new', 't-mid', 'self'], $slugs('t-old'));
         $this->assertSame([], $slugs('event'));
@@ -157,20 +159,20 @@ class PostsPageTest extends TestCase
         $child('b-off', 3, $b->id, false);
         $child('orphan', 1, $hidden->id);
 
-        $links = Queries::getNavLinks();
+        $links = SiteLayout::navLinks();
         $this->assertSame([['a', []], ['b', ['b1', 'b2']]], array_map(fn (array $l) => [$l['label'], array_column($l['children'], 'label')], $links));
     }
 
     public function test_filters_and_pagination(): void
     {
-        $result = Queries::listPosts(['search' => 'orientation'], 10);
+        $result = Posts::list(['search' => 'orientation'], 10);
         $this->assertSame(['block', 'markdown'], array_column($result['items'], 'slug'));
         $this->assertSame(1, $result['pageCount']);
 
-        $this->assertSame(['empty', 'legacy'], array_column(Queries::listPosts(['sort' => 'oldest'], 2)['items'], 'slug'));
-        $this->assertSame(['block', 'markdown'], array_column(Queries::listPosts([], 2, 1)['items'], 'slug'));
-        $this->assertSame(['legacy', 'empty'], array_column(Queries::listPosts([], 2, 2)['items'], 'slug'));
-        $this->assertSame(2, Queries::listPosts([], 2)['pageCount']);
-        $this->assertSame([], Queries::listPosts(['search' => '%'], 10)['items']);
+        $this->assertSame(['empty', 'legacy'], array_column(Posts::list(['sort' => 'oldest'], 2)['items'], 'slug'));
+        $this->assertSame(['block', 'markdown'], array_column(Posts::list([], 2, 1)['items'], 'slug'));
+        $this->assertSame(['legacy', 'empty'], array_column(Posts::list([], 2, 2)['items'], 'slug'));
+        $this->assertSame(2, Posts::list([], 2)['pageCount']);
+        $this->assertSame([], Posts::list(['search' => '%'], 10)['items']);
     }
 }

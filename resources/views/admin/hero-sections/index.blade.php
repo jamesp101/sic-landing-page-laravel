@@ -38,7 +38,7 @@
                                 <td class="px-4 py-3">
                                     <div class="flex items-center gap-3">
                                         <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gold-500/10 text-gold-600">
-                                            <x-admin.icon name="sparkles" class="h-4 w-4" />
+                                            <x-icon name="sparkles" class="h-4 w-4" />
                                         </div>
                                         <div class="min-w-0">
                                             <span
@@ -75,11 +75,11 @@
                                 <td class="px-4 py-3">
                                     @if ($hs->is_active)
                                         <span class="{{ Ui::PILL }} bg-status-article-bg text-status-article-fg">
-                                            <x-admin.icon name="eye" class="h-3 w-3" /> Active
+                                            <x-icon name="eye" class="h-3 w-3" /> Active
                                         </span>
                                     @else
                                         <span class="{{ Ui::PILL }} bg-secondary text-muted-foreground">
-                                            <x-admin.icon name="eye-off" class="h-3 w-3" /> Inactive
+                                            <x-icon name="eye-off" class="h-3 w-3" /> Inactive
                                         </span>
                                     @endif
                                 </td>
@@ -91,7 +91,7 @@
                                             aria-label="Edit hero section {{ $hs->title ?? $hs->id }}"
                                             title="Edit section"
                                         >
-                                            <x-admin.icon name="pencil" class="h-4 w-4" />
+                                            <x-icon name="pencil" class="h-4 w-4" />
                                         </a>
                                         <x-admin.delete-row-button kind="heroSection" :id="$hs->id" :name="$hs->title ?? '#'.$hs->id" />
                                     </div>

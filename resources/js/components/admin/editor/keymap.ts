@@ -11,6 +11,7 @@ import {
     type KeyEventLike,
     type Shortcut as SharedShortcut,
 } from '../shared/keymap-core';
+import { REDO_CHORDS, UNDO_CHORDS } from '../shared/undo-keys';
 
 export type { KeyEventLike };
 
@@ -56,16 +57,13 @@ export const SHORTCUTS: readonly Shortcut[] = [
     {
         command: 'undo',
         label: 'Undo',
-        chords: [{ key: 'z', mod: true }],
+        chords: UNDO_CHORDS,
         when: 'idle',
     },
     {
         command: 'redo',
         label: 'Redo',
-        chords: [
-            { key: 'z', mod: true, shift: true },
-            { key: 'y', mod: true },
-        ],
+        chords: REDO_CHORDS,
         when: 'idle',
     },
     { command: 'escape', label: 'Deselect, or leave full screen', chords: [{ key: 'Escape' }], when: 'always' },

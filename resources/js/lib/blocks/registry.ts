@@ -2,7 +2,7 @@
  * The Block type registry: one module per Block type (`block-types/`), looked up by validation, rendering,
  * plain-text extraction, the palette and the editor. The mapped type makes the compiler reject a Block type
  * without a module, so adding one to `PropsByType` forces a module and a line here. The editor's icon and
- * Inspector panel are in the client registry (`components/admin/editor/block-editors.ts`), keyed the same way.
+ * Inspector panel are one module per type in `components/admin/editor/block-types/`, checked against this list.
  * Key order is the palette order.
  */
 import type { BlockTypeModule } from './block-type';

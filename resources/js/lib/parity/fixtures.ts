@@ -2,12 +2,12 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
 /**
- * Fixtures under `tests/Unit/{Content,Carousel,Platform,Site}/fixtures` are the contract between the TS modules and their PHP twins:
+ * Fixtures under `tests/Unit/{Content,Carousel,OrgChart,Platform,Site}/fixtures` are the contract between the TS modules and their PHP twins:
  * PHPUnit feeds them to the PHP side, the `*.parity.test.ts` suites beside this file feed them to the TS side.
  */
 const root = fileURLToPath(new URL('../../../../tests/Unit/', import.meta.url));
 
-export function fixture<T>(directory: 'Content' | 'Carousel' | 'Platform' | 'Site', name: string): T {
+export function fixture<T>(directory: 'Content' | 'Carousel' | 'OrgChart' | 'Platform' | 'Site', name: string): T {
     return JSON.parse(readFileSync(`${root}${directory}/fixtures/${name}.json`, 'utf8')) as T;
 }
 

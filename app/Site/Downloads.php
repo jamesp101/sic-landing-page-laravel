@@ -30,7 +30,7 @@ final class Downloads
         $search = $filters['search'] ?? null;
         $departmentId = $filters['departmentId'] ?? null;
         $directory = $filters['directory'] ?? null;
-        $layout = Queries::layout();
+        $layout = SiteLayout::read();
 
         $matching = self::listDownloads($search, $departmentId);
         $counts = array_fill_keys(self::getDownloadDirectories($departmentId), 0);

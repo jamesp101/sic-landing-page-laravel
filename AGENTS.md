@@ -25,8 +25,13 @@ San Isidro College website. Laravel 13 + Blade (server-rendered) + Svelte 5 isla
 - Public pages are cacheable for anonymous visitors: no session cookie, no CSRF meta, no per-visitor markup in them (`App\Http\Middleware\RequestPolicy`).
 - Inline scripts need `nonce="{{ Vite::cspNonce() }}"` (CSP has no `unsafe-inline` for scripts).
 - Tests: PHPUnit in `tests/Unit` and `tests/Feature` (in-memory SQLite); Vitest beside the TS code (`resources/js/**/*.test.ts`); Playwright in `e2e/`.
-- Shared rules exist twice where both sides need them (Block rendering, Overlay parsing and Mobile layout for the slide designer, org and nav tree rules, slug, public-page test): PHP under `app/`, TypeScript under `resources/js/lib`. Change both; the TS-generated fixtures under `tests/Unit/**/fixtures` fail when they disagree.
+- Shared rules exist twice where both sides need them (Block rendering and Block type names, Overlay parsing and Mobile layout for the slide designer, Org chart rules, nav tree rules, slug, public-page test): PHP under `app/`, TypeScript under `resources/js/lib`. Change both; the fixtures under `tests/Unit/**/fixtures` (e.g. `OrgChart/fixtures/org-tree.json`, `Content/fixtures/block-types.json`) fail when they disagree.
+- Block types: a type is its PHP class, its `lib/blocks/block-types/<type>.ts` module (Svelte-free) and its editor entry `components/admin/editor/block-types/<type>.ts` (icon + Inspector panel), plus its name in `block-types.json`.
+- Public reads: one module per page family in `app/Site` (`SiteLayout`, `Posts`, `DepartmentPages`, `HomePage`, `Sitemap`); reads return view data and never import `Seo`; controllers assemble page SEO.
+- Sign-in: `AuthSession::attemptSignIn` reports a failure (status + message); callers render it and never map it themselves.
+- Editors: each editor's state lives in its Editing session module (`editor/session.ts`, `slide-designer-session.ts`, `org-chart-session.ts`, `nav-links-session.ts`); components render and show toasts. Undo/redo chords come from `components/admin/shared/undo-keys.ts`; the two undo engines stay separate (snapshots for the Block editor and slide designer, inverse steps with rollback for the Org chart and Navigation links).
 - Public Slides: the server decides every Layer's element and Mobile layout. `Slides::findSlides` ships `stage` (`Layout::stage`) and `focus`; the Blade fallback and `site/HeroCarousel` only print them, so no Overlay or Mobile layout rule reaches `site.ts`.
+- Site header menu: its markup lives in `site-header.blade.php` (server) and `NavMenu.svelte` (island); change both together, `e2e/site-header.spec.ts` fails when their layouts differ.
 - PHP 8.4 is the floor (`devenv.nix`, `composer.json`): no 8.5-only features.
 
 ## Area docs

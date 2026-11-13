@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
 use App\Site\PostFilters;
-use App\Site\Queries;
+use App\Site\Posts;
 use App\Site\Seo;
 use App\Support\Pagination;
 use App\Support\RequestError;
@@ -22,15 +22,17 @@ class PostController extends Controller
         $filters = PostFilters::parsePostFilters($params);
         $page = Pagination::parsePage($params['page'] ?? null);
 
-        $listing = Queries::getPostsPage($filters, $page, self::PER_PAGE, Seo::siteUrl(Seo::context($request))) ?? throw RequestError::notFound();
+        $listing = Posts::listingPage($filters, $page, self::PER_PAGE) ?? throw RequestError::notFound();
+        $seo = Seo::postsListSeo($listing['result']['items'], $filters, $page, Seo::siteUrl(Seo::context($request)));
 
-        return view('site.posts.index', [...$listing, 'filters' => $filters, 'page' => $page, 'perPage' => self::PER_PAGE]);
+        return view('site.posts.index', [...$listing, 'seo' => $seo, 'filters' => $filters, 'page' => $page, 'perPage' => self::PER_PAGE]);
     }
 
     public function show(Request $request, string $slug): View
     {
-        $page = Queries::getPostPage($slug, Seo::siteUrl(Seo::context($request))) ?? throw RequestError::notFound();
+        $page = Posts::page($slug) ?? throw RequestError::notFound();
+        $seo = Seo::postPageSeo($page['post'], Seo::siteUrl(Seo::context($request)));
 
-        return view('site.posts.show', $page);
+        return view('site.posts.show', [...$page, 'seo' => $seo]);
     }
 }

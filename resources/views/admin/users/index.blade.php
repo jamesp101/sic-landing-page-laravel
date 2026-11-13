@@ -54,7 +54,7 @@
                                             aria-label="Edit {{ $user->name }}"
                                             title="Edit user"
                                         >
-                                            <x-admin.icon name="pencil" class="h-4 w-4" />
+                                            <x-icon name="pencil" class="h-4 w-4" />
                                         </a>
                                         @if ($user->id !== $actor->id)
                                             <x-admin.delete-row-button kind="user" :id="$user->id" :name="$user->name" />

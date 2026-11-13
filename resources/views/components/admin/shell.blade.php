@@ -59,9 +59,9 @@
                                             @if ($scopeLogo)
                                                 <img src="{{ $scopeLogo }}" alt="" class="size-full object-cover" />
                                             @elseif ($scope['kind'] === 'all')
-                                                <x-admin.icon name="layers" class="size-4" />
+                                                <x-icon name="layers" class="size-4" />
                                             @elseif ($scope['kind'] === 'main')
-                                                <x-admin.icon name="house" class="size-4" />
+                                                <x-icon name="house" class="size-4" />
                                             @else
                                                 {{ Initials::getInitials($scope['label']) }}
                                             @endif
@@ -70,7 +70,7 @@
                                             <span class="truncate font-medium">{{ $scope['label'] }}</span>
                                             <span class="truncate text-xs text-muted-foreground">Department scope</span>
                                         </span>
-                                        <x-admin.icon name="chevrons-up-down" class="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
+                                        <x-icon name="chevrons-up-down" class="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
                                     </button>
                                 </div>
                             @endif
@@ -84,7 +84,7 @@
                             @foreach ($shell['navItems'] as $item)
                                 <li data-slot="sidebar-menu-item" data-sidebar="menu-item" class="group/menu-item relative">
                                     <a class="{{ $buttonLink }}" data-slot="sidebar-menu-button" data-sidebar="menu-button" data-size="default" data-active="{{ $item['active'] ? 'true' : 'false' }}" href="{{ $item['href'] }}" @if ($item['active']) aria-current="page" @endif>
-                                        <x-admin.icon :name="$item['icon']" class="size-4 shrink-0" />
+                                        <x-icon :name="$item['icon']" class="size-4 shrink-0" />
                                         <span>{{ $item['title'] }}</span>
                                     </a>
                                 </li>
@@ -103,7 +103,7 @@
                                     <div class="grid flex-1 text-left text-sm leading-tight">
                                         <span class="truncate font-medium">{{ $shell['user']['name'] }}</span>
                                     </div>
-                                    <x-admin.icon name="chevrons-up-down" class="ml-auto size-4" />
+                                    <x-icon name="chevrons-up-down" class="ml-auto size-4" />
                                 </button>
                             </div>
                         </li>
@@ -117,9 +117,9 @@
             <div class="flex items-center gap-2">
                 <button class="inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-7 w-7 -ml-1" type="button" data-sidebar="trigger" data-slot="sidebar-trigger">
                     {{-- The island shows "open" on phones and while collapsed, "close" on an expanded desktop sidebar. --}}
-                    <x-admin.icon name="panel-left-open" @class(['size-4', 'md:hidden' => $open]) />
+                    <x-icon name="panel-left-open" @class(['size-4', 'md:hidden' => $open]) />
                     @if ($open)
-                        <x-admin.icon name="panel-left-close" class="hidden size-4 md:block" />
+                        <x-icon name="panel-left-close" class="hidden size-4 md:block" />
                     @endif
                     <span class="sr-only">Toggle sidebar</span>
                 </button>

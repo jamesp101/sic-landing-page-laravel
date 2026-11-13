@@ -2,7 +2,7 @@
  * The contract of one Block type. Every Block type is a module in `block-types/` that implements
  * `BlockTypeModule` and is listed once in `registry.ts`, whose type makes the compiler reject a Block type
  * without a module. Pure TypeScript: no Svelte, no DOM (the editor's icon and Inspector panel live in the
- * client registry, `components/admin/editor/block-editors.ts`, keyed by the same type).
+ * editor module of the same name in `components/admin/editor/block-types/`).
  */
 import type { z } from 'zod';
 import type { Block, BlockMeta, BlockType, PropsByType } from './types';

@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
-use App\Site\Queries;
+use App\Site\Posts;
 use App\Site\Seo;
+use App\Site\Sitemap;
 use App\Site\SiteNav;
 use App\Support\Site;
 use Carbon\CarbonInterface;
@@ -22,7 +23,7 @@ class FeedController extends Controller
     public function sitemap(Request $request): Response
     {
         $origin = Seo::siteUrl(Seo::context($request));
-        ['departments' => $departments, 'posts' => $posts] = Queries::getSitemapData();
+        ['departments' => $departments, 'posts' => $posts] = Sitemap::read();
         $latestPost = null;
         foreach ($posts as $post) {
             if ($latestPost === null || $post['updatedAt'] > $latestPost) {
@@ -62,7 +63,7 @@ XML;
     public function rss(Request $request): Response
     {
         $origin = Seo::siteUrl(Seo::context($request));
-        $posts = Queries::listPosts(['sort' => 'newest'], 20)['items'];
+        $posts = Posts::list(['sort' => 'newest'], 20)['items'];
         $feedUrl = Seo::absoluteUrl('/rss.xml', $origin);
 
         $items = implode("\n", array_map(function (array $post) use ($origin): string {

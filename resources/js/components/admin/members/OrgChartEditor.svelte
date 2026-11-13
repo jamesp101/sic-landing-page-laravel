@@ -81,6 +81,7 @@
         secondaryButtonClass,
         type FormErrors,
     } from '../shared/form-utils';
+    import { isTypingTarget, undoRedoOf } from '../shared/undo-keys';
     import MemberInspector from './MemberInspector.svelte';
 
     let {
@@ -468,17 +469,13 @@
 
     function onRootKey(event: KeyboardEvent) {
         pan = takeControl(pan);
-        if ((event.target as HTMLElement).closest('input, textarea, select, [contenteditable="true"], [role="dialog"]'))
-            return;
-        const mod = event.ctrlKey || event.metaKey;
-        if (mod && event.key.toLowerCase() === 'z') {
+        if (isTypingTarget(event.target)) return;
+        const travel = undoRedoOf(event);
+        if (travel) {
             event.preventDefault();
-            if (event.shiftKey) redo();
+            if (travel === 'redo') redo();
             else undo();
-        } else if (mod && event.key.toLowerCase() === 'y') {
-            event.preventDefault();
-            redo();
-        } else if (!mod && !event.altKey) {
+        } else if (!(event.ctrlKey || event.metaKey) && !event.altKey) {
             if (event.key === '+' || event.key === '=') zoomBy(1.2);
             else if (event.key === '-') zoomBy(1 / 1.2);
             else if (event.key === '0') manualFit();

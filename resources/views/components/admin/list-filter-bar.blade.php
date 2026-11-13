@@ -5,7 +5,7 @@
 @props(['list', 'placeholder', 'label', 'submitLabel' => 'Filter'])
 <form method="get" action="{{ explode('?', $list->resetHref())[0] }}" class="{{ \App\Admin\Ui::CARD }} flex flex-col items-center justify-between gap-4 p-4 md:flex-row">
     <div class="relative w-full md:max-w-xs">
-        <x-admin.icon name="search" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <x-icon name="search" class="absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <input
             type="search"
             name="q"

@@ -21,26 +21,21 @@ final class AuthSession
      */
     private const DUMMY_HASH = '$2y$12$pQLYeVZo3lRUi5/ccZRviOMdJnLfbVN6MeyxK2u0Y3LfNNj2joKvu';
 
-    /** The failed sign-in answer for an HTTP status: 429 when rate limited, else 422. */
-    public static function signInFailure(int $status): array
-    {
-        return $status === 429
-            ? ['status' => 429, 'message' => 'Too many attempts. Please wait a few minutes and try again.']
-            : ['status' => 422, 'message' => 'These credentials do not match our records.'];
-    }
-
     /**
-     * Signs in with email and password. A slot is claimed before the password is checked and given back on
-     * success, so only failures count. Throws TOO_MANY_REQUESTS, or UNAUTHORIZED with one message for any
-     * other failure so it does not reveal which part was wrong.
+     * Signs in with email and password and reports a failure once, as `['status' => 429|422, 'message' => string]`
+     * (null on success). 429 when rate limited, else 422 with one message for any other failure so it does not
+     * reveal which part was wrong. A slot is claimed before the password is checked and given back on success, so
+     * only failures count.
+     *
+     * @return array{status: int, message: string}|null
      */
-    public static function signIn(Request $request, string $email, string $password, bool $remember): void
+    public static function attemptSignIn(Request $request, string $email, string $password, bool $remember): ?array
     {
         $clientIp = $request->ip() ?? 'unknown';
         // Every attempt counts here, successful or not, before the failure-only limits below.
         if (! RateLimit::consumeRateLimit("signin-ip:{$clientIp}", RateLimit::RATE_LIMITS['signInPerIp'])
             || ! RateLimit::claimSignInAttempt($email, $clientIp)) {
-            throw RequestError::tooManyRequests(self::signInFailure(429)['message']);
+            return ['status' => 429, 'message' => 'Too many attempts. Please wait a few minutes and try again.'];
         }
 
         $user = User::query()->whereRaw('lower(email) = ?', [mb_strtolower(trim($email))])->first();
@@ -51,12 +46,25 @@ final class AuthSession
         }
         $valid = Hash::check($password, $user?->password ?: self::DUMMY_HASH) && $user !== null;
         if (! $valid) {
-            throw RequestError::unauthorized(self::signInFailure(401)['message']);
+            return ['status' => 422, 'message' => 'These credentials do not match our records.'];
         }
 
         // Starts a fresh session id, so a session id planted before sign-in is useless.
         Auth::guard('web')->login($user, $remember);
         RateLimit::refundSignInAttempt($email, $clientIp);
+
+        return null;
+    }
+
+    /** Like `attemptSignIn`, but throws a failure as a RequestError: TOO_MANY_REQUESTS, else UNAUTHORIZED. */
+    public static function signIn(Request $request, string $email, string $password, bool $remember): void
+    {
+        $failure = self::attemptSignIn($request, $email, $password, $remember);
+        if ($failure !== null) {
+            throw $failure['status'] === 429
+                ? RequestError::tooManyRequests($failure['message'])
+                : RequestError::unauthorized($failure['message']);
+        }
     }
 
     /** Signs out the current session. */

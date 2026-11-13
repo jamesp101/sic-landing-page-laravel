@@ -5,7 +5,9 @@ namespace Tests\Feature\Site;
 use App\Content\WelcomeHero;
 use App\Models\Member;
 use App\Models\Setting;
-use App\Site\Queries;
+use App\Site\DepartmentPages;
+use App\Site\HomePage;
+use App\Site\Seo;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -51,7 +53,7 @@ class PageDataTest extends TestCase
     public function test_home_data_reads_the_main_carousel_newest_posts_main_hero_sections_and_departments(): void
     {
         WelcomeHero::setWelcomeHero('Hello');
-        $home = Queries::getHomeData();
+        $home = HomePage::read();
 
         $this->assertSame(['/storage/carousels/a.webp', '/storage/carousels/b.webp'], array_column($home['carousel'], 'imageUrl'));
         $this->assertSame(['cba-1', 'cit-8', 'cit-7', 'cit-6', 'main-1', 'cit-5'], array_column($home['latestPosts'], 'slug'));
@@ -63,13 +65,13 @@ class PageDataTest extends TestCase
     public function test_home_has_no_welcome_hero_until_one_is_saved(): void
     {
         Setting::query()->delete();
-        $this->assertNull(Queries::getHomeData()['welcomeHero']);
+        $this->assertNull(HomePage::read()['welcomeHero']);
     }
 
     public function test_an_unknown_department_is_null_and_runs_no_layout_query(): void
     {
         DB::enableQueryLog();
-        $this->assertNull(Queries::getDepartmentPage('nope', self::SITE));
+        $this->assertNull(DepartmentPages::read('nope'));
         $tables = implode(' ', array_column(DB::getQueryLog(), 'query'));
         $this->assertStringNotContainsString('navigation_links', $tables);
         $this->assertCount(1, DB::getQueryLog());
@@ -77,14 +79,14 @@ class PageDataTest extends TestCase
 
     public function test_a_department_page_hands_over_the_layout(): void
     {
-        $page = Queries::getDepartmentPage('cit', self::SITE);
+        $page = DepartmentPages::read('cit');
         $this->assertContains('CIT', array_column($page['layout']['departments'], 'name'));
         $this->assertIsArray($page['layout']['navLinks']);
     }
 
     public function test_a_department_page_reads_its_six_newest_posts_with_total_slides_people_and_hero_sections(): void
     {
-        $page = Queries::getDepartmentPage('cit', self::SITE);
+        $page = DepartmentPages::read('cit');
 
         $this->assertSame('CIT', $page['department']['name']);
         $this->assertSame(['cit-8', 'cit-7', 'cit-6', 'cit-5', 'cit-4', 'cit-3'], array_column($page['posts'], 'slug'));
@@ -92,12 +94,12 @@ class PageDataTest extends TestCase
         $this->assertSame(['/storage/carousels/cit-1.webp', '/storage/carousels/cit-2.webp'], array_column($page['carousel'], 'imageUrl'));
         $this->assertSame(['cit-hero'], array_column($page['heroSections'], 'title'));
         $this->assertSame([['Dean', ['Staff']]], array_map(fn (array $m) => [$m['name'], array_column($m['children'], 'name')], $page['members']));
-        $this->assertSame('/departments/cit', $page['seo']['canonical']);
+        $this->assertSame('/departments/cit', Seo::departmentPageSeo($page['department'], $page['members'], null, self::SITE)['canonical']);
     }
 
     public function test_a_department_with_fewer_than_six_posts_counts_only_its_own(): void
     {
-        $page = Queries::getDepartmentPage('cba', self::SITE);
+        $page = DepartmentPages::read('cba');
         $this->assertSame(['cba-1'], array_column($page['posts'], 'slug'));
         $this->assertSame(1, $page['postCount']);
     }
