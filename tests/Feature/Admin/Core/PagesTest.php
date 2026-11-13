@@ -22,7 +22,6 @@ class PagesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         Department::query()->forceCreate(['id' => 10, 'name' => 'College of IT', 'slug' => 'cit']);
         Department::query()->forceCreate(['id' => 11, 'name' => 'College of Business', 'slug' => 'cba']);
         $this->admin = User::factory()->superadmin()->create();

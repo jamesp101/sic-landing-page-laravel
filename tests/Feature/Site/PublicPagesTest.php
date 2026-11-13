@@ -15,7 +15,6 @@ class PublicPagesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         $this->seedOwner();
         $dept = $this->makeDepartment('College of IT', 'cit', ['description' => 'Computing.']);
         $this->makeDepartment('Business', 'cba');

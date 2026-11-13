@@ -26,7 +26,6 @@ class PagesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->withoutVite();
         $this->useLocalUploads();
         Department::query()->forceCreate(['id' => 10, 'name' => 'College of IT', 'slug' => 'cit']);
         Department::query()->forceCreate(['id' => 11, 'name' => 'College of Business', 'slug' => 'cba']);

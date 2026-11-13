@@ -10,6 +10,13 @@ use Illuminate\Testing\TestResponse;
 
 abstract class TestCase extends BaseTestCase
 {
+    /** Pages render without built assets (`public/build`) or a running Vite dev server, as on CI. */
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->withoutVite();
+    }
+
     /** Signs in a Superadmin (a new one unless given). */
     protected function actingAsSuperadmin(?User $user = null): User
     {
