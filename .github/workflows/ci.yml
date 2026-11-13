@@ -15,6 +15,8 @@ jobs:
                   php-version: '8.4'
                   extensions: mbstring, pdo_sqlite, gd, exif, intl
                   coverage: none
+                  # Same limits as devenv.nix and public/.user.ini: the largest multipart upload is a 20 MB Download.
+                  ini-values: memory_limit=512M, upload_max_filesize=24M, post_max_size=26M
             - uses: actions/cache@v4
               with:
                   path: ~/.composer/cache
@@ -50,6 +52,7 @@ jobs:
                   php-version: '8.4'
                   extensions: mbstring, pdo_sqlite, gd, exif, intl
                   coverage: none
+                  ini-values: memory_limit=512M, upload_max_filesize=24M, post_max_size=26M
             - uses: pnpm/action-setup@v4
             - uses: actions/setup-node@v4
               with:
