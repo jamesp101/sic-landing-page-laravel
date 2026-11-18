@@ -1,0 +1,1 @@
+function e(e=8){return`The password must be at least ${e} characters.`}function t(e=8){return`Minimum ${e} characters.`}export{e as n,t};

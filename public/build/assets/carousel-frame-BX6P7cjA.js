@@ -1,0 +1,1 @@
+var e={w:16,h:9},t={desktop:`aspect-video`,phone:`aspect-[4/5]`},n={tall:{base:500,wide:600},short:{base:400,wide:450}},r={tall:Math.ceil(n.tall.base*e.w/e.h),short:Math.ceil(n.short.base*e.w/e.h)},i=e=>`(max-width: 39.99rem) ${r[e?`tall`:`short`]}px, 100vw`,a=(100-n.tall.wide/(1440*e.h/e.w)*100)/2;export{i,e as n,t as r,a as t};

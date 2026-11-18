@@ -1,0 +1,1 @@
+function e(e,t){if(e.target&&e.target!==`_self`||e.download)return null;let n=new URL(e.href,t);return n.origin!==t.origin||n.pathname===t.pathname&&n.search===t.search?null:n}function t(t,n=new URL(location.href)){let r=t instanceof Element?t.closest(`a[href]`):null;return r?e({href:r.href,target:r.target,download:r.hasAttribute(`download`)},n):null}export{t};

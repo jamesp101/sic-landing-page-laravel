@@ -1,0 +1,1 @@
+import"./disclose-version-xihTtKlq.js";import{o as e,s as t}from"./preload-helper-sYx6ar9k.js";import{t as n}from"./Icon-SmpaWsPj.js";var r={name:`x`,size:24,node:[[`path`,{d:`M18 6 6 18`}],[`path`,{d:`m6 6 12 12`}]]};r.node;var i=new Set([`$$slots`,`$$events`,`$$legacy`]);function a(a,o){let s=e(o,i);n(a,t(()=>s,{get icon(){return r}}))}export{a as t};

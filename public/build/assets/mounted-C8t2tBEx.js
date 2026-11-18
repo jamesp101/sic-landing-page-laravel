@@ -1,0 +1,1 @@
+import"./disclose-version-xihTtKlq.js";import{At as e,a as t,kt as n}from"./preload-helper-sYx6ar9k.js";import{t as r}from"./on-mount-effect.svelte-B-pLLcjS.js";import{l as i}from"./floating-utils.svelte-Dlzlbj0J.js";function a(a,o){e(o,!0);let s=t(o,`mounted`,15,!1),c=t(o,`onMountedChange`,3,i);r(()=>(s(!0),c()(!0),()=>{s(!1),c()(!1)})),n()}export{a as t};

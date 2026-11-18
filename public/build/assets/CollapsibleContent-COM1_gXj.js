@@ -1,0 +1,1 @@
+import"./disclose-version-xihTtKlq.js";import{It as e,L as t,Rt as n,Y as r,mt as i,o as a,q as o,y as s}from"./preload-helper-sYx6ar9k.js";var c=new Set([`$$slots`,`$$events`,`$$legacy`,`children`]),l=r(`<div><!></div>`);function u(r,u){let d=a(u,c);var f=l();s(f,()=>({"data-slot":`collapsible-content`,...d}));var p=i(f);t(p,()=>u.children??n),e(f),o(r,f)}export{u as default};

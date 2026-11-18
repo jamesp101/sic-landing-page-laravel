@@ -1,0 +1,1 @@
+import"./disclose-version-xihTtKlq.js";import{I as e,J as t,ht as n,o as r,q as i,s as a}from"./preload-helper-sYx6ar9k.js";import{t as o}from"./portal-CNKRjZjH.js";var s=new Set([`$$slots`,`$$events`,`$$legacy`]);function c(c,l){let u=r(l,s);var d=t(),f=n(d);e(f,()=>o,(e,t)=>{t(e,a(()=>u))}),i(c,d)}export{c as default};

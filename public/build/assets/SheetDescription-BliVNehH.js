@@ -1,0 +1,1 @@
+import{t as e}from"./rolldown-runtime-DK3Fl9T5.js";import"./disclose-version-xihTtKlq.js";import"./legacy-DF9VOcVR.js";import{It as t,R as n,Y as r,mt as i,q as a}from"./preload-helper-sYx6ar9k.js";var o=e({default:()=>c}),s=r(`<p class="text-sm text-muted-foreground"><!></p>`);function c(e,r){var o=s(),c=i(o);n(c,r,`default`,{},null),t(o),a(e,o)}export{o as t};

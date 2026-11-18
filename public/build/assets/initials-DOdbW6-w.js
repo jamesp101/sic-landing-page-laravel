@@ -1,0 +1,1 @@
+function e(e){return Array.from(e)[0]??``}var t=/^(dr|prof|mr|mrs|ms|mx|engr|atty|fr|sr|sis|br|rev|hon)\.?$/i;function n(n){if(!n)return``;let r=n.trim().split(/\s+/u).filter(Boolean),i=r.filter((e,n)=>n>=r.length-1||!t.test(e)),a=i.length>0?i:r;return a.length===0?``:a.length===1?e(a[0]).toUpperCase():`${e(a[0])}${e(a[a.length-1])}`.toUpperCase()}export{n as t};

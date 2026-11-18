@@ -1,0 +1,1 @@
+import"./disclose-version-xihTtKlq.js";import{At as e,J as t,L as n,Rt as r,a as i,ht as a,kt as o,q as s,st as c}from"./preload-helper-sYx6ar9k.js";import{r as l}from"./floating-root.svelte-C2BN54PA.js";function u(u,d){e(d,!0);let f=i(d,`tooltip`,3,!1);l.create(c(()=>f()));var p=t(),m=a(p);n(m,()=>d.children??r),s(u,p),o()}export{u as t};

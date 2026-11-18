@@ -1,0 +1,1 @@
+import"./disclose-version-xihTtKlq.js";import{J as e,L as t,Rt as n,a as r,ht as i,q as a}from"./preload-helper-sYx6ar9k.js";import{t as o}from"./SidebarInset-90oTel9v.js";import"./sidebar-DFARYg91.js";function s(s,c){let l=r(c,`class`,3,``);o(s,{get class(){return l()},children:(r,o)=>{var s=e(),l=i(s);t(l,()=>c.children??n),a(r,s)},$$slots:{default:!0}})}export{s as default};

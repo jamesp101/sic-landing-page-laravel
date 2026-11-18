@@ -1,0 +1,1 @@
+var e=`#departments`,t=[{label:`Home`,url:`/`},{label:`Departments`,url:e},{label:`News & Events`,url:`/posts`},{label:`Downloads`,url:`/downloads`},{label:`Contact`,url:`/contact`}];export{e as n,t};

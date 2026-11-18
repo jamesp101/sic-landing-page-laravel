@@ -1,0 +1,1 @@
+function e(e,t={}){return t.history===`replace`?window.location.replace(e):window.location.assign(e),new Promise(()=>{})}function t(){return window.location.reload(),new Promise(()=>{})}export{t as n,e as t};

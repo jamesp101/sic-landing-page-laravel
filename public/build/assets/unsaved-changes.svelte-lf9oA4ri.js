@@ -1,0 +1,1 @@
+import{St as e,at as t,bt as n,st as r,vt as i}from"./preload-helper-sYx6ar9k.js";function a(a){let o=()=>JSON.stringify(a()),s=e(i(r(o)));return{get dirty(){return o()!==t(s)},markSaved(){n(s,o(),!0)}}}export{a as t};

@@ -1,0 +1,1 @@
+var e=`sic-blocks`,t={documentChars:4e5,blocks:400,depth:6,text:5e3,label:300,url:2e3,listItems:50,tableRows:60,tableColumns:10,cell:500,accordionItems:30,statItems:12,badgeItems:20,markdown:1e5,albumImages:48},n=[`Layout`,`Content`,`Media`,`Legacy`];export{e as n,t as r,n as t};
