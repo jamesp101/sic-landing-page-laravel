@@ -9,7 +9,7 @@ The application is checked out outside the web root. Each deployment copies the 
 - Terminal or SSH access, and Composer (present on most cPanel hosts).
 - Apache or LiteSpeed with `mod_rewrite` (`.htaccess`).
 
-cPanel has no Node, so the built assets come with the code: the GitHub workflow `cPanel branch` publishes every push to the main branch, plus `public/build`, as the branch `cpanel`. Deploy that branch.
+cPanel has no Node, so the built assets come with the code: the GitHub workflow `cPanel branch` publishes every push to the main branch, plus `public/build`, as the branch `cpanel`. Deploy that branch. The branch only moves forward (each build commit has the previous one as a parent), because cPanel pulls with `--ff-only`.
 
 ## First deployment
 
@@ -47,7 +47,25 @@ cPanel has no Node, so the built assets come with the code: the GitHub workflow 
 
 ## Later deployments
 
-Git Version Control → Manage → Pull or Deploy → Update from Remote, then Deploy HEAD Commit. The site answers 503 for the few seconds the script runs. A failed run leaves the site in maintenance mode only if `artisan up` itself fails; run `php artisan up` once the cause is fixed.
+Automatic (recommended): once set up, every push to the main branch builds the assets, publishes the `cpanel` branch, and has cPanel pull and deploy it. The `deploy` job of the `cPanel branch` workflow shows the result and the deployment log; it fails when the pull or `deploy.sh` fails.
+
+1. cPanel → Manage API Tokens → Create: a name such as `github-deploy`, no expiry (or note the date to renew it). Copy the token.
+2. GitHub → the repository → Settings → Secrets and variables → Actions:
+
+    | Kind | Name | Value |
+    | --- | --- | --- |
+    | Secret | `CPANEL_TOKEN` | the token |
+    | Variable | `CPANEL_HOST` | the host name of the cPanel login (the part before `:2083`), e.g. the domain or the server name GoDaddy shows |
+    | Variable | `CPANEL_USER` | the cPanel account name, e.g. `sicedu` |
+    | Variable | `CPANEL_REPOSITORY` | only when the repository path is not `/home/CPANEL_USER/repositories/sic` |
+
+3. Run the workflow once (Actions → cPanel branch → Run workflow) and check that the `deploy` job is green.
+
+Without `CPANEL_HOST` the `deploy` job is skipped and deployments stay manual. If the pull reports that the checkout on the host stopped at another commit (its history diverged, e.g. a checkout from before the branch moved forward only), reset it once in the Terminal: `cd ~/repositories/sic && git fetch origin && git reset --hard origin/cpanel`.
+
+Manual: Git Version Control → Manage → Pull or Deploy → Update from Remote, then Deploy HEAD Commit.
+
+Either way the site answers 503 for the few seconds the script runs. A failed run leaves the site in maintenance mode only if `artisan up` itself fails; run `php artisan up` once the cause is fixed.
 
 ## The web root's `.htaccess`
 

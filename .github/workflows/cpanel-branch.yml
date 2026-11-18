@@ -1,8 +1,9 @@
 name: cPanel branch
 
 # cPanel hosts have no Node, so the built assets travel with the code: after every push to the main branch
-# this publishes the same commit plus `public/build` as the `cpanel` branch. cPanel's Git Version Control
-# pulls that branch and deploys it (.cpanel.yml). See docs/deploy-cpanel.md.
+# this publishes the same commit plus `public/build` as the `cpanel` branch, then (once the repository variables
+# CPANEL_HOST and CPANEL_USER and the secret CPANEL_TOKEN are set) has cPanel pull and deploy it
+# (deploy/cpanel/remote-deploy.sh → .cpanel.yml → deploy/cpanel/deploy.sh). See docs/deploy-cpanel.md.
 on:
     push:
         branches: [main, master]
@@ -11,13 +12,17 @@ on:
 permissions:
     contents: write
 
+# Queued, not cancelled: each run must publish on top of the previous one (cPanel only fast-forwards), and a
+# deployment already running on the host cannot be stopped from here.
 concurrency:
     group: cpanel-branch
-    cancel-in-progress: true
+    cancel-in-progress: false
 
 jobs:
     publish:
         runs-on: ubuntu-latest
+        outputs:
+            commit: ${{ steps.publish.outputs.commit }}
         steps:
             - uses: actions/checkout@v4
             - uses: pnpm/action-setup@v4
@@ -27,11 +32,34 @@ jobs:
                   cache: pnpm
             - run: pnpm install --frozen-lockfile
             - run: pnpm run build
+            # The new cpanel commit has two parents, the previous cpanel commit and the pushed commit, so the
+            # branch only ever moves forward and cPanel's `git pull --ff-only` succeeds.
             - name: Publish the cpanel branch
+              id: publish
               run: |
                   git config user.name "github-actions[bot]"
                   git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-                  git checkout -B cpanel
                   git add --force public/build
-                  git commit -m "build: assets for ${GITHUB_SHA}"
-                  git push --force origin cpanel
+                  parents=(-p "$GITHUB_SHA")
+                  if git ls-remote --exit-code --heads origin cpanel >/dev/null; then
+                      git fetch --quiet origin cpanel
+                      parents=(-p FETCH_HEAD "${parents[@]}")
+                  fi
+                  commit="$(git commit-tree "$(git write-tree)" "${parents[@]}" -m "build: assets for ${GITHUB_SHA}")"
+                  git push origin "$commit:refs/heads/cpanel"
+                  echo "commit=$commit" >>"$GITHUB_OUTPUT"
+
+    deploy:
+        needs: publish
+        if: vars.CPANEL_HOST != ''
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v4
+            - name: Pull and deploy on cPanel
+              env:
+                  CPANEL_HOST: ${{ vars.CPANEL_HOST }}
+                  CPANEL_USER: ${{ vars.CPANEL_USER }}
+                  CPANEL_REPOSITORY: ${{ vars.CPANEL_REPOSITORY }}
+                  CPANEL_TOKEN: ${{ secrets.CPANEL_TOKEN }}
+                  EXPECTED_COMMIT: ${{ needs.publish.outputs.commit }}
+              run: bash deploy/cpanel/remote-deploy.sh
