@@ -3,4 +3,5 @@
 # Deploy the `cpanel` branch (it carries the built assets). Details: docs/deploy-cpanel.md.
 deployment:
   tasks:
+    - export CPANEL_DOCROOT=/home/sicedu/public_html
     - /bin/bash deploy/cpanel/deploy.sh
