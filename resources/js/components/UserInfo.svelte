@@ -1,7 +1,7 @@
 <script lang="ts">
     import { Avatar, AvatarFallback } from '@/components/ui/avatar';
     import type { AdminUser } from '@/components/admin/types';
-    import { getInitials } from '@/lib/initials';
+    import PersonSilhouette from '@/components/PersonSilhouette.svelte';
 
     let {
         user,
@@ -14,7 +14,7 @@
 
 <Avatar class="h-8 w-8 overflow-hidden rounded-lg">
     <AvatarFallback class="rounded-lg bg-secondary font-semibold text-secondary-foreground">
-        {getInitials(user.name)}
+        <PersonSilhouette />
     </AvatarFallback>
 </Avatar>
 

@@ -16,7 +16,7 @@
         ZoomIn,
         ZoomOut,
     } from '@lucide/svelte';
-    import { getInitials } from '@/lib/initials';
+    import PersonSilhouette from '@/components/PersonSilhouette.svelte';
     import {
         buildOrgTree,
         keyboardMove,
@@ -649,10 +649,10 @@
                         />
                     {:else}
                         <span
-                            class="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-brand-100 text-lg font-bold text-brand-800 dark:bg-surface-alt dark:text-gold-400"
+                            class="flex h-16 w-16 shrink-0 overflow-hidden rounded-full bg-brand-100 text-brand-800 dark:bg-surface-alt dark:text-gold-400"
                             aria-hidden="true"
                         >
-                            {getInitials(m.name)}
+                            <PersonSilhouette />
                         </span>
                     {/if}
                     <span class="min-w-0">

@@ -98,7 +98,7 @@
                             <div class="relative w-full">
                                 <button type="button" class="{{ $buttonLarge }} data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground" data-slot="sidebar-menu-button" data-sidebar="menu-button" data-size="lg" data-active="false" aria-haspopup="menu" aria-expanded="false">
                                     <div class="relative flex shrink-0 h-8 w-8 overflow-hidden rounded-lg">
-                                        <div class="flex h-full w-full items-center justify-center text-sm rounded-lg bg-secondary font-semibold text-secondary-foreground">{{ Initials::getInitials($shell['user']['name']) }}</div>
+                                        <div class="flex h-full w-full items-center justify-center text-sm rounded-lg bg-secondary font-semibold text-secondary-foreground"><x-person-silhouette /></div>
                                     </div>
                                     <div class="grid flex-1 text-left text-sm leading-tight">
                                         <span class="truncate font-medium">{{ $shell['user']['name'] }}</span>
