@@ -7,29 +7,25 @@
 @if ($root)
     <style nonce="{{ Vite::cspNonce() }}">
         .org-list { list-style: none; margin: 0; padding: 0; }
-        .org-card { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--surface); box-shadow: var(--shadow-sm); }
+        .org-card { display: flex; align-items: center; gap: 0.75rem; min-width: 0; padding: 0.75rem 1rem; border: 1px solid var(--border); border-radius: 1rem; background: var(--surface); box-shadow: var(--shadow-sm); overflow-wrap: break-word; }
         /* Mobile: indented outline with a left rule. */
         .org-list .org-list { margin-left: 1.25rem; padding-left: 1rem; border-left: 2px solid var(--border-strong); }
         /* From the third level the outline stops moving right, so deep charts stay readable on a phone. */
         @media (max-width: 767.98px) { .org-list .org-list .org-list .org-list { margin-left: 0; padding-left: 0.75rem; } }
         .org-item { margin-top: 0.75rem; }
         .org-root > .org-item + .org-item { margin-top: 2rem; }
-        /* Desktop: horizontal tree with a vertical stem and a horizontal bus. */
+        /* Desktop: a tree that never scrolls sideways. A stem runs from each card down to its reports, which sit in
+           an outlined group and wrap onto more rows when they do not fit; a group too wide for its row shrinks and
+           wraps inside, so the chart grows downwards instead of sideways. A single report hangs from the stem. */
         @media (min-width: 768px) {
-            .org-list { display: flex; justify-content: center; position: relative; }
-            .org-root { flex-wrap: wrap; gap: 2.5rem; }
-            .org-list .org-list { margin-left: 0; padding: 1.5rem 0 0; border-left: 0; }
-            .org-list .org-list::before { content: ''; position: absolute; top: 0; left: 50%; height: 1.5rem; border-left: 2px solid var(--border-strong); }
-            .org-item { position: relative; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 1.5rem 0.5rem 0; }
-            .org-root > .org-item, .org-root > .org-item + .org-item { margin: 0; padding-top: 0; }
-            .org-card { width: 13rem; }
-            .org-list .org-list > .org-item::before, .org-list .org-list > .org-item::after { content: ''; position: absolute; top: 0; right: 50%; width: 50%; height: 1.5rem; border-top: 2px solid var(--border-strong); }
-            .org-list .org-list > .org-item::after { right: auto; left: 50%; border-left: 2px solid var(--border-strong); }
-            .org-list .org-list > .org-item:only-child::before { display: none; }
-            .org-list .org-list > .org-item:only-child::after { border-top: 0; }
-            .org-list .org-list > .org-item:first-child::before, .org-list .org-list > .org-item:last-child::after { border-top: 0; }
-            .org-list .org-list > .org-item:last-child::before { border-right: 2px solid var(--border-strong); border-radius: 0 0.5rem 0 0; }
-            .org-list .org-list > .org-item:first-child::after { border-radius: 0.5rem 0 0 0; }
+            .org-list { display: flex; flex-wrap: wrap; justify-content: center; align-items: flex-start; gap: 1.25rem 1rem; }
+            .org-root { gap: 2.5rem; }
+            .org-item { display: flex; flex-direction: column; align-items: center; flex: 0 1 auto; min-width: 0; max-width: 100%; margin: 0; }
+            .org-root > .org-item + .org-item { margin: 0; }
+            .org-card { width: 15rem; max-width: 100%; }
+            .org-list .org-list { position: relative; max-width: 100%; margin: 1.5rem 0 0; padding: 1rem; border: 2px solid var(--border-strong); border-radius: 1rem; }
+            .org-list .org-list::before { content: ''; position: absolute; bottom: 100%; left: 50%; height: 1.5rem; margin-left: -1px; border-left: 2px solid var(--border-strong); }
+            .org-list .org-list:has(> .org-item:only-child) { padding: 0; border: 0; }
         }
     </style>
 @endif
