@@ -143,11 +143,7 @@
     </div>
 
     <h3 class="{{ $h }}">Org chart</h3>
-    <div class="overflow-x-auto pb-4">
-        <div class="mx-auto w-max min-w-full">
-            <x-site.org-chart :nodes="$members" />
-        </div>
-    </div>
+    <x-site.org-chart :nodes="$members" />
 
     <h3 class="{{ $h }}">Empty state</h3>
     <x-site.empty-state title="No posts found" description="No posts match your search criteria." actionHref="#top" actionLabel="Show all posts" />

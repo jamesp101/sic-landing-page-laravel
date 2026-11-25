@@ -21,10 +21,8 @@
                         Leadership &amp; faculty
                     </h2>
                 </div>
-                <div class="mt-12 overflow-x-auto pb-4" role="region" aria-labelledby="people-heading" tabindex="0">
-                    <div class="mx-auto w-max min-w-full">
-                        <x-site.org-chart :nodes="$members" />
-                    </div>
+                <div class="mt-12">
+                    <x-site.org-chart :nodes="$members" />
                 </div>
             </div>
         </section>
