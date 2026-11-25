@@ -3,9 +3,17 @@
  * site's real stylesheet (so Tailwind breakpoints, dark mode and tokens behave exactly as on the public
  * page). It owns selection/hover outlines, the drag handle, drop indicators, inline text editing and
  * pointer drag & drop. All document changes go back to the host through callbacks.
+ *
+ * Inline editing: every text the renderer marks with `ctx.field` (`data-edit`, `data-edit-kind`, `data-edit-part`)
+ * can be typed into. Double-click a text, or click a text of the selected block, to type; Tab / Shift+Tab move to the
+ * block's next / previous text; Enter (Ctrl+Enter in rich text) or clicking away saves; Escape cancels.
+ * In a list item (`data-edit-kind="item"`) Enter starts a new item, pasted lines become items, and Backspace at the
+ * start joins the item to the one above.
  */
-import { CONTAINER_TYPES, BLOCK_REGISTRY, isBlockType } from '@/lib/blocks/registry';
+import { CONTAINER_TYPES } from '@/lib/blocks/registry';
 import type { DropSource, DropTarget } from '@/lib/blocks/edit';
+import { escapeInline } from '@/lib/blocks/inline';
+import { itemOf, pastedItems, type InlineEdit, type ItemsEdit } from '@/lib/blocks/inline-edit';
 import { domToInline, domToPlain } from './inline-dom';
 
 /** What a canvas drag carries: the drop rule's source plus the ghost's label. */
@@ -13,8 +21,10 @@ export type CanvasSource = DropSource & { label: string };
 
 export interface CanvasHost {
     select(id: string | null): void;
-    /** Inline edit finished with a changed value. */
-    commitText(id: string, patch: Record<string, string>): void;
+    /** Inline edit of block `id` finished with a changed value. */
+    commitText(id: string, edit: InlineEdit): void;
+    /** Splits or joins list items of block `id`; false when refused (e.g. the list is full). */
+    spliceItems(id: string, edit: ItemsEdit): boolean;
     key(event: KeyboardEvent, editing: boolean): void;
     drop(source: CanvasSource, target: DropTarget): void;
     canDrop(source: CanvasSource, parentId: string | null): boolean;
@@ -33,6 +43,8 @@ body{min-height:100vh;margin:0}
 [data-empty]{min-height:4.5rem;border:1px dashed var(--border-strong);border-radius:.75rem;align-items:center;justify-content:center}
 [data-empty]::after{content:'Drop elements here';color:var(--muted-foreground);font-size:12px;margin:auto;padding:1rem}
 [contenteditable]{outline:2px solid var(--gold-500)!important;outline-offset:2px;cursor:text;min-width:1ch}
+[data-selected][data-edit]:not([contenteditable]),[data-selected] [data-edit]:not([contenteditable]){cursor:text}
+[data-selected][data-edit]:not([contenteditable]):hover,[data-selected] [data-edit]:not([contenteditable]):hover{outline:1px dashed var(--gold-500);outline-offset:2px}
 .sic-chip{position:absolute;z-index:40;display:flex;align-items:center;gap:4px;height:22px;padding:0 8px 0 4px;border-radius:6px 6px 6px 0;background:var(--ring);color:var(--primary-foreground);font:600 11px/22px var(--font-sans,system-ui),system-ui,sans-serif;cursor:grab;user-select:none;white-space:nowrap}
 .sic-chip:active{cursor:grabbing}
 .sic-indicator{position:absolute;z-index:45;pointer-events:none;background:var(--gold-500);border-radius:2px;box-shadow:0 0 0 1px var(--surface)}
@@ -68,6 +80,139 @@ function childBlocks(root: HTMLElement, scope: HTMLElement | null): HTMLElement[
     });
 }
 
+/** Which text of a block an element shows: its `data-edit` path and paragraph. */
+type EditingKind = 'plain' | 'rich' | 'item';
+
+/** The text being typed. */
+interface Editing {
+    id: string;
+    el: HTMLElement;
+    kind: EditingKind;
+    field: FieldRef;
+    /** The text when typing started, to skip saving an unchanged text. */
+    before: string;
+}
+
+/** Where the caret goes when typing starts: under a pointer, or after `offset` characters of the text. */
+type Caret = { x: number; y: number } | { offset: number };
+
+interface FieldRef {
+    path: string;
+    part: number | null;
+}
+
+function fieldRef(el: HTMLElement): FieldRef {
+    const part = el.dataset.editPart;
+    return { path: el.dataset.edit ?? '', part: part === undefined ? null : Number(part) };
+}
+
+/** The typeable texts of a block (not those of blocks nested in it), in document order. */
+function fieldsOf(block: HTMLElement): HTMLElement[] {
+    const inside = Array.from(block.querySelectorAll<HTMLElement>('[data-edit]')).filter((el) => blockOf(el) === block);
+    return block.hasAttribute('data-edit') ? [block, ...inside] : inside;
+}
+
+function editingKind(el: HTMLElement): EditingKind {
+    const kind = el.dataset.editKind;
+    return kind === 'rich' || kind === 'item' ? kind : 'plain';
+}
+
+/** The stored form of a text element: inline markup, or plain text for plain texts. */
+function textOf(el: HTMLElement, kind: EditingKind): string {
+    return kind === 'plain' ? domToPlain(el) : domToInline(el);
+}
+
+/** Inline markup of the part of a text a range covers (formatting cut by the range is kept). */
+function inlineOfRange(doc: Document, range: Range): string {
+    const box = doc.createElement('div');
+    box.append(range.cloneContents());
+    return domToInline(box);
+}
+
+/** A collapsed range after `offset` characters of `el`'s text (clamped to its end). */
+function rangeAtOffset(doc: Document, el: HTMLElement, offset: number): Range {
+    const range = doc.createRange();
+    const walker = doc.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+    let left = offset;
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+        const length = node.nodeValue?.length ?? 0;
+        if (left <= length) {
+            range.setStart(node, left);
+            return range;
+        }
+        left -= length;
+    }
+    range.selectNodeContents(el);
+    range.collapse(false);
+    return range;
+}
+
+/**
+ * Where a drop at (x, y) may go, innermost first: the container blocks under the pointer (not the moved block or its
+ * descendants, and not when the pointer is near the container's border: then the drop goes beside it), then the root
+ * (`null`).
+ */
+function dropCandidates(doc: Document, x: number, y: number, moving: HTMLElement | null): (HTMLElement | null)[] {
+    const candidates: (HTMLElement | null)[] = [];
+    for (let el = blockOf(doc.elementFromPoint(x, y)); el; el = blockOf(el.parentElement)) {
+        const isMoving = moving !== null && (el === moving || moving.contains(el));
+        const isContainer = CONTAINERS[el.dataset.blockType ?? ''] === true;
+        if (!isMoving && isContainer && !nearEdge(el.getBoundingClientRect(), x, y)) candidates.push(el);
+    }
+    candidates.push(null);
+    return candidates;
+}
+
+function nearEdge(rect: DOMRect, x: number, y: number): boolean {
+    return x - rect.left < EDGE || rect.right - x < EDGE || y - rect.top < EDGE || rect.bottom - y < EDGE;
+}
+
+/** The block closest to (x, y); `kids` is not empty. */
+function nearestBlock(kids: HTMLElement[], x: number, y: number): HTMLElement {
+    let nearest = kids[0];
+    let best = Infinity;
+    for (const kid of kids) {
+        const distance = distanceTo(kid.getBoundingClientRect(), x, y);
+        if (distance < best) {
+            best = distance;
+            nearest = kid;
+        }
+    }
+    return nearest;
+}
+
+/** Whether a container places its children side by side: a row flexbox, or a grid whose first two share a row. */
+function laysOutInRow(style: CSSStyleDeclaration, kids: HTMLElement[]): boolean {
+    if (style.display.includes('flex')) return style.flexDirection.startsWith('row');
+    if (!style.display.includes('grid') || kids.length < 2) return false;
+    const a = kids[0].getBoundingClientRect();
+    const b = kids[1].getBoundingClientRect();
+    return a.top < b.bottom && b.top < a.bottom;
+}
+
+/** The drop indicator beside a block (page coordinates): a vertical bar in a row, else a horizontal one. */
+function indicatorLine(win: Window, rect: DOMRect, horizontal: boolean, before: boolean) {
+    if (horizontal) {
+        const left = before ? rect.left : rect.right;
+        return { left: left + win.scrollX - 2, top: rect.top + win.scrollY, width: 4, height: rect.height };
+    }
+    const top = before ? rect.top : rect.bottom;
+    return { left: rect.left + win.scrollX, top: top + win.scrollY - 2, width: rect.width, height: 4 };
+}
+
+/** A collapsed range at the text position under a point (frame coordinates), if it falls inside `el`. */
+function rangeAtPoint(doc: Document, el: HTMLElement, point: { x: number; y: number }): Range | null {
+    const position = doc.caretPositionFromPoint?.(point.x, point.y);
+    if (position && el.contains(position.offsetNode)) {
+        const range = doc.createRange();
+        range.setStart(position.offsetNode, position.offset);
+        return range;
+    }
+    // Fallback for browsers without caretPositionFromPoint (older Safari), hence the deprecated API.
+    const legacy = doc.caretRangeFromPoint?.(point.x, point.y);
+    return legacy && el.contains(legacy.startContainer) ? legacy : null;
+}
+
 function distanceTo(rect: DOMRect, x: number, y: number): number {
     const dx = Math.max(rect.left - x, 0, x - rect.right);
     const dy = Math.max(rect.top - y, 0, y - rect.bottom);
@@ -84,7 +229,7 @@ export class CanvasController {
     #selected: string | null = null;
     #hover: HTMLElement | null = null;
     #html = '';
-    #editing: { id: string; el: HTMLElement; kind: 'plain' | 'rich'; field: string; before: string } | null = null;
+    #editing: Editing | null = null;
     #drag: {
         source: CanvasSource;
         ghost: HTMLElement;
@@ -181,31 +326,31 @@ export class CanvasController {
             win.scrollBy(0, Math.min(rect.bottom - win.innerHeight + 24, rect.top - 24));
     }
 
-    /** Puts the block's text into inline-edit mode (heading, text and button blocks). */
-    startEdit(id: string): boolean {
+    /**
+     * Puts a text of the block into inline-edit mode: `field` (default: the block's first text), with the caret at
+     * `caret` (frame coordinates or a character offset) or at the end. Returns false when the block has no typeable text.
+     */
+    startEdit(id: string, field?: FieldRef, caret?: Caret): boolean {
         const el = this.#find(id);
         if (!el || this.#editing) return false;
-        const type = el.dataset.blockType ?? '';
-        const inline = isBlockType(type) ? BLOCK_REGISTRY[type].inline : undefined;
-        if (!inline) return false;
-        const { kind, field } = inline;
-        const target = inline.target ? el.querySelector<HTMLElement>(inline.target) : el;
+        const fields = fieldsOf(el);
+        const target = field
+            ? fields.find((f) => {
+                  const ref = fieldRef(f);
+                  return ref.path === field.path && ref.part === field.part;
+              })
+            : fields[0];
         if (!target) return false;
 
-        const before = kind === 'rich' ? domToInline(target) : domToPlain(target);
-        this.#editing = { id, el: target, kind, field, before };
+        const kind = editingKind(target);
+        const before = textOf(target, kind);
+        this.#editing = { id, el: target, kind, field: fieldRef(target), before };
         target.setAttribute('contenteditable', kind === 'plain' ? 'plaintext-only' : 'true');
         target.spellcheck = true;
         target.focus({ preventScroll: true });
-        const range = this.#doc!.createRange();
-        range.selectNodeContents(target);
-        range.collapse(false);
-        const selection = this.#iframe.contentWindow?.getSelection();
-        selection?.removeAllRanges();
-        selection?.addRange(range);
+        this.#placeCaret(target, caret);
 
-        const finish = () => this.#finishEdit(true);
-        target.addEventListener('blur', finish, { once: true });
+        target.addEventListener('blur', this.#onBlur);
         target.addEventListener('paste', this.#onPaste);
         return true;
     }
@@ -214,9 +359,42 @@ export class CanvasController {
         this.#finishEdit(true);
     }
 
+    #placeCaret(target: HTMLElement, caret?: Caret): void {
+        const doc = target.ownerDocument;
+        let range: Range | null = null;
+        if (caret && 'offset' in caret) range = rangeAtOffset(doc, target, caret.offset);
+        else if (caret) range = rangeAtPoint(doc, target, caret);
+        const placed = range !== null;
+        if (!range) {
+            range = doc.createRange();
+            range.selectNodeContents(target);
+        }
+        range.collapse(placed && range.collapsed);
+        const selection = this.#iframe.contentWindow?.getSelection();
+        selection?.removeAllRanges();
+        selection?.addRange(range);
+    }
+
+    /** Saves the current text and continues in the block's next (or previous) text. */
+    #moveEdit(step: 1 | -1): void {
+        const editing = this.#editing;
+        const block = editing ? this.#find(editing.id) : null;
+        if (!editing || !block) return;
+        const fields = fieldsOf(block);
+        const next = fields[fields.indexOf(editing.el) + step];
+        const ref = next ? fieldRef(next) : null;
+        this.#finishEdit(true);
+        // After the host has re-rendered the saved text.
+        if (ref) setTimeout(() => this.startEdit(editing.id, ref), 0);
+    }
+
+    #onBlur = () => this.#finishEdit(true);
+
     #onPaste = (event: ClipboardEvent) => {
         event.preventDefault();
         const text = event.clipboardData?.getData('text/plain') ?? '';
+        // Several pasted lines in a list item become several items.
+        if (this.#editing?.kind === 'item' && this.#pasteItems(this.#editing, pastedItems(text))) return;
         this.#doc?.execCommand(
             'insertText',
             false,
@@ -224,16 +402,23 @@ export class CanvasController {
         );
     };
 
+    /** Leaves inline-edit mode without saving or re-rendering. */
+    #endEditing(editing: Editing): void {
+        this.#editing = null;
+        editing.el.removeEventListener('paste', this.#onPaste);
+        // Removed here, not `once`: a later blur of this element must not end the edit of the next text.
+        editing.el.removeEventListener('blur', this.#onBlur);
+        editing.el.removeAttribute('contenteditable');
+    }
+
     #finishEdit(commit: boolean): void {
         const editing = this.#editing;
         if (!editing) return;
-        this.#editing = null;
-        editing.el.removeEventListener('paste', this.#onPaste);
-        editing.el.removeAttribute('contenteditable');
-        const value = editing.kind === 'rich' ? domToInline(editing.el) : domToPlain(editing.el);
+        this.#endEditing(editing);
+        const value = textOf(editing.el, editing.kind);
         if (commit && value !== editing.before) {
             // The host re-renders with the new model right after this.
-            this.#host.commitText(editing.id, { [editing.field]: value });
+            this.#host.commitText(editing.id, { ...editing.field, value });
             return;
         }
         // Nothing changed: restore the rendered markup so the DOM matches the model again.
@@ -241,29 +426,134 @@ export class CanvasController {
     }
 
     #onKeyDown(event: KeyboardEvent): void {
-        const editing = this.#editing;
-        if (editing) {
-            const mod = event.ctrlKey || event.metaKey;
-            if (event.key === 'Escape') {
-                event.preventDefault();
-                this.#finishEdit(false);
-            } else if (event.key === 'Enter' && (editing.kind === 'plain' || mod)) {
-                event.preventDefault();
-                this.#finishEdit(true);
-            } else if (event.key === 'Enter') {
-                event.preventDefault();
-                this.#doc?.execCommand('insertLineBreak');
-            } else if (mod && event.key.toLowerCase() === 'k' && editing.kind === 'rich') {
-                event.preventDefault();
-                const url = this.#iframe.contentWindow?.prompt('Link address (https://…)', 'https://');
-                if (url) this.#doc?.execCommand('createLink', false, url);
-            } else if (mod && editing.kind === 'plain' && ['b', 'i', 'u'].includes(event.key.toLowerCase())) {
-                event.preventDefault();
-            }
-            this.#host.key(event, true);
+        if (!this.#editing) {
+            this.#host.key(event, false);
             return;
         }
-        this.#host.key(event, false);
+        if (event.key === 'Tab') {
+            event.preventDefault();
+            this.#moveEdit(event.shiftKey ? -1 : 1);
+            return;
+        }
+        if (this.#editing.kind === 'item' && this.#onItemKey(event, this.#editing)) return;
+        this.#onEditingKey(event, this.#editing);
+        this.#host.key(event, true);
+    }
+
+    // -----------------------------------------------------------------------------------------
+    // List items: Enter splits, pasted lines become items, Backspace at the start joins
+    // -----------------------------------------------------------------------------------------
+
+    /** Enter (new item) and Backspace at the start (join with the item above); true when handled. */
+    #onItemKey(event: KeyboardEvent, editing: Editing): boolean {
+        const plainKey = !event.ctrlKey && !event.metaKey && !event.altKey && !event.shiftKey;
+        const listKey = event.key === 'Enter' || event.key === 'Backspace';
+        const around = plainKey && listKey ? this.#textAround(editing.el) : null;
+        const item = itemOf(editing.field.path);
+        if (!around || !item) return false;
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            // A full list refuses the split and keeps the caret where it is.
+            this.#spliceItems(
+                editing,
+                { path: item.path, start: item.index, remove: 1, insert: [around.before, around.after] },
+                item.index + 1,
+                0,
+            );
+            return true;
+        }
+        if (event.key !== 'Backspace' || !around.atStart) return false;
+        return this.#joinWithPrevious(event, editing, item);
+    }
+
+    #joinWithPrevious(event: KeyboardEvent, editing: Editing, item: { path: string; index: number }): boolean {
+        const block = this.#find(editing.id);
+        const previousPath = `${item.path}.${item.index - 1}`;
+        const previous = block ? fieldsOf(block).find((el) => fieldRef(el).path === previousPath) : undefined;
+        if (!previous) return false;
+        event.preventDefault();
+        const joined = domToInline(previous) + textOf(editing.el, 'item');
+        return this.#spliceItems(
+            editing,
+            { path: item.path, start: item.index - 1, remove: 2, insert: [joined] },
+            item.index - 1,
+            previous.textContent?.length ?? 0,
+        );
+    }
+
+    /** Pasted lines (at least two) replace the selection: the first joins the text before it, the last the text after. */
+    #pasteItems(editing: Editing, lines: string[]): boolean {
+        const around = this.#textAround(editing.el);
+        const item = itemOf(editing.field.path);
+        if (lines.length < 2 || !around || !item) return false;
+        const insert = lines.map(escapeInline);
+        insert[0] = around.before + insert[0];
+        insert.push(`${insert.pop() ?? ''}${around.after}`);
+        return this.#spliceItems(
+            editing,
+            { path: item.path, start: item.index, remove: 1, insert },
+            item.index + lines.length - 1,
+            lines.at(-1)?.length ?? 0,
+        );
+    }
+
+    /** The inline markup before and after the selection in `el`; `atStart` when the caret is at its very start. */
+    #textAround(el: HTMLElement): { before: string; after: string; atStart: boolean } | null {
+        const doc = this.#doc;
+        const selection = this.#iframe.contentWindow?.getSelection();
+        const range = selection && selection.rangeCount > 0 ? selection.getRangeAt(0) : null;
+        if (!doc || !range || !el.contains(range.startContainer) || !el.contains(range.endContainer)) return null;
+        const head = doc.createRange();
+        head.selectNodeContents(el);
+        head.setEnd(range.startContainer, range.startOffset);
+        const tail = doc.createRange();
+        tail.selectNodeContents(el);
+        tail.setStart(range.endContainer, range.endOffset);
+        return {
+            before: inlineOfRange(doc, head).trimEnd(),
+            after: inlineOfRange(doc, tail).trimStart(),
+            atStart: range.collapsed && head.toString() === '',
+        };
+    }
+
+    /** Hands a split or join to the host, then continues typing in item `index` after `offset` characters. */
+    #spliceItems(editing: Editing, edit: ItemsEdit, index: number, offset: number): boolean {
+        if (!this.#host.spliceItems(editing.id, edit)) return false;
+        this.#endEditing(editing);
+        // After the host has re-rendered the list.
+        setTimeout(() => this.startEdit(editing.id, { path: `${edit.path}.${index}`, part: null }, { offset }), 0);
+        return true;
+    }
+
+    /** Keys while typing: save, cancel, line break; Ctrl/⌘ chords go to `#onFormatKey`. */
+    #onEditingKey(event: KeyboardEvent, editing: Editing): void {
+        const mod = event.ctrlKey || event.metaKey;
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            this.#finishEdit(false);
+        } else if (event.key === ' ' && editing.el.closest('summary')) {
+            // A space in an accordion title would toggle the item instead of typing.
+            event.preventDefault();
+            this.#doc?.execCommand('insertText', false, ' ');
+        } else if (event.key === 'Enter') {
+            event.preventDefault();
+            if (editing.kind === 'plain' || mod) this.#finishEdit(true);
+            else this.#doc?.execCommand('insertLineBreak');
+        } else if (mod) {
+            this.#onFormatKey(event, editing.kind);
+        }
+    }
+
+    /** Ctrl/⌘+K adds a link in rich text; plain texts take no bold, italic or underline. */
+    #onFormatKey(event: KeyboardEvent, kind: EditingKind): void {
+        const key = event.key.toLowerCase();
+        if (key === 'k' && kind !== 'plain') {
+            event.preventDefault();
+            const url = this.#iframe.contentWindow?.prompt('Link address (https://…)', 'https://');
+            if (url) this.#doc?.execCommand('createLink', false, url);
+        } else if (kind === 'plain' && ['b', 'i', 'u'].includes(key)) {
+            event.preventDefault();
+        }
     }
 
     #onClick(event: MouseEvent): void {
@@ -271,18 +561,40 @@ export class CanvasController {
         const target = event.target as Element | null;
         const inEditing = this.#editing?.el.contains(target);
         if (inEditing) return;
-        const insideSummary = target?.closest('summary');
-        if (!insideSummary) event.preventDefault();
-        if (target?.closest('.sic-chip')) return;
-        this.#host.select(blockOf(target)?.dataset.blockId ?? null);
+        if (target?.closest('.sic-chip')) {
+            event.preventDefault();
+            return;
+        }
+        // A click on a text of the selected block starts typing there.
+        const block = blockOf(target);
+        const field = this.#fieldAt(target, block);
+        if (block && field && block.dataset.blockId === this.#selected) {
+            event.preventDefault();
+            this.#editAt(block.dataset.blockId, field, event);
+            return;
+        }
+        if (!target?.closest('summary')) event.preventDefault();
+        this.#host.select(block?.dataset.blockId ?? null);
     }
 
     #onDoubleClick(event: MouseEvent): void {
-        const block = blockOf(event.target as Element | null);
+        const target = event.target as Element | null;
+        const block = blockOf(target);
         if (!block?.dataset.blockId) return;
         this.#host.select(block.dataset.blockId);
-        // Wait one tick so the selection render finishes before the element becomes editable.
-        setTimeout(() => this.startEdit(block.dataset.blockId!), 0);
+        this.#editAt(block.dataset.blockId, this.#fieldAt(target, block), event);
+    }
+
+    /** The text of `block` under `target`, if any. */
+    #fieldAt(target: Element | null, block: HTMLElement | null): FieldRef | undefined {
+        const field = target?.closest<HTMLElement>('[data-edit]');
+        return field && block && blockOf(field) === block ? fieldRef(field) : undefined;
+    }
+
+    #editAt(id: string, field: FieldRef | undefined, event: MouseEvent): void {
+        const point = { x: event.clientX, y: event.clientY };
+        // Wait one tick so the selection (and the re-render of any text just saved) finishes first.
+        setTimeout(() => this.startEdit(id, field, field ? point : undefined), 0);
     }
 
     #onHover(event: MouseEvent): void {
@@ -319,7 +631,7 @@ export class CanvasController {
             chip.setAttribute('data-chip', '');
             chip.setAttribute('title', 'Drag to move');
             chip.addEventListener('pointerdown', (event) => this.#onChipPointerDown(event));
-            doc.body.appendChild(chip);
+            doc.body.append(chip);
             this.#chip = chip;
         }
         const label = selected.dataset.blockLabel ?? 'Block';
@@ -359,7 +671,7 @@ export class CanvasController {
         ghost.textContent = source.label;
         ghost.className =
             'pointer-events-none fixed z-[9999] hidden rounded-md bg-brand-800 px-2.5 py-1 text-xs font-semibold text-white shadow-brand-md dark:bg-gold-500 dark:text-brand-950';
-        document.body.appendChild(ghost);
+        document.body.append(ghost);
         this.#drag = { source, ghost, target: null, started: false, startX, startY };
 
         const move = (event: PointerEvent) => this.#dragMove(event);
@@ -457,7 +769,7 @@ export class CanvasController {
         if (!this.#indicator) {
             this.#indicator = this.#doc.createElement('div');
             this.#indicator.className = 'sic-indicator';
-            this.#doc.body.appendChild(this.#indicator);
+            this.#doc.body.append(this.#indicator);
         }
         const { left, top, width, height } = target.line;
         Object.assign(this.#indicator.style, {
@@ -497,71 +809,21 @@ export class CanvasController {
         const win = this.#iframe.contentWindow;
         const root = this.#root;
         if (!doc || !win || !root) return null;
-        const movingId = source.kind === 'move' ? source.id : null;
-        const moving = movingId ? this.#find(movingId) : null;
-
-        const candidates: (HTMLElement | null)[] = [];
-        for (let el = blockOf(doc.elementFromPoint(x, y)); el; el = blockOf(el.parentElement)) {
-            if (moving && (el === moving || moving.contains(el))) continue;
-            candidates.push(el);
-        }
-        candidates.push(null);
-
-        for (const candidate of candidates) {
-            const parentId = candidate?.dataset.blockId ?? null;
-            if (candidate && !CONTAINERS[candidate.dataset.blockType ?? '']) continue;
+        const moving = source.kind === 'move' ? this.#find(source.id) : null;
+        for (const container of dropCandidates(doc, x, y, moving)) {
+            const parentId = container?.dataset.blockId ?? null;
             if (!this.#host.canDrop(source, parentId)) continue;
-            if (candidate) {
-                // Near a container's border the drop goes beside it (into its parent) instead of inside.
-                const rect = candidate.getBoundingClientRect();
-                const nearEdge =
-                    x - rect.left < EDGE || rect.right - x < EDGE || y - rect.top < EDGE || rect.bottom - y < EDGE;
-                if (nearEdge) continue;
-            }
-            const kids = childBlocks(root, candidate).filter((el) => el !== moving);
-            const container = candidate;
-            if (kids.length === 0) {
-                return { drop: { parentId, beforeId: null }, line: null, container };
-            }
-            let nearest = kids[0];
-            let best = Infinity;
-            for (const kid of kids) {
-                const d = distanceTo(kid.getBoundingClientRect(), x, y);
-                if (d < best) {
-                    best = d;
-                    nearest = kid;
-                }
-            }
+            const kids = childBlocks(root, container).filter((el) => el !== moving);
+            if (kids.length === 0) return { drop: { parentId, beforeId: null }, line: null, container };
+
+            const nearest = nearestBlock(kids, x, y);
             const rect = nearest.getBoundingClientRect();
-            const style = container ? win.getComputedStyle(container) : null;
-            const horizontal =
-                style !== null &&
-                ((style.display.includes('flex') && style.flexDirection.startsWith('row')) ||
-                    (style.display.includes('grid') && kids.length > 1 && this.#sharesRow(kids)));
+            const horizontal = container !== null && laysOutInRow(win.getComputedStyle(container), kids);
             const before = horizontal ? x < rect.left + rect.width / 2 : y < rect.top + rect.height / 2;
-            const index = kids.indexOf(nearest);
-            const beforeEl = before ? nearest : (kids[index + 1] ?? null);
-            const line = horizontal
-                ? {
-                      left: (before ? rect.left : rect.right) + win.scrollX - 2,
-                      top: rect.top + win.scrollY,
-                      width: 4,
-                      height: rect.height,
-                  }
-                : {
-                      left: rect.left + win.scrollX,
-                      top: (before ? rect.top : rect.bottom) + win.scrollY - 2,
-                      width: rect.width,
-                      height: 4,
-                  };
+            const beforeEl = before ? nearest : (kids[kids.indexOf(nearest) + 1] ?? null);
+            const line = indicatorLine(win, rect, horizontal, before);
             return { drop: { parentId, beforeId: beforeEl?.dataset.blockId ?? null }, line, container };
         }
         return null;
-    }
-
-    #sharesRow(kids: HTMLElement[]): boolean {
-        const a = kids[0].getBoundingClientRect();
-        const b = kids[1].getBoundingClientRect();
-        return a.top < b.bottom && b.top < a.bottom;
     }
 }

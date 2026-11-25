@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Content\Blocks\Types;
 
 use App\Content\Blocks\BlockType;
+use App\Content\Blocks\Colors;
 use App\Content\Blocks\Limits;
 use App\Content\Blocks\RenderContext;
 use App\Content\Blocks\RenderKit;
@@ -36,6 +37,8 @@ final class CardBlock extends BlockType
             'imageAlt' => '',
             'linkLabel' => '',
             'linkHref' => '',
+            'color' => '',
+            'background' => '',
         ];
     }
 
@@ -48,6 +51,8 @@ final class CardBlock extends BlockType
             'imageAlt' => Z::str(Limits::LABEL),
             'linkLabel' => Z::str(Limits::LABEL),
             'linkHref' => Z::str(Limits::URL),
+            'color' => Z::str(Limits::LABEL),
+            'background' => Z::str(Limits::LABEL),
         ]);
     }
 
@@ -62,6 +67,7 @@ final class CardBlock extends BlockType
         if ($props['linkHref'] !== '' && Js::blank($props['linkLabel'])) {
             $report('Give the card link a label.', ['linkLabel']);
         }
+        Colors::check($props, ['color', 'background'], $report);
     }
 
     public function html(array $block, RenderContext $ctx): string
@@ -70,12 +76,16 @@ final class CardBlock extends BlockType
         $image = Urls::safeImageSrc($p['imageUrl']);
         $href = ! Js::blank($p['linkLabel']) ? Urls::safeHref($p['linkHref']) : null;
         $children = $ctx->children($block['children'] ?? null);
+        $text = Colors::parts($p['color'], 'text');
+        $bg = Colors::parts($p['background'], 'bg');
         $parts = implode('', [
-            ! Js::blank($p['title']) ? '<h3 class="text-lg font-bold text-primary">'.RenderKit::esc($p['title']).'</h3>' : '',
-            RenderKit::paragraphsHtml($p['body'], 'text-sm leading-relaxed text-muted-foreground'),
+            ! Js::blank($p['title'])
+                ? '<h3 class="'.RenderKit::joinClasses('text-lg font-bold', $text === null ? 'text-primary' : null).'"'.$ctx->field('title', 'plain').'>'.RenderKit::esc($p['title']).'</h3>'
+                : '',
+            RenderKit::paragraphsHtml($p['body'], RenderKit::joinClasses('text-sm leading-relaxed', $text === null ? 'text-muted-foreground' : null), $ctx->field('body', 'rich')),
             $children !== '' ? RenderKit::flow($children, 'gap-3') : '',
             $href !== null
-                ? '<a href="'.RenderKit::esc($href).'" class="mt-auto text-sm font-semibold text-link underline-offset-4 hover:underline"'.(Urls::isExternalHref($href) ? ' target="_blank" rel="noopener noreferrer"' : '').'>'.RenderKit::esc($p['linkLabel']).'<span aria-hidden="true"> →</span></a>'
+                ? '<a href="'.RenderKit::esc($href).'" class="'.RenderKit::joinClasses('mt-auto text-sm font-semibold', $text === null ? 'text-link' : null, 'underline-offset-4 hover:underline').'"'.(Urls::isExternalHref($href) ? ' target="_blank" rel="noopener noreferrer"' : '').'>'.$ctx->editable('linkLabel', 'plain', RenderKit::esc($p['linkLabel'])).'<span aria-hidden="true"> →</span></a>'
                 : '',
         ]);
         if ($parts === '' && $image === null && ! $ctx->editor) {
@@ -85,7 +95,14 @@ final class CardBlock extends BlockType
             ? '<img src="'.RenderKit::esc($image).'" alt="'.RenderKit::esc($p['imageAlt']).'" loading="lazy" decoding="async" class="aspect-video w-full object-cover">'
             : '';
 
-        return '<article class="flex flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-brand-sm"'.$ctx->hooks($block, $parts === '' && $image === null).'>'.$img.'<div class="flex flex-1 flex-col gap-3 p-6">'.$parts.'</div></article>';
+        $classes = RenderKit::joinClasses(
+            'flex flex-col overflow-hidden rounded-2xl border border-border',
+            $bg !== null ? $bg['className'] : 'bg-surface',
+            'shadow-brand-sm',
+            $text['className'] ?? null,
+        );
+
+        return '<article class="'.$classes.'"'.Colors::styleAttr($text, $bg).$ctx->hooks($block, $parts === '' && $image === null).'>'.$img.'<div class="flex flex-1 flex-col gap-3 p-6">'.$parts.'</div></article>';
     }
 
     public function text(stdClass $props): array

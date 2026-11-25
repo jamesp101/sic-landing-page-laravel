@@ -30,7 +30,10 @@ export const LIMITS = {
 
 export type Gap = 'none' | 'sm' | 'md' | 'lg';
 export type CrossAlign = 'start' | 'center' | 'end' | 'stretch';
-export type TextAlign = 'inherit' | 'left' | 'center' | 'right';
+export type TextAlign = 'inherit' | 'left' | 'center' | 'right' | 'justify';
+export type BoxAlign = 'inherit' | 'left' | 'center' | 'right';
+/** `''`, a Brand palette name or `#rrggbb` (`colors.ts`). */
+export type BlockColor = string;
 export type CalloutTone = 'info' | 'success' | 'warning';
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost';
 
@@ -38,6 +41,8 @@ export interface SectionProps {
     background: 'none' | 'surface' | 'alt' | 'accent' | 'gold';
     padding: 'none' | 'sm' | 'md' | 'lg';
     align: TextAlign;
+    /** Replaces the `background` preset when set. */
+    backgroundColor: BlockColor;
 }
 export interface RowProps {
     /** `responsive` stacks on small screens and lays out in a row from `md`. */
@@ -66,6 +71,7 @@ export interface HeadingProps {
     text: string;
     level: 2 | 3 | 4;
     align: TextAlign;
+    color: BlockColor;
 }
 export interface ParagraphProps {
     /** Inline markup: `**bold**`, `*italic*`, `[label](url)`, `\` escapes. */
@@ -73,6 +79,9 @@ export interface ParagraphProps {
     size: 'sm' | 'base' | 'lg';
     tone: 'default' | 'muted';
     align: TextAlign;
+    /** Overrides `tone` when set. */
+    color: BlockColor;
+    background: BlockColor;
 }
 export interface ListProps {
     ordered: boolean;
@@ -86,7 +95,7 @@ export interface ButtonProps {
     label: string;
     href: string;
     variant: ButtonVariant;
-    align: TextAlign;
+    align: BoxAlign;
 }
 export interface BadgesProps {
     items: string[];
@@ -98,6 +107,9 @@ export interface CardProps {
     imageAlt: string;
     linkLabel: string;
     linkHref: string;
+    /** Text colour of the title, body and link. */
+    color: BlockColor;
+    background: BlockColor;
 }
 export interface ImageProps {
     src: string;
@@ -109,6 +121,10 @@ export interface ImageProps {
     height: number | null;
     /** Click-through link (`safeHref` rules); `''` = none. */
     link: string;
+    /** Caption colour. */
+    color: BlockColor;
+    /** Frame behind the image; `''` = no frame. */
+    background: BlockColor;
 }
 export interface AlbumImage {
     src: string;

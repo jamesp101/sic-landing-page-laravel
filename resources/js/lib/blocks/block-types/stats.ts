@@ -20,12 +20,15 @@ export const stats: BlockTypeModule<'stats'> = {
             .default([]),
     }),
     html(block, ctx) {
-        const items = block.props.items.filter((item) => item.value.trim() || item.label.trim());
+        // Keep each item's stored index: the canvas writes typed text back to `items.<index>.*`.
+        const items = block.props.items.flatMap((item, index) =>
+            item.value.trim() || item.label.trim() ? [{ item, index }] : [],
+        );
         if (items.length === 0) return '';
         const html = items
             .map(
-                (item) =>
-                    `<div class="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-5 text-center shadow-brand-sm"><dt class="order-2 text-sm font-medium text-muted-foreground">${esc(item.label)}</dt><dd class="order-1 text-3xl font-bold text-primary">${esc(item.value)}</dd>${item.hint.trim() ? `<dd class="order-3 text-xs text-muted-foreground">${esc(item.hint)}</dd>` : ''}</div>`,
+                ({ item, index }) =>
+                    `<div class="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-5 text-center shadow-brand-sm"><dt class="order-2 text-sm font-medium text-muted-foreground"${ctx.field(`items.${index}.label`, 'plain')}>${esc(item.label)}</dt><dd class="order-1 text-3xl font-bold text-primary"${ctx.field(`items.${index}.value`, 'plain')}>${esc(item.value)}</dd>${item.hint.trim() ? `<dd class="order-3 text-xs text-muted-foreground"${ctx.field(`items.${index}.hint`, 'plain')}>${esc(item.hint)}</dd>` : ''}</div>`,
             )
             .join('');
         return `<dl class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-4"${ctx.hooks(block)}>${html}</dl>`;

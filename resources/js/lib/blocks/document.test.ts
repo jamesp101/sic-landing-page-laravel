@@ -95,7 +95,7 @@ describe('document factories', () => {
         expect(heading.children).toBeUndefined();
 
         const custom = createBlock('heading', { text: 'Hi', level: 3 });
-        expect(custom.props).toEqual({ text: 'Hi', level: 3, align: 'inherit' });
+        expect(custom.props).toEqual({ text: 'Hi', level: 3, align: 'inherit', color: '' });
     });
 
     it('gives every block a fresh, valid id and fresh prop objects', () => {

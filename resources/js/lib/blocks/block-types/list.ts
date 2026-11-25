@@ -14,13 +14,20 @@ export const list: BlockTypeModule<'list'> = {
     }),
     html(block, ctx) {
         const p = block.props;
-        const items = p.items.filter((item) => item.trim());
+        // Keep each item's stored index: the canvas writes typed text back to `items.<index>`. The canvas also shows
+        // blank items (a fresh one after Enter must be typeable); the public page drops them.
+        const items = p.items.flatMap((item, index) => (item.trim() || ctx.editor ? [{ item, index }] : []));
         if (items.length === 0) return '';
         const tag = p.ordered ? 'ol' : 'ul';
         const classes = p.ordered
             ? 'list-decimal space-y-1 pl-6 text-foreground marker:text-gold-600'
             : 'list-disc space-y-1 pl-6 text-foreground marker:text-gold-600';
-        const lis = items.map((item) => `<li class="leading-relaxed">${inlineToHtml(item)}</li>`).join('');
+        const lis = items
+            .map(
+                ({ item, index }) =>
+                    `<li class="leading-relaxed"${ctx.field(`items.${index}`, 'item')}>${item.trim() ? inlineToHtml(item) : '<br>'}</li>`,
+            )
+            .join('');
         return `<${tag} class="${classes}"${ctx.hooks(block)}>${lis}</${tag}>`;
     },
     text: (props) => itemsOf(props.items).map(richOf),

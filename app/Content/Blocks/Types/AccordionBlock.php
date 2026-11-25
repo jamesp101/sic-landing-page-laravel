@@ -58,8 +58,9 @@ final class AccordionBlock extends BlockType
             return '';
         }
         $html = '';
-        foreach ($items as $item) {
-            $html .= '<details class="group rounded-xl border border-border bg-surface-alt p-4"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-primary [&::-webkit-details-marker]:hidden"><span>'.RenderKit::esc($item['title']).'</span>'.self::CHEVRON.'</summary><div class="mt-3 flex flex-col gap-2">'.RenderKit::paragraphsHtml($item['body'], 'text-sm leading-relaxed text-muted-foreground').'</div></details>';
+        // `array_filter` keeps the stored index: the canvas writes typed text back to `items.<index>.*`.
+        foreach ($items as $index => $item) {
+            $html .= '<details class="group rounded-xl border border-border bg-surface-alt p-4"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-primary [&::-webkit-details-marker]:hidden"><span'.$ctx->field("items.{$index}.title", 'plain').'>'.RenderKit::esc($item['title']).'</span>'.self::CHEVRON.'</summary><div class="mt-3 flex flex-col gap-2">'.RenderKit::paragraphsHtml($item['body'], 'text-sm leading-relaxed text-muted-foreground', $ctx->field("items.{$index}.body", 'rich')).'</div></details>';
         }
 
         return '<div class="flex flex-col gap-3"'.$ctx->hooks($block).'>'.$html.'</div>';

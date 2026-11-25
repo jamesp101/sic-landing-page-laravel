@@ -1,7 +1,7 @@
 <script lang="ts">
     import Group from '../Group.svelte';
     import AlbumEditor from '../AlbumEditor.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import { ALBUM_COLUMN_OPTIONS } from '../options';
     import type { PanelProps } from '../panel';
 
@@ -17,7 +17,7 @@
     />
 </Group>
 <Group title="Layout">
-    <SelectField
+    <ChoiceField
         id={fid('columns')}
         label="Columns"
         value={block.props.columns}

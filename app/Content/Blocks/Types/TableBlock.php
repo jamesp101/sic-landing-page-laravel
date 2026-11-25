@@ -56,19 +56,31 @@ final class TableBlock extends BlockType
     public function html(array $block, RenderContext $ctx): string
     {
         $p = $block['props'];
-        $rows = array_values(array_filter($p['rows'], static fn (array $row): bool => $row !== []));
+        // `array_filter` keeps each row's stored index: the canvas writes typed text back to `rows.<row>.<column>`.
+        $rows = array_filter($p['rows'], static fn (array $row): bool => $row !== []);
         if ($rows === []) {
             return '';
         }
-        $th = static fn (string $cell): string => '<th scope="col" class="border-b-2 border-border-strong bg-surface-alt px-4 py-2 text-left font-semibold text-primary">'.Inline::inlineToHtml($cell).'</th>';
-        $td = static fn (string $cell): string => '<td class="border-b border-border px-4 py-2 align-top text-foreground">'.Inline::inlineToHtml($cell).'</td>';
-        $tr = static fn (array $row, callable $cell): string => '<tr>'.implode('', array_map($cell, $row)).'</tr>';
-        $head = $p['header'] ? '<thead>'.$tr($rows[0], $th).'</thead>' : '';
-        $bodyRows = $p['header'] ? array_slice($rows, 1) : $rows;
+        $th = static fn (string $cell, string $field): string => '<th scope="col" class="border-b-2 border-border-strong bg-surface-alt px-4 py-2 text-left font-semibold text-primary"'.$field.'>'.Inline::inlineToHtml($cell).'</th>';
+        $td = static fn (string $cell, string $field): string => '<td class="border-b border-border px-4 py-2 align-top text-foreground"'.$field.'>'.Inline::inlineToHtml($cell).'</td>';
+        $tr = static function (int $index, array $row, callable $cell) use ($ctx): string {
+            $html = '';
+            foreach ($row as $column => $value) {
+                $html .= $cell($value, $ctx->field("rows.{$index}.{$column}", 'rich'));
+            }
+
+            return '<tr>'.$html.'</tr>';
+        };
+        $first = array_key_first($rows);
+        $head = $p['header'] ? '<thead>'.$tr($first, $rows[$first], $th).'</thead>' : '';
+        $bodyRows = $p['header'] ? array_slice($rows, 1, null, true) : $rows;
         $caption = ! Js::blank($p['caption'])
-            ? '<caption class="caption-top pb-2 text-left text-sm font-semibold text-muted-foreground">'.RenderKit::esc($p['caption']).'</caption>'
+            ? '<caption class="caption-top pb-2 text-left text-sm font-semibold text-muted-foreground"'.$ctx->field('caption', 'plain').'>'.RenderKit::esc($p['caption']).'</caption>'
             : '';
-        $body = implode('', array_map(static fn (array $row): string => $tr($row, $td), $bodyRows));
+        $body = '';
+        foreach ($bodyRows as $index => $row) {
+            $body .= $tr($index, $row, $td);
+        }
 
         return '<div class="overflow-x-auto"'.$ctx->hooks($block).'><table class="w-full border-collapse text-left text-sm">'.$caption.$head.'<tbody>'.$body.'</tbody></table></div>';
     }

@@ -65,7 +65,7 @@ final class ButtonBlock extends BlockType
         }
         $external = Urls::isExternalHref($href) ? ' target="_blank" rel="noopener noreferrer"' : '';
 
-        return '<div class="flex '.RenderKit::pick(self::JUSTIFY_SELF, $p['align'], 'left').'"'.$ctx->hooks($block).'><a href="'.RenderKit::esc($href).'" class="'.RenderKit::pick(self::VARIANT, $p['variant'], 'primary').'"'.$external.'>'.RenderKit::esc($p['label']).'</a></div>';
+        return '<div class="flex '.RenderKit::pick(self::JUSTIFY_SELF, $p['align'], 'left').'"'.$ctx->hooks($block).'><a href="'.RenderKit::esc($href).'" class="'.RenderKit::pick(self::VARIANT, $p['variant'], 'primary').'"'.$external.$ctx->field('label', 'plain').'>'.RenderKit::esc($p['label']).'</a></div>';
     }
 
     public function text(stdClass $props): array

@@ -17,7 +17,7 @@ export const video: BlockTypeModule<'video'> = {
         const source = parseVideoUrl(p.url);
         if (!source || !p.title.trim()) return '';
         const caption = p.caption.trim()
-            ? `<figcaption class="mt-2 text-sm text-muted-foreground">${esc(p.caption)}</figcaption>`
+            ? `<figcaption class="mt-2 text-sm text-muted-foreground"${ctx.field('caption', 'plain')}>${esc(p.caption)}</figcaption>`
             : '';
         let frame: string;
         if (ctx.editor) {

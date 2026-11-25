@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import type { BlockTypeModule } from '../block-type';
 import { esc, pick } from '../render-kit';
-import { label, textAlign, url } from '../schema-kit';
+import { boxAlign, label, url } from '../schema-kit';
 import { isExternalHref, safeHref } from '../urls';
 
 const JUSTIFY_SELF = {
@@ -26,7 +26,7 @@ export const button: BlockTypeModule<'button'> = {
         label,
         href: url,
         variant: z.enum(['primary', 'secondary', 'ghost']).default('primary'),
-        align: textAlign,
+        align: boxAlign,
     }),
     rules(props, report) {
         if (!props.label.trim()) report('Give the button a label.', ['label']);
@@ -37,8 +37,7 @@ export const button: BlockTypeModule<'button'> = {
         const href = safeHref(p.href);
         if (!p.label.trim() || href === null) return '';
         const external = isExternalHref(href) ? ' target="_blank" rel="noopener noreferrer"' : '';
-        return `<div class="flex ${pick(JUSTIFY_SELF, p.align, 'left')}"${ctx.hooks(block)}><a href="${esc(href)}" class="${pick(VARIANT, p.variant, 'primary')}"${external}>${esc(p.label)}</a></div>`;
+        return `<div class="flex ${pick(JUSTIFY_SELF, p.align, 'left')}"${ctx.hooks(block)}><a href="${esc(href)}" class="${pick(VARIANT, p.variant, 'primary')}"${external}${ctx.field('label', 'plain')}>${esc(p.label)}</a></div>`;
     },
     text: () => [],
-    inline: { field: 'label', kind: 'plain', target: 'a' },
 };

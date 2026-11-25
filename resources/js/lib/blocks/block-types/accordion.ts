@@ -22,12 +22,13 @@ export const accordion: BlockTypeModule<'accordion'> = {
         if (props.items.some((item) => !item.title.trim())) report('Every item needs a title.', ['items']);
     },
     html(block, ctx) {
-        const items = block.props.items.filter((item) => item.title.trim());
+        // Keep each item's stored index: the canvas writes typed text back to `items.<index>.*`.
+        const items = block.props.items.flatMap((item, index) => (item.title.trim() ? [{ item, index }] : []));
         if (items.length === 0) return '';
         const html = items
             .map(
-                (item) =>
-                    `<details class="group rounded-xl border border-border bg-surface-alt p-4"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-primary [&::-webkit-details-marker]:hidden"><span>${esc(item.title)}</span>${CHEVRON}</summary><div class="mt-3 flex flex-col gap-2">${paragraphsHtml(item.body, 'text-sm leading-relaxed text-muted-foreground')}</div></details>`,
+                ({ item, index }) =>
+                    `<details class="group rounded-xl border border-border bg-surface-alt p-4"><summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-primary [&::-webkit-details-marker]:hidden"><span${ctx.field(`items.${index}.title`, 'plain')}>${esc(item.title)}</span>${CHEVRON}</summary><div class="mt-3 flex flex-col gap-2">${paragraphsHtml(item.body, 'text-sm leading-relaxed text-muted-foreground', ctx.field(`items.${index}.body`, 'rich'))}</div></details>`,
             )
             .join('');
         return `<div class="flex flex-col gap-3"${ctx.hooks(block)}>${html}</div>`;

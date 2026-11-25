@@ -81,7 +81,10 @@ test.describe('visual block editor (superadmin)', () => {
         ).toBeVisible();
         await page.getByLabel('Button link').fill('/posts');
 
-        // Canvas selection and keyboard reorder: move the button above the table.
+        // Canvas selection and keyboard reorder: move the button above the table. (A click on a text of the block that
+        // is already selected starts typing, so select the table first.)
+        await canvas(page).locator('[data-block-type="table"]').click();
+        await expect(page.getByLabel('Table caption')).toHaveValue('Enrolment steps');
         await canvas(page).locator('[data-block-type="button"] a').click();
         await expect(page.getByLabel('Button label')).toHaveValue('Read the guide');
         await page.keyboard.press('Alt+ArrowUp');
@@ -229,6 +232,132 @@ test.describe('visual block editor (superadmin)', () => {
         await expect(canvas(page).locator('[data-block-type="paragraph"]')).toHaveCount(1);
     });
 
+    test('types straight into the canvas: click a text, Tab to the next one, Escape cancels', async ({ page }) => {
+        await page.goto('/admin/posts/create');
+        await editorReady(page);
+
+        // A new card is selected, so one click on its title starts typing there.
+        await add(page, 'Card').click();
+        const card = canvas(page).locator('[data-block-type="card"]');
+        const title = card.locator('[data-edit="title"]');
+        await title.click();
+        await expect(title).toHaveAttribute('contenteditable', 'plaintext-only');
+        await page.keyboard.press('ControlOrMeta+a');
+        await page.keyboard.type('Typed title');
+
+        // Tab saves the title and continues in the card text (rich: Ctrl+Enter saves).
+        await page.keyboard.press('Tab');
+        const body = card.locator('[data-edit="body"]').first();
+        await expect(body).toHaveAttribute('contenteditable', 'true');
+        await page.keyboard.press('ControlOrMeta+a');
+        await page.keyboard.type('Typed text');
+        await page.keyboard.press('ControlOrMeta+Enter');
+
+        await expect(page.getByLabel('Card title')).toHaveValue('Typed title');
+        await expect(page.getByRole('textbox', { name: 'Card text', exact: true })).toHaveValue('Typed text');
+        await expect(card.locator('[contenteditable]')).toHaveCount(0);
+
+        // Escape throws the typing away.
+        await card.locator('[data-edit="title"]').click();
+        await page.keyboard.type(' extra');
+        await page.keyboard.press('Escape');
+        await expect(card.locator('[data-edit="title"]')).toHaveText('Typed title');
+        await expect(page.getByLabel('Card title')).toHaveValue('Typed title');
+
+        // Items of lists are typeable too, each written back to its own item.
+        await add(page, 'List').click();
+        const second = canvas(page).locator('[data-block-type="list"] [data-edit="items.1"]');
+        await second.click();
+        await page.keyboard.press('ControlOrMeta+a');
+        await page.keyboard.type('Changed item');
+        await page.keyboard.press('ControlOrMeta+Enter');
+        await expect(canvas(page).locator('[data-block-type="list"] li')).toHaveText(['First item', 'Changed item']);
+    });
+
+    test('lists: Enter and pasted lines make new items, Backspace at the start joins them', async ({ page }) => {
+        await page.goto('/admin/posts/create');
+        await editorReady(page);
+        await add(page, 'List').click();
+        const list = canvas(page).locator('[data-block-type="list"]');
+        const item = (index: number) => list.locator(`[data-edit="items.${index}"]`);
+        const typing = (index: number) => expect(item(index)).toHaveAttribute('contenteditable', 'true');
+        /** A paste of `text` into the element being typed in (the canvas reads `clipboardData`). */
+        const paste = (index: number, text: string) =>
+            item(index).evaluate((el, value) => {
+                const data = new DataTransfer();
+                data.setData('text/plain', value);
+                el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+            }, text);
+
+        // Enter at the end of an item starts a new, empty item below it.
+        await item(0).click();
+        await typing(0);
+        await page.keyboard.press('End');
+        await page.keyboard.press('Enter');
+        await typing(1);
+        await page.keyboard.type('Inserted');
+
+        // Enter in the middle splits the item; pasted lines become items, without their bullets.
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('ArrowLeft');
+        await page.keyboard.press('Enter');
+        await typing(2);
+        await expect(list.locator('li')).toHaveText(['First item', 'Insert', 'ed', 'Second item']);
+        await page.keyboard.press('End');
+        await page.keyboard.press('Enter');
+        await typing(3);
+        await paste(3, '- Pasted one\n- Pasted two\n');
+        await typing(4);
+        await expect(list.locator('li')).toHaveText([
+            'First item',
+            'Insert',
+            'ed',
+            'Pasted one',
+            'Pasted two',
+            'Second item',
+        ]);
+
+        // Backspace at the start of an item joins it to the one above.
+        await page.keyboard.press('Home');
+        await page.keyboard.press('Backspace');
+        await typing(3);
+        await page.keyboard.press('ControlOrMeta+Enter');
+        await expect(list.locator('li')).toHaveText([
+            'First item',
+            'Insert',
+            'ed',
+            'Pasted onePasted two',
+            'Second item',
+        ]);
+
+        // The inspector's item fields work the same way.
+        const field = (n: number) => page.getByRole('textbox', { name: `Item ${n}`, exact: true });
+        await field(1).click();
+        await page.keyboard.press('End');
+        await page.keyboard.press('Enter');
+        await expect(field(2)).toBeFocused();
+        await expect(field(2)).toHaveValue('');
+        await field(2).evaluate((el) => {
+            const data = new DataTransfer();
+            data.setData('text/plain', '1. Alpha\n2. Beta');
+            el.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
+        });
+        await expect(field(3)).toBeFocused();
+        await expect(list.locator('li')).toHaveText([
+            'First item',
+            'Alpha',
+            'Beta',
+            'Insert',
+            'ed',
+            'Pasted onePasted two',
+            'Second item',
+        ]);
+        await page.keyboard.press('Home');
+        await page.keyboard.press('Backspace');
+        await expect(field(2)).toBeFocused();
+        await expect(field(2)).toHaveValue('AlphaBeta');
+    });
+
     test('the Keyboard shortcuts button and the ? key open the shortcuts dialog', async ({ page }) => {
         await page.goto('/admin/posts/create');
         await editorReady(page);
@@ -257,7 +386,7 @@ test.describe('visual block editor (superadmin)', () => {
         await editorReady(page);
         await expect(page.getByText(/contains.*Markdown \(legacy\).*blocks/)).toBeVisible();
         await canvas(page).locator('[data-block-type="markdown"]').click();
-        await expect(page.getByLabel('Markdown source')).toHaveValue(new RegExp(`# ${AI_LAB_HEADING}`));
+        await expect.poll(() => page.getByLabel('Markdown source').inputValue()).toContain(`# ${AI_LAB_HEADING}`);
 
         // Converting keeps the content, as editable blocks.
         await page.getByRole('button', { name: 'Convert to blocks' }).first().click();
@@ -317,10 +446,8 @@ test.describe('visual block editor (superadmin)', () => {
             await expect(canvas(page).locator('[data-block-type="markdown"]')).toHaveCount(0);
         } finally {
             await page.goto('/admin/departments');
-            const id = await page
-                .getByRole('link', { name: `Edit ${name}` })
-                .getAttribute('href')
-                .then((href) => Number(href?.match(/departments\/(\d+)\/edit/)?.[1]));
+            const href = await page.getByRole('link', { name: `Edit ${name}` }).getAttribute('href');
+            const id = Number(href?.match(/departments\/(\d+)\/edit/)?.[1]);
             await postAction(page, 'departments.delete', { json: { id } });
         }
     });

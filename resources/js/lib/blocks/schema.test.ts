@@ -92,6 +92,8 @@ describe('validateDocument: structure', () => {
                 size: 'base',
                 tone: 'default',
                 align: 'inherit',
+                color: '',
+                background: '',
             });
         }
     });
@@ -423,7 +425,16 @@ describe('checkContent', () => {
         if (result.ok) {
             const stored = JSON.parse(result.value);
             expect(stored).toEqual(
-                raw([leaf('paragraph', { text: 'Hi', size: 'base', tone: 'default', align: 'inherit' })]),
+                raw([
+                    leaf('paragraph', {
+                        text: 'Hi',
+                        size: 'base',
+                        tone: 'default',
+                        align: 'inherit',
+                        color: '',
+                        background: '',
+                    }),
+                ]),
             );
             expect(result.value).not.toContain('evil');
         }

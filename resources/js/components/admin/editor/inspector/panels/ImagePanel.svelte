@@ -1,5 +1,7 @@
 <script lang="ts">
     import CheckField from '../CheckField.svelte';
+    import ColorField from '../ColorField.svelte';
+    import ContrastNote from '../ContrastNote.svelte';
     import Group from '../Group.svelte';
     import ImageEditor from '../ImageEditor.svelte';
     import TextField from '../TextField.svelte';
@@ -44,6 +46,31 @@
         maxlength={LIMITS.label}
         oninput={(v) => set({ caption: v })}
     />
+</Group>
+<Group title="Appearance">
+    <ColorField
+        id={fid('background')}
+        label="Frame background"
+        value={block.props.background}
+        defaultLabel="No frame"
+        error={errors.background}
+        onchange={(v) => set({ background: v })}
+    />
+    <ColorField
+        id={fid('color')}
+        label="Caption colour"
+        value={block.props.color}
+        error={errors.color}
+        onchange={(v) => set({ color: v })}
+    />
+    {#if block.props.caption.trim()}
+        <ContrastNote
+            text={block.props.color}
+            background={block.props.background}
+            textFallback="text-muted-foreground"
+            backgroundFallback="bg-background"
+        />
+    {/if}
 </Group>
 <Group title="Link">
     <TextField

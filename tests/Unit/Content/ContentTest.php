@@ -87,7 +87,7 @@ final class ContentTest extends TestCase
         $checked = Content::checkContent($input);
 
         $this->assertTrue($checked['ok']);
-        $this->assertSame('{"type":"sic-blocks","version":1,"blocks":[{"id":"a1","type":"paragraph","props":{"text":"Hi","size":"base","tone":"default","align":"inherit"}}]}', $checked['value']);
+        $this->assertSame('{"type":"sic-blocks","version":1,"blocks":[{"id":"a1","type":"paragraph","props":{"text":"Hi","size":"base","tone":"default","align":"inherit","color":"","background":""}}]}', $checked['value']);
         $this->assertSame(['ok' => true, 'value' => ''], Content::checkContent('{"type":"sic-blocks","version":1,"blocks":[]}'));
     }
 

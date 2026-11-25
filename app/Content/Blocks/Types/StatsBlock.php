@@ -47,8 +47,9 @@ final class StatsBlock extends BlockType
             return '';
         }
         $html = '';
-        foreach ($items as $item) {
-            $html .= '<div class="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-5 text-center shadow-brand-sm"><dt class="order-2 text-sm font-medium text-muted-foreground">'.RenderKit::esc($item['label']).'</dt><dd class="order-1 text-3xl font-bold text-primary">'.RenderKit::esc($item['value']).'</dd>'.(! Js::blank($item['hint']) ? '<dd class="order-3 text-xs text-muted-foreground">'.RenderKit::esc($item['hint']).'</dd>' : '').'</div>';
+        // `array_filter` keeps the stored index: the canvas writes typed text back to `items.<index>.*`.
+        foreach ($items as $index => $item) {
+            $html .= '<div class="flex flex-col gap-1 rounded-2xl border border-border bg-surface p-5 text-center shadow-brand-sm"><dt class="order-2 text-sm font-medium text-muted-foreground"'.$ctx->field("items.{$index}.label", 'plain').'>'.RenderKit::esc($item['label']).'</dt><dd class="order-1 text-3xl font-bold text-primary"'.$ctx->field("items.{$index}.value", 'plain').'>'.RenderKit::esc($item['value']).'</dd>'.(! Js::blank($item['hint']) ? '<dd class="order-3 text-xs text-muted-foreground"'.$ctx->field("items.{$index}.hint", 'plain').'>'.RenderKit::esc($item['hint']).'</dd>' : '').'</div>';
         }
 
         return '<dl class="grid grid-cols-[repeat(auto-fit,minmax(10rem,1fr))] gap-4"'.$ctx->hooks($block).'>'.$html.'</dl>';

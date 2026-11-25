@@ -11,7 +11,7 @@ final class RenderKit
 {
     public const GAP = ['none' => 'gap-0', 'sm' => 'gap-2', 'md' => 'gap-4', 'lg' => 'gap-8'];
 
-    public const TEXT_ALIGN = ['inherit' => '', 'left' => 'text-left', 'center' => 'text-center', 'right' => 'text-right'];
+    public const TEXT_ALIGN = ['inherit' => '', 'left' => 'text-left', 'center' => 'text-center', 'right' => 'text-right', 'justify' => 'text-justify'];
 
     public static function esc(string $value): string
     {
@@ -34,11 +34,15 @@ final class RenderKit
         return implode(' ', array_filter($parts, static fn (string|false|null $part): bool => $part !== false && $part !== null && $part !== ''));
     }
 
-    public static function paragraphsHtml(string $text, string $className): string
+    /**
+     * One `<p>` per paragraph. `$field` is the canvas mark of the prop (`RenderContext::field`, `''` publicly); each
+     * paragraph then also carries its index so the canvas edits one paragraph of the prop at a time.
+     */
+    public static function paragraphsHtml(string $text, string $className, string $field = ''): string
     {
         $html = '';
-        foreach (Inline::paragraphsOf($text) as $part) {
-            $html .= '<p class="'.$className.'">'.Inline::inlineToHtml($part).'</p>';
+        foreach (Inline::paragraphsOf($text) as $index => $part) {
+            $html .= '<p class="'.$className.'"'.($field !== '' ? $field.' data-edit-part="'.$index.'"' : '').'>'.Inline::inlineToHtml($part).'</p>';
         }
 
         return $html;

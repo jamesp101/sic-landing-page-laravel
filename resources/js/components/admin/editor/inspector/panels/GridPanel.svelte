@@ -1,6 +1,6 @@
 <script lang="ts">
     import Group from '../Group.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import { GAP_OPTIONS, GRID_COLUMN_OPTIONS } from '../options';
     import type { PanelProps } from '../panel';
 
@@ -8,14 +8,14 @@
 </script>
 
 <Group title="Layout">
-    <SelectField
+    <ChoiceField
         id={fid('columns')}
         label="Columns"
         value={block.props.columns}
         options={GRID_COLUMN_OPTIONS}
         onchange={(v) => set({ columns: Number(v) })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('gap')}
         label="Gap"
         value={block.props.gap}

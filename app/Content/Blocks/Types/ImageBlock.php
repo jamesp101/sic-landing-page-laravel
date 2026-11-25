@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Content\Blocks\Types;
 
 use App\Content\Blocks\BlockType;
+use App\Content\Blocks\Colors;
 use App\Content\Blocks\Limits;
 use App\Content\Blocks\RenderContext;
 use App\Content\Blocks\RenderKit;
@@ -23,7 +24,7 @@ final class ImageBlock extends BlockType
 
     public function defaults(): array
     {
-        return ['src' => '', 'alt' => '', 'decorative' => false, 'caption' => '', 'width' => null, 'height' => null, 'link' => ''];
+        return ['src' => '', 'alt' => '', 'decorative' => false, 'caption' => '', 'width' => null, 'height' => null, 'link' => '', 'color' => '', 'background' => ''];
     }
 
     public function schema(): array
@@ -36,6 +37,8 @@ final class ImageBlock extends BlockType
             'width' => Z::int(1, 20_000, null, true),
             'height' => Z::int(1, 20_000, null, true),
             'link' => Z::str(Limits::URL),
+            'color' => Z::str(Limits::LABEL),
+            'background' => Z::str(Limits::LABEL),
         ]);
     }
 
@@ -56,6 +59,7 @@ final class ImageBlock extends BlockType
                 $report('A linked image needs alt text that names the link target.', ['link']);
             }
         }
+        Colors::check($props, ['color', 'background'], $report);
     }
 
     public function html(array $block, RenderContext $ctx): string
@@ -71,8 +75,10 @@ final class ImageBlock extends BlockType
         $size = is_int($p['width']) && is_int($p['height']) && $p['width'] > 0 && $p['height'] > 0
             ? ' width="'.$p['width'].'" height="'.$p['height'].'"'
             : '';
+        $text = Colors::parts($p['color'], 'text');
+        $bg = Colors::parts($p['background'], 'bg');
         $caption = ! Js::blank($p['caption'])
-            ? '<figcaption class="mt-2 text-sm text-muted-foreground">'.RenderKit::esc($p['caption']).'</figcaption>'
+            ? '<figcaption class="'.RenderKit::joinClasses('mt-2 text-sm', $text !== null ? $text['className'] : 'text-muted-foreground').'"'.Colors::styleAttr($text).$ctx->field('caption', 'plain').'>'.RenderKit::esc($p['caption']).'</figcaption>'
             : '';
         $img = '<img src="'.RenderKit::esc($src).'" alt="'.RenderKit::esc($alt).'"'.$size.' loading="lazy" decoding="async" class="h-auto max-w-full rounded-xl">';
         $href = $p['link'] !== '' ? Urls::safeHref($p['link']) : null;
@@ -82,7 +88,9 @@ final class ImageBlock extends BlockType
             default => '<a href="'.RenderKit::esc($href).'" class="inline-block rounded-xl">'.$img.'</a>',
         };
 
-        return '<figure'.$ctx->hooks($block).'>'.$linked.$caption.'</figure>';
+        $frame = $bg !== null ? ' class="'.RenderKit::joinClasses('rounded-2xl p-4', $bg['className']).'"'.Colors::styleAttr($bg) : '';
+
+        return '<figure'.$frame.$ctx->hooks($block).'>'.$linked.$caption.'</figure>';
     }
 
     public function text(stdClass $props): array

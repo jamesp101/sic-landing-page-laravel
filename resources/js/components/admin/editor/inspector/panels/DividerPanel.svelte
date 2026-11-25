@@ -1,6 +1,6 @@
 <script lang="ts">
     import Group from '../Group.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import { DIVIDER_OPTIONS } from '../options';
     import type { PanelProps } from '../panel';
 
@@ -8,7 +8,7 @@
 </script>
 
 <Group title="Appearance">
-    <SelectField
+    <ChoiceField
         id={fid('tone')}
         label="Style"
         value={block.props.tone}

@@ -27,6 +27,28 @@ final class RenderContext
         return ' data-block-id="'.Html::escape($block['id']).'" data-block-type="'.$block['type'].'" data-block-label="'.Html::escape($label).'"'.($empty ? ' data-empty="true"' : '');
     }
 
+    /**
+     * Marks the element holding a text prop as typeable on the canvas (leading space included), `''` on the public
+     * site. `$path` is the prop's path (`'title'`, `'items.2.body'`); `rich` keeps bold, italic, links and line breaks;
+     * `item` is rich text that is one entry of a string list (`items.<index>`): Enter and pasted lines make new entries.
+     *
+     * @param  'plain'|'rich'|'item'  $kind
+     */
+    public function field(string $path, string $kind): string
+    {
+        return $this->editor ? ' data-edit="'.Html::escape($path).'" data-edit-kind="'.$kind.'"' : '';
+    }
+
+    /**
+     * Wraps escaped text that shares its element with other markup in a marked `<span>`; the text itself publicly.
+     *
+     * @param  'plain'|'rich'|'item'  $kind
+     */
+    public function editable(string $path, string $kind, string $html): string
+    {
+        return $this->editor ? '<span'.$this->field($path, $kind).'>'.$html.'</span>' : $html;
+    }
+
     /** Renders child blocks in this context. */
     public function children(?array $children): string
     {

@@ -38,14 +38,18 @@ export const event: BlockTypeModule<'event'> = {
         const start = parseEventDate(p.start);
         const end = parseEventDate(p.end);
         if (!start && !p.location.trim() && !p.title.trim()) return '';
+        // An end before the start is ignored (the rules flag it).
+        const validEnd = start && end && eventDateKey(end) >= eventDateKey(start) ? end : null;
         const when = start
-            ? `<div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">When</dt><dd class="mt-0.5 text-foreground">${dateRange(start, end && eventDateKey(end) >= eventDateKey(start) ? end : null)}</dd></div>`
+            ? `<div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">When</dt><dd class="mt-0.5 text-foreground">${dateRange(start, validEnd)}</dd></div>`
             : '';
         const where = p.location.trim()
-            ? `<div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Where</dt><dd class="mt-0.5 text-foreground">${esc(p.location)}</dd></div>`
+            ? `<div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Where</dt><dd class="mt-0.5 text-foreground"${ctx.field('location', 'plain')}>${esc(p.location)}</dd></div>`
             : '';
-        const title = p.title.trim() ? `<p class="mb-3 text-lg font-bold text-primary">${esc(p.title)}</p>` : '';
-        return `<div class="rounded-2xl border border-border bg-surface p-5 shadow-brand-sm"${ctx.hooks(block)}>${title}<dl class="grid gap-4 text-sm sm:grid-cols-2">${when}${where}</dl>${paragraphsHtml(p.note, 'mt-3 text-sm leading-relaxed text-muted-foreground')}</div>`;
+        const title = p.title.trim()
+            ? `<p class="mb-3 text-lg font-bold text-primary"${ctx.field('title', 'plain')}>${esc(p.title)}</p>`
+            : '';
+        return `<div class="rounded-2xl border border-border bg-surface p-5 shadow-brand-sm"${ctx.hooks(block)}>${title}<dl class="grid gap-4 text-sm sm:grid-cols-2">${when}${where}</dl>${paragraphsHtml(p.note, 'mt-3 text-sm leading-relaxed text-muted-foreground', ctx.field('note', 'rich'))}</div>`;
     },
     text(props) {
         const start = parseEventDate(props.start);
