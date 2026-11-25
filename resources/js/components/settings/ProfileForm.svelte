@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import { actions } from '@/lib/actions';
     import { reloadView } from '@/lib/navigation';
     import { actionForm } from '@/components/admin/shared/action-form.svelte';
@@ -14,8 +15,9 @@
         emailVerified,
     }: { name: string; email: string; emailVerified: boolean } = $props();
 
-    let name = $state(initialName);
-    let email = $state(initialEmail);
+    // The saved values seed the fields once; typing then owns them.
+    let name = $state(untrack(() => initialName));
+    let email = $state(untrack(() => initialEmail));
     let currentPassword = $state('');
     // Changing the email (the password-reset address) requires the current password.
     const emailChanged = $derived(email.trim().toLowerCase() !== initialEmail.toLowerCase());

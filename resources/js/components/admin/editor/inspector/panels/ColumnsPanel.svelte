@@ -1,6 +1,6 @@
 <script lang="ts">
     import Group from '../Group.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import { COLUMN_COUNT_OPTIONS, GAP_OPTIONS, RATIO_OPTIONS } from '../options';
     import type { PanelProps } from '../panel';
 
@@ -8,14 +8,14 @@
 </script>
 
 <Group title="Layout">
-    <SelectField
+    <ChoiceField
         id={fid('count')}
         label="Number of columns"
         value={block.props.count}
         options={COLUMN_COUNT_OPTIONS}
         onchange={(v) => set({ count: Number(v) })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('ratio')}
         label="Column widths"
         value={block.props.ratio}
@@ -23,7 +23,7 @@
         hint="Unequal widths apply to two columns only."
         onchange={(v) => set({ ratio: v })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('gap')}
         label="Gap"
         value={block.props.gap}

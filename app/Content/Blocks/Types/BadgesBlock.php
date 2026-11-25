@@ -40,8 +40,9 @@ final class BadgesBlock extends BlockType
             return '';
         }
         $lis = '';
-        foreach ($items as $item) {
-            $lis .= '<li class="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700">'.RenderKit::esc($item).'</li>';
+        // `array_filter` keeps the stored index: the canvas writes typed text back to `items.<index>`.
+        foreach ($items as $index => $item) {
+            $lis .= '<li class="inline-flex items-center rounded-full bg-brand-100 px-2.5 py-0.5 text-xs font-semibold text-brand-700"'.$ctx->field("items.{$index}", 'plain').'>'.RenderKit::esc($item).'</li>';
         }
 
         return '<ul class="flex flex-wrap gap-1.5"'.$ctx->hooks($block).'>'.$lis.'</ul>';

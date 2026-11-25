@@ -66,11 +66,11 @@ final class EventBlock extends BlockType
             ? '<div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">When</dt><dd class="mt-0.5 text-foreground">'.self::dateRange($start, $end !== null && EventDate::eventDateKey($end) >= EventDate::eventDateKey($start) ? $end : null).'</dd></div>'
             : '';
         $where = ! Js::blank($p['location'])
-            ? '<div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Where</dt><dd class="mt-0.5 text-foreground">'.RenderKit::esc($p['location']).'</dd></div>'
+            ? '<div><dt class="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Where</dt><dd class="mt-0.5 text-foreground"'.$ctx->field('location', 'plain').'>'.RenderKit::esc($p['location']).'</dd></div>'
             : '';
-        $title = ! Js::blank($p['title']) ? '<p class="mb-3 text-lg font-bold text-primary">'.RenderKit::esc($p['title']).'</p>' : '';
+        $title = ! Js::blank($p['title']) ? '<p class="mb-3 text-lg font-bold text-primary"'.$ctx->field('title', 'plain').'>'.RenderKit::esc($p['title']).'</p>' : '';
 
-        return '<div class="rounded-2xl border border-border bg-surface p-5 shadow-brand-sm"'.$ctx->hooks($block).'>'.$title.'<dl class="grid gap-4 text-sm sm:grid-cols-2">'.$when.$where.'</dl>'.RenderKit::paragraphsHtml($p['note'], 'mt-3 text-sm leading-relaxed text-muted-foreground').'</div>';
+        return '<div class="rounded-2xl border border-border bg-surface p-5 shadow-brand-sm"'.$ctx->hooks($block).'>'.$title.'<dl class="grid gap-4 text-sm sm:grid-cols-2">'.$when.$where.'</dl>'.RenderKit::paragraphsHtml($p['note'], 'mt-3 text-sm leading-relaxed text-muted-foreground', $ctx->field('note', 'rich')).'</div>';
     }
 
     public function text(stdClass $props): array

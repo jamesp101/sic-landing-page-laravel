@@ -1,7 +1,7 @@
 <script lang="ts">
     import CheckField from '../CheckField.svelte';
     import Group from '../Group.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import { CROSS_ALIGN_OPTIONS, DIRECTION_OPTIONS, GAP_OPTIONS, JUSTIFY_OPTIONS } from '../options';
     import type { PanelProps } from '../panel';
 
@@ -9,28 +9,28 @@
 </script>
 
 <Group title="Layout">
-    <SelectField
+    <ChoiceField
         id={fid('direction')}
         label="Direction"
         value={block.props.direction}
         options={DIRECTION_OPTIONS}
         onchange={(v) => set({ direction: v })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('gap')}
         label="Gap"
         value={block.props.gap}
         options={GAP_OPTIONS}
         onchange={(v) => set({ gap: v })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('align')}
         label="Align items"
         value={block.props.align}
         options={CROSS_ALIGN_OPTIONS}
         onchange={(v) => set({ align: v })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('justify')}
         label="Justify"
         value={block.props.justify}

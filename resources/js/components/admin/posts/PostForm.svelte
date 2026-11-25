@@ -24,6 +24,7 @@
         endDate: string | null;
         isFeatured: boolean;
         hideAuthor: boolean;
+        isHidden: boolean;
         highlightImageUrl: string | null;
     }
 
@@ -52,6 +53,7 @@
     let departmentId = $state(String(untrack(() => departmentField.value) ?? ''));
     let isFeatured = $state(initial?.isFeatured ?? false);
     let hideAuthor = $state(initial?.hideAuthor ?? false);
+    let isHidden = $state(initial?.isHidden ?? false);
     let highlightImage = $state<File | null>(null);
     let slugEdited = $state(initial !== null);
 
@@ -71,6 +73,7 @@
         departmentId,
         isFeatured,
         hideAuthor,
+        isHidden,
         highlightImage !== null,
     ]);
 
@@ -87,6 +90,7 @@
             append(data, 'departmentId', departmentId);
             append(data, 'isFeatured', isFeatured);
             append(data, 'hideAuthor', hideAuthor);
+            append(data, 'isHidden', isHidden);
             append(data, 'highlightImage', highlightImage);
             return post ? actions.posts.update(data) : actions.posts.create(data);
         },
@@ -200,6 +204,20 @@
                     class="h-4 w-4 rounded border-border-strong accent-brand-800"
                 />
                 Hide author on the public post
+            </label>
+            <label class="flex cursor-pointer items-start gap-2 text-sm font-semibold text-foreground">
+                <input
+                    type="checkbox"
+                    bind:checked={isHidden}
+                    aria-describedby="isHidden-hint"
+                    class="mt-0.5 h-4 w-4 rounded border-border-strong accent-brand-800"
+                />
+                <span>
+                    Hide from post lists
+                    <span id="isHidden-hint" class="block text-xs font-normal text-muted-foreground">
+                        Left out of News &amp; Events, the home page and Department pages. Its link still opens.
+                    </span>
+                </span>
             </label>
         </div>
     </div>

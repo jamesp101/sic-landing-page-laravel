@@ -73,7 +73,7 @@ final class SchemaTest extends TestCase
         $result = self::validate(self::raw([self::leaf('paragraph', ['text' => 'Hi', 'onclick' => 'alert(1)', 'style' => 'x'])]));
 
         $this->assertTrue($result['ok']);
-        $this->assertSame(['text' => 'Hi', 'size' => 'base', 'tone' => 'default', 'align' => 'inherit'], $result['document']['blocks'][0]['props']);
+        $this->assertSame(['text' => 'Hi', 'size' => 'base', 'tone' => 'default', 'align' => 'inherit', 'color' => '', 'background' => ''], $result['document']['blocks'][0]['props']);
     }
 
     public function test_missing_props_are_defaults(): void
@@ -305,7 +305,7 @@ final class SchemaTest extends TestCase
 
         $this->assertTrue($result['ok']);
         $this->assertSame(
-            '{"type":"sic-blocks","version":1,"blocks":[{"id":"i1","type":"image","props":{"src":"/a/é.png","alt":"A & <b>","decorative":false,"caption":"","width":640,"height":480,"link":""}}]}',
+            '{"type":"sic-blocks","version":1,"blocks":[{"id":"i1","type":"image","props":{"src":"/a/é.png","alt":"A & <b>","decorative":false,"caption":"","width":640,"height":480,"link":"","color":"","background":""}}]}',
             Schema::serialize($result['document']),
         );
     }

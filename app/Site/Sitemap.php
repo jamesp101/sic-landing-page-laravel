@@ -17,7 +17,7 @@ final class Sitemap
     {
         $departments = Department::query()->orderBy('name')->get(['slug', 'updated_at'])
             ->map(fn (Department $d) => ['slug' => $d->slug, 'updatedAt' => $d->updated_at])->all();
-        $posts = Post::query()->orderByDesc('created_at')->get(['slug', 'updated_at', 'highlight_image_path', 'title'])
+        $posts = Posts::listed()->orderByDesc('created_at')->get(['slug', 'updated_at', 'highlight_image_path', 'title'])
             ->map(fn (Post $p) => [
                 'slug' => $p->slug,
                 'updatedAt' => $p->updated_at,

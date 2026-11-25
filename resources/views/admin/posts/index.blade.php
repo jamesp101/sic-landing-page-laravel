@@ -36,6 +36,11 @@
                 <option value="yes" @selected($list->values['featured'] === true)>Featured only</option>
                 <option value="no" @selected($list->values['featured'] === false)>Not featured</option>
             </select>
+            <select name="hidden" aria-label="Filter by visibility" class="{{ Ui::SELECT }}">
+                <option value="">All visibility</option>
+                <option value="no" @selected($list->values['hidden'] === false)>Listed only</option>
+                <option value="yes" @selected($list->values['hidden'] === true)>Hidden only</option>
+            </select>
         </x-admin.list-filter-bar>
 
         <div class="{{ Ui::CARD }} overflow-hidden">
@@ -73,8 +78,18 @@
                                             </div>
                                         @endif
                                         <div class="min-w-0">
-                                            <span class="block max-w-60 truncate font-semibold text-foreground" title="{{ $post->title }}">
-                                                {{ $post->title }}
+                                            <span class="flex items-center gap-2">
+                                                <span class="block max-w-60 truncate font-semibold text-foreground" title="{{ $post->title }}">
+                                                    {{ $post->title }}
+                                                </span>
+                                                @if ($post->is_hidden)
+                                                    <span
+                                                        class="{{ Ui::PILL }} shrink-0 bg-secondary text-secondary-foreground"
+                                                        title="Left out of public lists; the post's own link still opens"
+                                                    >
+                                                        <x-icon name="eye-off" class="h-3 w-3" /> Hidden
+                                                    </span>
+                                                @endif
                                             </span>
                                             <span
                                                 class="mt-0.5 block max-w-60 truncate text-xs text-muted-foreground"

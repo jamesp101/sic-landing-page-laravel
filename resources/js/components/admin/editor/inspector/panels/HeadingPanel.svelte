@@ -1,12 +1,14 @@
 <script lang="ts">
+    import ColorField from '../ColorField.svelte';
+    import ContrastNote from '../ContrastNote.svelte';
     import Group from '../Group.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import TextField from '../TextField.svelte';
     import { LIMITS } from '@/lib/blocks/types';
-    import { ALIGN_OPTIONS, HEADING_LEVEL_OPTIONS } from '../options';
+    import { HEADING_LEVEL_OPTIONS, TEXT_ALIGN_OPTIONS } from '../options';
     import type { PanelProps } from '../panel';
 
-    let { block, set, fid }: PanelProps<'heading'> = $props();
+    let { block, set, fid, errors }: PanelProps<'heading'> = $props();
 </script>
 
 <Group title="Content">
@@ -19,18 +21,31 @@
     />
 </Group>
 <Group title="Appearance">
-    <SelectField
+    <ChoiceField
         id={fid('level')}
         label="Heading level"
         value={block.props.level}
         options={HEADING_LEVEL_OPTIONS}
         onchange={(v) => set({ level: Number(v) })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('align')}
         label="Text alignment"
         value={block.props.align}
-        options={ALIGN_OPTIONS}
+        options={TEXT_ALIGN_OPTIONS}
         onchange={(v) => set({ align: v })}
+    />
+    <ColorField
+        id={fid('color')}
+        label="Heading colour"
+        value={block.props.color}
+        error={errors.color}
+        onchange={(v) => set({ color: v })}
+    />
+    <ContrastNote
+        text={block.props.color}
+        background=""
+        textFallback="text-primary"
+        backgroundFallback="bg-background"
     />
 </Group>

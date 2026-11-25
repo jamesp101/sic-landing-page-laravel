@@ -19,9 +19,9 @@ export const callout: BlockTypeModule<'callout'> = {
         if (!p.title.trim() && !p.text.trim()) return '';
         const tone = Object.hasOwn(TONE, p.tone) ? TONE[p.tone] : TONE.info;
         const title = p.title.trim()
-            ? `<p class="font-bold"><span class="sr-only">${tone.label}: </span>${esc(p.title)}</p>`
+            ? `<p class="font-bold"><span class="sr-only">${tone.label}: </span>${ctx.editable('title', 'plain', esc(p.title))}</p>`
             : `<p class="sr-only">${tone.label}</p>`;
-        return `<div role="note" class="flex flex-col gap-1 rounded-xl border p-4 ${tone.box}"${ctx.hooks(block)}>${title}${paragraphsHtml(p.text, 'text-sm leading-relaxed')}</div>`;
+        return `<div role="note" class="flex flex-col gap-1 rounded-xl border p-4 ${tone.box}"${ctx.hooks(block)}>${title}${paragraphsHtml(p.text, 'text-sm leading-relaxed', ctx.field('text', 'rich'))}</div>`;
     },
     text: (props) => [textOf(props.title), richOf(props.text)],
 };

@@ -1,7 +1,7 @@
 <script lang="ts">
     import Group from '../Group.svelte';
     import RichTextField from '../RichTextField.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import TextField from '../TextField.svelte';
     import { LIMITS } from '@/lib/blocks/types';
     import { CALLOUT_TONE_OPTIONS } from '../options';
@@ -11,7 +11,7 @@
 </script>
 
 <Group title="Content">
-    <SelectField
+    <ChoiceField
         id={fid('tone')}
         label="Tone"
         value={block.props.tone}

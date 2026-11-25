@@ -5,9 +5,11 @@ namespace Tests\Feature\Site;
 use App\Content\Content;
 use App\Models\NavigationLink;
 use App\Models\Post;
+use App\Site\DepartmentPages;
 use App\Site\Posts;
 use App\Site\Seo;
 use App\Site\SiteLayout;
+use App\Site\Sitemap;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -128,6 +130,26 @@ class PostsPageTest extends TestCase
         $shown = Posts::page('markdown');
         $this->assertSame('Owner', $shown['post']['authorName']);
         $this->assertStringContainsString('"name":"Owner"', json_encode(Seo::postPageSeo($shown['post'], self::SITE)));
+    }
+
+    public function test_a_hidden_post_is_left_out_of_every_list_but_its_page_opens_noindex(): void
+    {
+        $this->makePost('hidden', ['is_hidden' => true, 'department_id' => 1, 'created_at' => $this->day(11)]);
+        $this->makePost('listed', ['department_id' => 1, 'created_at' => $this->day(5)]);
+
+        $this->assertNotContains('hidden', array_column(Posts::list([], 50)['items'], 'slug'));
+        $this->assertNotContains('hidden', array_column(Posts::newest(10), 'slug'));
+        $this->assertNotContains('hidden', array_column(Posts::newest(10, 1), 'slug'));
+        $this->assertNotContains('hidden', array_column(Sitemap::read()['posts'], 'slug'));
+        $this->assertNotContains('hidden', array_column(Posts::page('listed')['related'], 'slug'));
+        $this->assertSame(1, DepartmentPages::read('cit')['postCount']);
+
+        $page = Posts::page('hidden');
+        $this->assertTrue($page['post']['isHidden']);
+        $this->assertTrue(Seo::postPageSeo($page['post'], self::SITE)['noindex']);
+        $this->assertFalse(Seo::postPageSeo(Posts::page('listed')['post'], self::SITE)['noindex']);
+        $this->get('/posts/hidden')->assertOk()->assertSee('noindex', false);
+        $this->get('/posts')->assertOk()->assertDontSee('/posts/hidden', false);
     }
 
     public function test_related_posts_list_the_newest_of_the_same_department_then_the_newest_of_the_same_type(): void

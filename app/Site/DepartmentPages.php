@@ -5,7 +5,6 @@ namespace App\Site;
 use App\Carousel\Slides;
 use App\Models\Department;
 use App\Models\Member;
-use App\Models\Post;
 use App\OrgChart\OrgTree;
 use App\Storage\Storage;
 use App\Storage\Variants;
@@ -41,7 +40,7 @@ final class DepartmentPages
             'department' => [...self::summary($row), 'heroContent' => $row->hero_content],
             'carousel' => Slides::findSlides(['departmentId' => $row->id]),
             'posts' => Posts::newest(self::PAGE_POSTS, $row->id),
-            'postCount' => Post::query()->where('department_id', $row->id)->count(),
+            'postCount' => Posts::listed()->where('department_id', $row->id)->count(),
             'members' => self::orgChart($row->id),
             'heroSections' => HeroSections::active($row->id),
             'layout' => $layout,

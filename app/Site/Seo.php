@@ -250,6 +250,8 @@ final class Seo
             'description' => $post['excerpt'] !== '' ? $post['excerpt'] : $post['title'],
             'canonical' => $canonical,
             'type' => 'article',
+            // A Hidden post opens by its URL only; search engines are asked to leave it out too.
+            'noindex' => $post['isHidden'] ?? false,
             'image' => $post['imageUrl'],
             'imageAlt' => $post['title'],
             'publishedTime' => $post['createdAt'],

@@ -15,6 +15,19 @@ export function replaceItem<T>(items: readonly T[], index: number, value: T): T[
     return items.map((item, i) => (i === index ? value : item));
 }
 
+/** A change to a list: `remove` items from `start` replaced with `insert`. */
+export interface Splice<T> {
+    start: number;
+    remove: number;
+    insert: T[];
+}
+
+/** Applies `splice`; `null` when the list would grow past `max`. */
+export function spliceItems<T>(items: readonly T[], { start, remove, insert }: Splice<T>, max: number): T[] | null {
+    const next = [...items.slice(0, start), ...insert, ...items.slice(start + remove)];
+    return next.length > max ? null : next;
+}
+
 /** Splits an event value (`YYYY-MM-DD` or `YYYY-MM-DDTHH:mm`) into date and time parts. */
 export function splitDateTime(value: string): { date: string; time: string } {
     const [date = '', time = ''] = value.split('T');

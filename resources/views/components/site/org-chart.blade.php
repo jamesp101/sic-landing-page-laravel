@@ -52,8 +52,8 @@
                         class="h-12 w-12 shrink-0 rounded-full object-cover md:h-16 md:w-16"
                     />
                 @else
-                    <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-brand-100 text-base font-bold md:h-16 md:w-16 md:text-lg text-brand-800 dark:bg-surface-alt dark:text-gold-400" aria-hidden="true">
-                        {{ \App\Support\Initials::getInitials($node['name']) }}
+                    <span class="flex h-12 w-12 shrink-0 overflow-hidden rounded-full bg-brand-100 md:h-16 md:w-16 text-brand-800 dark:bg-surface-alt dark:text-gold-400" aria-hidden="true">
+                        <x-person-silhouette />
                     </span>
                 @endif
                 <span class="min-w-0">

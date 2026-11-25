@@ -48,10 +48,10 @@ final class CalloutBlock extends BlockType
         }
         $tone = self::TONE[$p['tone']] ?? self::TONE['info'];
         $title = ! Js::blank($p['title'])
-            ? '<p class="font-bold"><span class="sr-only">'.$tone['label'].': </span>'.RenderKit::esc($p['title']).'</p>'
+            ? '<p class="font-bold"><span class="sr-only">'.$tone['label'].': </span>'.$ctx->editable('title', 'plain', RenderKit::esc($p['title'])).'</p>'
             : '<p class="sr-only">'.$tone['label'].'</p>';
 
-        return '<div role="note" class="flex flex-col gap-1 rounded-xl border p-4 '.$tone['box'].'"'.$ctx->hooks($block).'>'.$title.RenderKit::paragraphsHtml($p['text'], 'text-sm leading-relaxed').'</div>';
+        return '<div role="note" class="flex flex-col gap-1 rounded-xl border p-4 '.$tone['box'].'"'.$ctx->hooks($block).'>'.$title.RenderKit::paragraphsHtml($p['text'], 'text-sm leading-relaxed', $ctx->field('text', 'rich')).'</div>';
     }
 
     public function text(stdClass $props): array

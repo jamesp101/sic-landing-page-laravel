@@ -70,6 +70,10 @@ _Avoid_: activity, calendar entry
 A Post that its editors have marked for extra prominence.
 _Avoid_: pinned, highlighted
 
+**Hidden post**:
+A Post that its editors have left out of every public list: News & Events, the home page, Department pages, the RSS feed, the sitemap and related Posts. Its own page still opens by its link, marked noindex.
+_Avoid_: draft, unpublished, archived
+
 **Highlight image**:
 The lead image of a Post.
 _Avoid_: cover, thumbnail, banner

@@ -58,6 +58,16 @@ class PagesTest extends TestCase
         $this->withHeader('Cookie', 'admin_scope=999')->get('/admin/posts')->assertOk()->assertSee('CIT post');
     }
 
+    public function test_the_posts_list_marks_and_filters_hidden_posts(): void
+    {
+        $this->actingAs($this->admin);
+        Post::query()->where('title', 'CBA post')->update(['is_hidden' => true]);
+
+        $this->get('/admin/posts')->assertOk()->assertSee('CBA post')->assertSeeText('Hidden');
+        $this->get('/admin/posts?hidden=yes')->assertOk()->assertSee('CBA post')->assertDontSee('CIT post');
+        $this->get('/admin/posts?hidden=no')->assertOk()->assertSee('CIT post')->assertDontSee('CBA post');
+    }
+
     public function test_a_department_user_is_pinned_whatever_the_cookie_says(): void
     {
         $this->actingAs($this->cit);

@@ -401,6 +401,8 @@
                 {/each}
             </ul>
         {:else}
+            <!-- A horizontally scrolling region must be focusable so keyboard users can scroll it (WCAG 2.1.1). -->
+            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
             <div class="{cardClass} overflow-x-auto" tabindex="0" role="region" aria-label="Files table">
                 <table class="w-full min-w-3xl border-collapse text-left">
                     <thead>

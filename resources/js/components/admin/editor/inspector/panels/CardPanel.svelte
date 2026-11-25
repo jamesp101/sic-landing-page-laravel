@@ -1,4 +1,6 @@
 <script lang="ts">
+    import ColorField from '../ColorField.svelte';
+    import ContrastNote from '../ContrastNote.svelte';
     import Group from '../Group.svelte';
     import ImageEditor from '../ImageEditor.svelte';
     import RichTextField from '../RichTextField.svelte';
@@ -60,6 +62,28 @@
         hint="Accepted: https://…, /path, mailto: or tel:"
         error={errors.linkHref}
         oninput={(v) => set({ linkHref: v })}
+    />
+</Group>
+<Group title="Appearance">
+    <ColorField
+        id={fid('background')}
+        label="Card background"
+        value={block.props.background}
+        error={errors.background}
+        onchange={(v) => set({ background: v })}
+    />
+    <ColorField
+        id={fid('color')}
+        label="Card text colour"
+        value={block.props.color}
+        error={errors.color}
+        onchange={(v) => set({ color: v })}
+    />
+    <ContrastNote
+        text={block.props.color}
+        background={block.props.background}
+        textFallback="text-muted-foreground"
+        backgroundFallback="bg-surface"
     />
 </Group>
 <p class="text-xs text-muted-foreground">Drop elements into the card in the canvas or Layers panel.</p>

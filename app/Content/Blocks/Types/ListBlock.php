@@ -36,7 +36,8 @@ final class ListBlock extends BlockType
     public function html(array $block, RenderContext $ctx): string
     {
         $p = $block['props'];
-        $items = array_filter($p['items'], static fn (string $item): bool => ! Js::blank($item));
+        // The canvas also shows blank items (a fresh one after Enter must be typeable); the public page drops them.
+        $items = $ctx->editor ? $p['items'] : array_filter($p['items'], static fn (string $item): bool => ! Js::blank($item));
         if ($items === []) {
             return '';
         }
@@ -45,8 +46,9 @@ final class ListBlock extends BlockType
             ? 'list-decimal space-y-1 pl-6 text-foreground marker:text-gold-600'
             : 'list-disc space-y-1 pl-6 text-foreground marker:text-gold-600';
         $lis = '';
-        foreach ($items as $item) {
-            $lis .= '<li class="leading-relaxed">'.Inline::inlineToHtml($item).'</li>';
+        // `array_filter` keeps the stored index: the canvas writes typed text back to `items.<index>`.
+        foreach ($items as $index => $item) {
+            $lis .= '<li class="leading-relaxed"'.$ctx->field("items.{$index}", 'item').'>'.(Js::blank($item) ? '<br>' : Inline::inlineToHtml($item)).'</li>';
         }
 
         return "<{$tag} class=\"{$classes}\"".$ctx->hooks($block).'>'.$lis."</{$tag}>";

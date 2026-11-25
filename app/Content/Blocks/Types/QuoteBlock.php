@@ -37,10 +37,10 @@ final class QuoteBlock extends BlockType
             return '';
         }
         $cite = ! Js::blank($p['cite'])
-            ? '<footer class="mt-2 text-sm font-semibold not-italic text-foreground">— '.RenderKit::esc($p['cite']).'</footer>'
+            ? '<footer class="mt-2 text-sm font-semibold not-italic text-foreground">— '.$ctx->editable('cite', 'plain', RenderKit::esc($p['cite'])).'</footer>'
             : '';
 
-        return '<blockquote class="border-l-4 border-gold-500 pl-4 italic text-muted-foreground"'.$ctx->hooks($block).'>'.RenderKit::paragraphsHtml($p['text'], 'leading-relaxed').$cite.'</blockquote>';
+        return '<blockquote class="border-l-4 border-gold-500 pl-4 italic text-muted-foreground"'.$ctx->hooks($block).'>'.RenderKit::paragraphsHtml($p['text'], 'leading-relaxed', $ctx->field('text', 'rich')).$cite.'</blockquote>';
     }
 
     public function text(stdClass $props): array

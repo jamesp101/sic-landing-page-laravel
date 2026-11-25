@@ -15,7 +15,7 @@ use App\Storage\Storage;
 final class FormValues
 {
     /**
-     * @return array{id: int, title: string, slug: string, content: string, type: string, startDate: ?string, endDate: ?string, isFeatured: bool, hideAuthor: bool, highlightImageUrl: ?string}
+     * @return array{id: int, title: string, slug: string, content: string, type: string, startDate: ?string, endDate: ?string, isFeatured: bool, hideAuthor: bool, isHidden: bool, highlightImageUrl: ?string}
      */
     public static function post(Post $post): array
     {
@@ -29,6 +29,7 @@ final class FormValues
             'endDate' => $post->end_date?->toISOString(),
             'isFeatured' => $post->is_featured,
             'hideAuthor' => $post->hide_author,
+            'isHidden' => $post->is_hidden,
             'highlightImageUrl' => Storage::publicUrl($post->highlight_image_path),
         ];
     }

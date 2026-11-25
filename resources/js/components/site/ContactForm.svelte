@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { untrack } from 'svelte';
     import { actions, isInputError } from '@/lib/actions';
     import { btnGold, field } from './classes';
 
@@ -21,9 +22,9 @@
     } = $props();
 
     // Server-rendered state seeds the form; client submissions then keep it up to date.
-    let errors = $state<FieldErrors>({ ...fieldErrors });
-    let error = $state<string | null>(formError);
-    let success = $state(sent);
+    let errors = $state<FieldErrors>(untrack(() => ({ ...fieldErrors })));
+    let error = $state<string | null>(untrack(() => formError));
+    let success = $state(untrack(() => sent));
     let pending = $state(false);
     let status: HTMLElement | undefined = $state();
     let form: HTMLFormElement | undefined = $state();

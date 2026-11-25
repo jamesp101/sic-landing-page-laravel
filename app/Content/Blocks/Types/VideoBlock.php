@@ -53,7 +53,7 @@ final class VideoBlock extends BlockType
             return '';
         }
         $caption = ! Js::blank($p['caption'])
-            ? '<figcaption class="mt-2 text-sm text-muted-foreground">'.RenderKit::esc($p['caption']).'</figcaption>'
+            ? '<figcaption class="mt-2 text-sm text-muted-foreground"'.$ctx->field('caption', 'plain').'>'.RenderKit::esc($p['caption']).'</figcaption>'
             : '';
         if ($ctx->editor) {
             $frame = '<div class="flex h-full w-full items-center justify-center p-4 text-center text-sm font-semibold text-muted-foreground">Video: '.RenderKit::esc($p['title']).'</div>';

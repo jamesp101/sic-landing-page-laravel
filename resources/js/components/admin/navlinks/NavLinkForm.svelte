@@ -81,6 +81,8 @@
     }
 </script>
 
+<!-- The form only catches Escape bubbling up from its own fields (cancel); it is never a key target itself. -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <form
     method="post"
     onsubmit={form.submit}

@@ -1,6 +1,6 @@
 <script lang="ts">
     import Group from '../Group.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import TextField from '../TextField.svelte';
     import { LIMITS } from '@/lib/blocks/types';
     import { ALIGN_OPTIONS, BUTTON_VARIANT_OPTIONS } from '../options';
@@ -29,14 +29,14 @@
     />
 </Group>
 <Group title="Appearance">
-    <SelectField
+    <ChoiceField
         id={fid('variant')}
         label="Button style"
         value={block.props.variant}
         options={BUTTON_VARIANT_OPTIONS}
         onchange={(v) => set({ variant: v })}
     />
-    <SelectField
+    <ChoiceField
         id={fid('align')}
         label="Alignment"
         value={block.props.align}

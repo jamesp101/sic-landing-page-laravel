@@ -40,11 +40,12 @@
         type EditFailure,
         type EditResult,
     } from '@/lib/blocks/edit';
+    import { inlineEditPatch, itemsEditPatch } from '@/lib/blocks/inline-edit';
     import { renderBlocks } from '@/lib/blocks/render';
     import { validateDocument } from '@/lib/blocks/schema';
     import { TEMPLATES, type BlockTemplate } from '@/lib/blocks/templates';
     import { BLOCK_REGISTRY } from '@/lib/blocks/registry';
-    import type { Block, BlockType } from '@/lib/blocks/types';
+    import { LIMITS, type Block, type BlockType } from '@/lib/blocks/types';
     import { buildSrcdoc, CanvasController, type CanvasHost, type CanvasSource } from './canvas';
     import { EditorSession } from './session';
     import Inspector from './Inspector.svelte';
@@ -289,6 +290,17 @@
     let leftOpen = $state(true);
     let rightOpen = $state(true);
     let helpOpen = $state(false);
+    /** Keys the canvas handles while a text is being typed (`canvas.ts`). */
+    const TYPING_KEYS = [
+        ['Next / previous text of the element', 'Tab / Shift+Tab'],
+        ['Save a one-line text', 'Enter'],
+        ['New line in a paragraph', 'Enter'],
+        ['Save a paragraph', 'Ctrl+Enter'],
+        ['New list item (pasted lines also become items)', 'Enter'],
+        ['Join a list item to the one above', 'Backspace at its start'],
+        ['Bold / italic / link', 'Ctrl+B / Ctrl+I / Ctrl+K'],
+        ['Cancel typing', 'Esc'],
+    ] as const;
 
     let leftTab = $state<'elements' | 'layers'>('elements');
     let showIssues = $state(false);
@@ -310,7 +322,18 @@
 
     const host: CanvasHost = {
         select: (next) => select(next),
-        commitText: (blockId, patch) => session.setProps(blockId, patch, false),
+        commitText: (blockId, edit) => {
+            const found = findBlock(session.view.blocks, blockId);
+            const patch = found ? inlineEditPatch(found.block.props, edit) : null;
+            if (patch) session.setProps(blockId, patch, false);
+        },
+        spliceItems: (blockId, edit) => {
+            // Only List items are typed as `item` (`list.ts`), so the List limit applies.
+            const found = findBlock(session.view.blocks, blockId);
+            const patch = found ? itemsEditPatch(found.block.props, edit, LIMITS.listItems) : null;
+            if (patch) session.setProps(blockId, patch, false);
+            return patch !== null;
+        },
         key: (event, editing) => handleKey(event, editing),
         drop,
         canDrop: (source: CanvasSource, parentId) => canDrop(blocks, source, parentId),
@@ -363,6 +386,9 @@
         active ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:bg-accent/60',
     ];
 </script>
+
+<!-- Escape closes the Keyboard shortcuts dialog (as in ConfirmDialog). -->
+<svelte:window onkeydown={(event) => event.key === 'Escape' && helpOpen && (helpOpen = false)} />
 
 <div class="space-y-1.5">
     <p id={`${id}-label`} class="text-sm font-semibold text-foreground">{label}</p>
@@ -803,18 +829,25 @@
 
     <Dialog bind:open={helpOpen}>
         <DialogContent class="max-w-lg border-border bg-surface shadow-brand-xl">
-            <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-            <div onkeydown={(event) => event.key === 'Escape' && (helpOpen = false)}>
-                <DialogTitle>Keyboard shortcuts</DialogTitle>
-                <dl class="mt-4 grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
-                    {#each SHORTCUTS as shortcut (shortcut.command)}
-                        <dt class="text-foreground">{shortcut.label}</dt>
-                        <dd class="text-right"><kbd class="font-sans font-semibold">{displayKeys(shortcut)}</kbd></dd>
-                    {/each}
-                </dl>
-                <div class="mt-6 flex justify-end">
-                    <button type="button" class={btn} onclick={() => (helpOpen = false)}>Close</button>
-                </div>
+            <DialogTitle>Keyboard shortcuts</DialogTitle>
+            <dl class="mt-4 grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
+                {#each SHORTCUTS as shortcut (shortcut.command)}
+                    <dt class="text-foreground">{shortcut.label}</dt>
+                    <dd class="text-right"><kbd class="font-sans font-semibold">{displayKeys(shortcut)}</kbd></dd>
+                {/each}
+            </dl>
+            <h3 class="mt-6 text-sm font-semibold text-foreground">Typing on the canvas</h3>
+            <p class="mt-1 text-xs text-muted-foreground">
+                Double-click any text, or click a text of the selected element, to type in place.
+            </p>
+            <dl class="mt-3 grid grid-cols-[1fr_auto] gap-x-6 gap-y-2 text-sm">
+                {#each TYPING_KEYS as [label, keys] (label)}
+                    <dt class="text-foreground">{label}</dt>
+                    <dd class="text-right"><kbd class="font-sans font-semibold">{keys}</kbd></dd>
+                {/each}
+            </dl>
+            <div class="mt-6 flex justify-end">
+                <button type="button" class={btn} onclick={() => (helpOpen = false)}>Close</button>
             </div>
         </DialogContent>
     </Dialog>

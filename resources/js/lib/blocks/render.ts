@@ -1,7 +1,7 @@
 /**
  * Block document → semantic HTML. Pure TypeScript: runs during SSR, in tests and inside
  * the admin canvas, so the editor shows exactly what visitors get. Every string is escaped, every URL is
- * filtered, every colour is a design token and headings are clamped to h2–h4 (the page owns its single h1).
+ * filtered, every colour is a design token or a validated `#rrggbb` (`colors.ts`) and headings are clamped to h2–h4 (the page owns its single h1).
  * Each Block type renders itself (`html` of its module in `block-types/`); this file walks the tree.
  */
 import type { RenderContext } from './block-type';
@@ -31,6 +31,8 @@ function contextFor(editor: boolean): RenderContext {
             return ` data-block-id="${esc(block.id)}" data-block-type="${block.type}" data-block-label="${esc(label)}"${empty ? ' data-empty="true"' : ''}`;
         },
         children: (children) => (children ?? []).map((child) => renderBlock(child, ctx)).join(''),
+        field: (path, kind) => (editor ? ` data-edit="${esc(path)}" data-edit-kind="${kind}"` : ''),
+        editable: (path, kind, html) => (editor ? `<span${ctx.field(path, kind)}>${html}</span>` : html),
     };
     return ctx;
 }

@@ -26,7 +26,20 @@ export default defineConfig({
     use: { baseURL: `http://localhost:${PORT}`, trace: 'retain-on-failure' },
     projects: [
         { name: 'setup', testMatch: /auth\.setup\.ts/ },
-        { name: 'chromium', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] },
+        // Server-vs-island layout specs compare two loads of the same page; they only read, and run before any spec that
+        // writes data (Navigation links, posts, …) can change the page between those loads.
+        {
+            name: 'layout-parity',
+            testMatch: /(site-header|admin-shell)\.spec\.ts/,
+            use: { ...devices['Desktop Chrome'] },
+            dependencies: ['setup'],
+        },
+        {
+            name: 'chromium',
+            testIgnore: /(site-header|admin-shell)\.spec\.ts/,
+            use: { ...devices['Desktop Chrome'] },
+            dependencies: ['setup', 'layout-parity'],
+        },
     ],
     webServer: {
         command: `${prepare} && ${serve}`,

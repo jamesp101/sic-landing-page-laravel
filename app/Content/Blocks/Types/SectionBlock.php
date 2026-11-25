@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Content\Blocks\Types;
 
 use App\Content\Blocks\BlockType;
+use App\Content\Blocks\Colors;
+use App\Content\Blocks\Limits;
 use App\Content\Blocks\RenderContext;
 use App\Content\Blocks\RenderKit;
 use App\Content\Blocks\Z;
+use Closure;
 use stdClass;
 
 final class SectionBlock extends BlockType
@@ -39,7 +42,7 @@ final class SectionBlock extends BlockType
 
     public function defaults(): array
     {
-        return ['background' => 'alt', 'padding' => 'md', 'align' => 'inherit'];
+        return ['background' => 'alt', 'padding' => 'md', 'align' => 'inherit', 'backgroundColor' => ''];
     }
 
     public function schema(): array
@@ -47,8 +50,15 @@ final class SectionBlock extends BlockType
         return Z::object([
             'background' => Z::enum(['none', 'surface', 'alt', 'accent', 'gold'], 'alt'),
             'padding' => Z::enum(['none', 'sm', 'md', 'lg'], 'md'),
-            'align' => Z::enum(['inherit', 'left', 'center', 'right'], 'inherit'),
+            'align' => Z::enum(['inherit', 'left', 'center', 'right', 'justify'], 'inherit'),
+            // A picked colour (palette name or hex) that replaces the `background` preset; '' keeps the preset.
+            'backgroundColor' => Z::str(Limits::LABEL),
         ]);
+    }
+
+    public function rules(array $props, Closure $report): void
+    {
+        Colors::check($props, ['backgroundColor'], $report);
     }
 
     public function html(array $block, RenderContext $ctx): string
@@ -58,14 +68,15 @@ final class SectionBlock extends BlockType
         if ($inner === '' && ! $ctx->editor) {
             return '';
         }
+        $bg = Colors::parts($p['backgroundColor'], 'bg');
         $classes = RenderKit::joinClasses(
             'rounded-2xl',
-            RenderKit::pick(self::BACKGROUND, $p['background'], 'alt'),
+            $bg !== null ? $bg['className'] : RenderKit::pick(self::BACKGROUND, $p['background'], 'alt'),
             RenderKit::pick(self::PADDING, $p['padding'], 'md'),
             RenderKit::pick(RenderKit::TEXT_ALIGN, $p['align'], 'inherit'),
         );
 
-        return '<section class="'.$classes.'"'.$ctx->hooks($block, $inner === '').'>'.RenderKit::flow($inner, 'gap-5').'</section>';
+        return '<section class="'.$classes.'"'.Colors::styleAttr($bg).$ctx->hooks($block, $inner === '').'>'.RenderKit::flow($inner, 'gap-5').'</section>';
     }
 
     public function text(stdClass $props): array

@@ -18,19 +18,20 @@ export interface RenderContext {
     hooks(block: Block, empty?: boolean): string;
     /** Renders child blocks in this context. */
     children(children: Block[] | undefined): string;
+    /**
+     * Marks the element holding a text prop as typeable on the canvas (leading space included), `''` on the public
+     * site. `path` is the prop's path (`'title'`, `'items.2.body'`); `rich` keeps bold, italic, links and line breaks;
+     * `item` is rich text that is one entry of a string list (`items.<index>`): Enter and pasted lines make new entries.
+     */
+    field(path: string, kind: EditKind): string;
+    /** Wraps escaped text that shares its element with other markup in a marked `<span>`; the text itself publicly. */
+    editable(path: string, kind: EditKind, html: string): string;
 }
+
+export type EditKind = 'plain' | 'rich' | 'item';
 
 /** Stored JSON of unknown shape, as seen by plain-text extraction. */
 export type Json = Record<string, unknown>;
-
-/** A prop that can be edited directly on the canvas. */
-export interface InlineEditing {
-    /** The prop the edited text is written to. */
-    field: string;
-    kind: 'plain' | 'rich';
-    /** CSS selector of the element to edit inside the block's element; the block element itself when absent. */
-    target?: string;
-}
 
 export interface BlockTypeModule<T extends BlockType> {
     /** Palette label, group and description. */
@@ -49,5 +50,4 @@ export interface BlockTypeModule<T extends BlockType> {
     html(block: Block<T>, ctx: RenderContext): string;
     /** Readable texts for search and excerpts, from stored props of unknown shape. Tolerates anything. */
     text(props: Json): string[];
-    inline?: InlineEditing;
 }

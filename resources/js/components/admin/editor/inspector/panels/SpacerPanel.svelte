@@ -1,6 +1,6 @@
 <script lang="ts">
     import Group from '../Group.svelte';
-    import SelectField from '../SelectField.svelte';
+    import ChoiceField from '../ChoiceField.svelte';
     import { SPACER_OPTIONS } from '../options';
     import type { PanelProps } from '../panel';
 
@@ -8,7 +8,7 @@
 </script>
 
 <Group title="Spacing">
-    <SelectField
+    <ChoiceField
         id={fid('size')}
         label="Size"
         value={block.props.size}

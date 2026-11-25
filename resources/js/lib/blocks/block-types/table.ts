@@ -32,17 +32,20 @@ export const table: BlockTypeModule<'table'> = {
     },
     html(block, ctx) {
         const p = block.props;
-        const rows = p.rows.filter((row) => row.length > 0);
+        // Keep each row's stored index: the canvas writes typed text back to `rows.<row>.<column>`.
+        const rows = p.rows.flatMap((cells, index) => (cells.length > 0 ? [{ cells, index }] : []));
         if (rows.length === 0) return '';
-        const th = (cell: string) =>
-            `<th scope="col" class="border-b-2 border-border-strong bg-surface-alt px-4 py-2 text-left font-semibold text-primary">${inlineToHtml(cell)}</th>`;
-        const td = (cell: string) =>
-            `<td class="border-b border-border px-4 py-2 align-top text-foreground">${inlineToHtml(cell)}</td>`;
-        const tr = (row: string[], cell: (value: string) => string) => `<tr>${row.map(cell).join('')}</tr>`;
+        type Row = (typeof rows)[number];
+        const th = (cell: string, field: string) =>
+            `<th scope="col" class="border-b-2 border-border-strong bg-surface-alt px-4 py-2 text-left font-semibold text-primary"${field}>${inlineToHtml(cell)}</th>`;
+        const td = (cell: string, field: string) =>
+            `<td class="border-b border-border px-4 py-2 align-top text-foreground"${field}>${inlineToHtml(cell)}</td>`;
+        const tr = (row: Row, cell: (value: string, field: string) => string) =>
+            `<tr>${row.cells.map((value, column) => cell(value, ctx.field(`rows.${row.index}.${column}`, 'rich'))).join('')}</tr>`;
         const head = p.header ? `<thead>${tr(rows[0], th)}</thead>` : '';
         const bodyRows = p.header ? rows.slice(1) : rows;
         const caption = p.caption.trim()
-            ? `<caption class="caption-top pb-2 text-left text-sm font-semibold text-muted-foreground">${esc(p.caption)}</caption>`
+            ? `<caption class="caption-top pb-2 text-left text-sm font-semibold text-muted-foreground"${ctx.field('caption', 'plain')}>${esc(p.caption)}</caption>`
             : '';
         return `<div class="overflow-x-auto"${ctx.hooks(block)}><table class="w-full border-collapse text-left text-sm">${caption}${head}<tbody>${bodyRows.map((row) => tr(row, td)).join('')}</tbody></table></div>`;
     },

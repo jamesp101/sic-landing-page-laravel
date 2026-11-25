@@ -12,9 +12,9 @@ export const quote: BlockTypeModule<'quote'> = {
         const p = block.props;
         if (!p.text.trim()) return '';
         const cite = p.cite.trim()
-            ? `<footer class="mt-2 text-sm font-semibold not-italic text-foreground">— ${esc(p.cite)}</footer>`
+            ? `<footer class="mt-2 text-sm font-semibold not-italic text-foreground">— ${ctx.editable('cite', 'plain', esc(p.cite))}</footer>`
             : '';
-        return `<blockquote class="border-l-4 border-gold-500 pl-4 italic text-muted-foreground"${ctx.hooks(block)}>${paragraphsHtml(p.text, 'leading-relaxed')}${cite}</blockquote>`;
+        return `<blockquote class="border-l-4 border-gold-500 pl-4 italic text-muted-foreground"${ctx.hooks(block)}>${paragraphsHtml(p.text, 'leading-relaxed', ctx.field('text', 'rich'))}${cite}</blockquote>`;
     },
     text: (props) => [richOf(props.text)],
 };

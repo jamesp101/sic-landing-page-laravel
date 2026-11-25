@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import type { BlockTypeModule } from '../block-type';
+import { checkColors, colorParts, styleAttr } from '../colors';
 import { flow, joinClasses, pick, TEXT_ALIGN } from '../render-kit';
-import { textAlign } from '../schema-kit';
+import { color, textAlign } from '../schema-kit';
 
 const BACKGROUND = {
     none: '',
@@ -16,23 +17,29 @@ export const section: BlockTypeModule<'section'> = {
     meta: { label: 'Section', group: 'Layout', description: 'Background and padding around other elements.' },
     container: true,
     rootOnly: true,
-    defaults: () => ({ background: 'alt', padding: 'md', align: 'inherit' }),
+    defaults: () => ({ background: 'alt', padding: 'md', align: 'inherit', backgroundColor: '' }),
     schema: z.object({
         background: z.enum(['none', 'surface', 'alt', 'accent', 'gold']).default('alt'),
         padding: z.enum(['none', 'sm', 'md', 'lg']).default('md'),
         align: textAlign,
+        // A picked colour (palette name or hex) that replaces the `background` preset; '' keeps the preset.
+        backgroundColor: color,
     }),
+    rules(props, report) {
+        checkColors(props, ['backgroundColor'], report);
+    },
     html(block, ctx) {
         const p = block.props;
         const inner = ctx.children(block.children);
         if (!inner && !ctx.editor) return '';
+        const bg = colorParts(p.backgroundColor, 'bg');
         const classes = joinClasses(
             'rounded-2xl',
-            pick(BACKGROUND, p.background, 'alt'),
+            bg ? bg.className : pick(BACKGROUND, p.background, 'alt'),
             pick(PADDING, p.padding, 'md'),
             pick(TEXT_ALIGN, p.align, 'inherit'),
         );
-        return `<section class="${classes}"${ctx.hooks(block, !inner)}>${flow(inner, 'gap-5')}</section>`;
+        return `<section class="${classes}"${styleAttr(bg)}${ctx.hooks(block, !inner)}>${flow(inner, 'gap-5')}</section>`;
     },
     text: () => [],
 };
