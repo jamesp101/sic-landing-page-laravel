@@ -97,6 +97,7 @@ class PostsActions
             'departmentId' => ActionField::int(['nullable', 'integer']),
             'isFeatured' => ActionField::bool(['required', 'boolean']),
             'hideAuthor' => ActionField::bool(['required', 'boolean']),
+            'isHidden' => ActionField::bool(['required', 'boolean']),
             'highlightImage' => ActionField::raw(['nullable', ...ImageFile::imageFile(Storage::limit('image'), 'highlight')]),
         ] + ($withId ? ['id' => ActionField::id()] : []));
     }
@@ -117,6 +118,7 @@ class PostsActions
             'department_id' => $departmentId,
             'is_featured' => $input['isFeatured'],
             'hide_author' => $input['hideAuthor'],
+            'is_hidden' => $input['isHidden'],
         ];
     }
 

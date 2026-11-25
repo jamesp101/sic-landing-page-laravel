@@ -70,7 +70,7 @@ class ActionsAuthorizationTest extends TestCase
 
     public function test_a_department_user_cannot_change_posts_of_another_department_or_the_main_page(): void
     {
-        $form = ['title' => 'Hijack', 'content' => 'Hijacked', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false];
+        $form = ['title' => 'Hijack', 'content' => 'Hijacked', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false, 'isHidden' => false];
         foreach ([$this->cbaPost, $this->mainPost] as $id) {
             $before = Post::query()->find($id)->only(['title', 'content', 'department_id']);
             $this->action($this->cit, 'posts.update', ['id' => $id] + $form)->assertStatus(403);
@@ -149,21 +149,21 @@ class ActionsAuthorizationTest extends TestCase
             ->assertJsonPath('error.fields.name.0', 'The folder name is required.');
         $this->action($this->admin, 'heroSections.create', ['content' => 'Body', 'order' => 1.5, 'isActive' => true])
             ->assertStatus(400)->assertJsonPath('error.fields.order.0', 'The order must be a whole number.');
-        $this->action($this->admin, 'posts.create', ['title' => '', 'content' => 'Body', 'type' => 'nope', 'isFeatured' => false, 'hideAuthor' => false])
+        $this->action($this->admin, 'posts.create', ['title' => '', 'content' => 'Body', 'type' => 'nope', 'isFeatured' => false, 'hideAuthor' => false, 'isHidden' => false])
             ->assertStatus(400)
             ->assertJsonPath('error.fields.title.0', 'The title is required.')
             ->assertJsonPath('error.fields.type.0', 'Choose a valid post type.');
-        $this->action($this->admin, 'posts.create', ['title' => 'No body', 'content' => '', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false])
+        $this->action($this->admin, 'posts.create', ['title' => 'No body', 'content' => '', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false, 'isHidden' => false])
             ->assertStatus(400)->assertJsonPath('error.fields.content.0', 'The content is required.');
         $this->action($this->admin, 'posts.create', [
-            'title' => 'Event', 'content' => 'Body', 'type' => 'event', 'isFeatured' => false, 'hideAuthor' => false,
+            'title' => 'Event', 'content' => 'Body', 'type' => 'event', 'isFeatured' => false, 'hideAuthor' => false, 'isHidden' => false,
             'startDate' => '2026-05-02T10:00:00Z', 'endDate' => '2026-05-01T10:00:00Z',
         ])->assertStatus(400)->assertJsonPath('error.fields.endDate.0', 'The end date must be on or after the start date.');
     }
 
     public function test_post_slugs_are_unique_and_a_department_name_conflicts(): void
     {
-        $form = ['title' => 'Same Title', 'content' => 'Body', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false];
+        $form = ['title' => 'Same Title', 'content' => 'Body', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false, 'isHidden' => false];
         $this->action($this->admin, 'posts.create', $form)->assertOk();
         $this->action($this->admin, 'posts.create', $form)->assertOk();
         $this->assertEqualsCanonicalizing(['same-title', 'same-title-1'], Post::query()->where('title', 'Same Title')->pluck('slug')->all());
@@ -213,7 +213,7 @@ class ActionsAuthorizationTest extends TestCase
 
     public function test_a_slug_of_zero_is_kept_like_in_js(): void
     {
-        $this->action($this->admin, 'posts.create', ['title' => 'Zero', 'slug' => '0', 'content' => 'Body', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false])->assertOk();
+        $this->action($this->admin, 'posts.create', ['title' => 'Zero', 'slug' => '0', 'content' => 'Body', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false, 'isHidden' => false])->assertOk();
         $this->assertTrue(Post::query()->where('slug', '0')->exists());
         $this->action($this->admin, 'departments.create', ['name' => '0'])->assertOk();
         $this->assertTrue(Department::query()->where('slug', '0')->exists());
@@ -223,14 +223,14 @@ class ActionsAuthorizationTest extends TestCase
     {
         $form = ['title' => 'T', 'content' => 'Body', 'type' => 'article'];
         // JSON is strict; a form reads any submitted value other than "false" as a checked box (Astro form actions).
-        $this->action($this->admin, 'posts.create', $form + ['isFeatured' => 'yes', 'hideAuthor' => false])
+        $this->action($this->admin, 'posts.create', $form + ['isFeatured' => 'yes', 'hideAuthor' => false, 'isHidden' => false])
             ->assertStatus(400)->assertJsonPath('error.fields.isFeatured.0', 'Invalid input: expected boolean, received string');
         $this->actingAs($this->admin)->post('/_actions/posts.create', $form + ['isFeatured' => 'yes', 'hideAuthor' => 'false'], ['Accept' => 'application/json'])
             ->assertOk();
         $this->assertTrue(Post::query()->where('title', 'T')->value('is_featured'));
-        $this->action($this->admin, 'posts.create', ['title' => str_repeat('a', 256), 'content' => 'Body', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false])
+        $this->action($this->admin, 'posts.create', ['title' => str_repeat('a', 256), 'content' => 'Body', 'type' => 'article', 'isFeatured' => false, 'hideAuthor' => false, 'isHidden' => false])
             ->assertStatus(400)->assertJsonPath('error.fields.title.0', 'Too big: expected string to have <=255 characters');
-        $this->action($this->admin, 'posts.create', $form + ['hideAuthor' => false])
+        $this->action($this->admin, 'posts.create', $form + ['hideAuthor' => false, 'isHidden' => false])
             ->assertStatus(400)->assertJsonPath('error.fields.isFeatured.0', 'Invalid input: expected boolean, received undefined');
     }
 }

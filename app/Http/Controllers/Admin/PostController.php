@@ -32,6 +32,10 @@ class PostController extends Controller
                 fn (?string $raw) => AdminList::parseYesNo($raw),
                 fn (bool $isFeatured) => fn (Builder $q) => $q->where('is_featured', $isFeatured),
             ),
+            'hidden' => AdminList::listFilter(
+                fn (?string $raw) => AdminList::parseYesNo($raw),
+                fn (bool $isHidden) => fn (Builder $q) => $q->where('is_hidden', $isHidden),
+            ),
         ];
 
         $list = AdminList::runList([
@@ -57,7 +61,7 @@ class PostController extends Controller
             'count' => fn ($where) => Post::query()->where($where)->count(),
             'fetch' => fn (array $args) => AdminList::apply(
                 Post::query()
-                    ->select(['id', 'title', 'type', 'is_featured', 'created_at', 'highlight_image_path', 'department_id', 'user_id'])
+                    ->select(['id', 'title', 'type', 'is_featured', 'is_hidden', 'created_at', 'highlight_image_path', 'department_id', 'user_id'])
                     ->with(['department:id,name', 'user:id,name']),
                 $args,
             )->get(),

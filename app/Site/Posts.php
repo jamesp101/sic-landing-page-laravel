@@ -9,7 +9,10 @@ use App\Storage\Variants;
 use App\Support\Search;
 use Illuminate\Database\Eloquent\Builder;
 
-/** The public Post reads: list, page, related Posts and the Post summary with its Excerpt. */
+/**
+ * The public Post reads: list, page, related Posts and the Post summary with its Excerpt. A Hidden post is left out of
+ * every list (`listed()`), but its own page still opens.
+ */
 final class Posts
 {
     private const COLUMNS = [
@@ -39,7 +42,7 @@ final class Posts
      */
     public static function list(array $filters, int $perPage, int $page = 1): array
     {
-        $query = Post::query();
+        $query = self::listed();
         if (isset($filters['type']) && $filters['type'] !== '') {
             $query->where('type', $filters['type']);
         }
@@ -88,7 +91,7 @@ final class Posts
     /** @return array{post: array, related: list<array>, layout: array}|null */
     public static function page(string $slug): ?array
     {
-        $row = Post::query()->select([...self::COLUMNS, 'content', 'hide_author', 'user_id'])
+        $row = Post::query()->select([...self::COLUMNS, 'content', 'hide_author', 'is_hidden', 'user_id'])
             ->with(['department:id,name,slug', 'user:id,name'])->where('slug', $slug)->first();
         if (! $row) {
             return null;
@@ -98,6 +101,7 @@ final class Posts
             ...self::summaryWithExcerpt($row, self::excerptFor($row, $row->content)),
             'html' => Content::parseContent($row->content)->html(),
             'authorName' => $row->hide_author ? null : $row->user->name,
+            'isHidden' => (bool) $row->is_hidden,
         ];
 
         return ['post' => $post, 'related' => self::related($post), 'layout' => $layout];
@@ -155,9 +159,15 @@ final class Posts
         return self::summaries($rows);
     }
 
+    /** The Posts that public lists may show: every Post except a Hidden post. */
+    public static function listed(): Builder
+    {
+        return Post::query()->where('is_hidden', false);
+    }
+
     private static function query(): Builder
     {
-        return Post::query()->select(self::COLUMNS)->with('department:id,name,slug');
+        return self::listed()->select(self::COLUMNS)->with('department:id,name,slug');
     }
 
     private static function summaryWithExcerpt(Post $row, string $excerpt): array
